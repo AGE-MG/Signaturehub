@@ -25,6 +25,8 @@ namespace AGE.SignatureHub.Domain.Entities
         public SignatureMetadata SignatureMetadata { get; private set; }
         public string SignatureImagePath { get; private set; }
 
+        private Signer() { }
+
         public Signer(
                 Guid signatureFlowId, 
                 string name, 
@@ -59,6 +61,22 @@ namespace AGE.SignatureHub.Domain.Entities
             SignatureMetadata = signatureMetadata ?? throw new ArgumentNullException(nameof(signatureMetadata));
             SignatureImagePath = signatureImagePath;
             Status = SignatureStatus.Signed;
+            SetUpdatedAt();
+        }
+
+        public void Reject(string reason)
+        {
+            if (Status != SignatureStatus.Pending)
+                throw new InvalidOperationException("Signer can only reject when status is pending.");
+
+            RejectionReason = reason ?? throw new ArgumentNullException(nameof(reason));
+            Status = SignatureStatus.Rejected;
+            SetUpdatedAt();
+        }
+
+        public void Cancel()
+        {
+            Status = SignatureStatus.Cancelled;
             SetUpdatedAt();
         }
     }
