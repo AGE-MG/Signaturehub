@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace AGE.SignatureHub.Application.Contracts.Persistence
 {
+ /* This code snippet defines a generic interface named `IRepository<T>` where `T` is a type parameter
+ constrained to be a reference type (class). This interface declares a set of asynchronous methods
+ commonly used for data access operations in a repository pattern: */
     public interface IRepository<T> where T : class
     {
         Task<T> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);

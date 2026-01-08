@@ -7,6 +7,10 @@ using AGE.SignatureHub.Domain.Enums;
 
 namespace AGE.SignatureHub.Application.Contracts.Persistence
 {
+   /* This code snippet is defining an interface in C# named `IDocumentRepository` that extends another
+   interface `IRepository<Document>`. The `IDocumentRepository` interface declares several
+   asynchronous methods that are used for interacting with document entities in a repository. Here's
+   a breakdown of the methods declared in the interface: */
     public interface IDocumentRepository : IRepository<Document>
     {
         Task<Document?> GetByIdWithFlowsAsync(Guid id, CancellationToken cancellationToken = default);
