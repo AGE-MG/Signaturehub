@@ -7,12 +7,12 @@ namespace AGE.SignatureHub.Domain.ValueObjects
 {
     public class SignatureMetadata
     {
-        public string IpAddress { get; private set; }
-        public string UserAgent { get; private set; }
-        public string DeviceInfo { get; private set; }
-        public string Location { get; private set; }
+        public string IpAddress { get; private set; } = string.Empty;
+        public string UserAgent { get; private set; } = string.Empty;
+        public string DeviceInfo { get; private set; } = string.Empty;
+        public string Location { get; private set; } = string.Empty;
         public DateTime SignedAt { get; private set; }
-        public string DocumentHash { get; private set; }
+        public string DocumentHash { get; private set; } = string.Empty;
 
         private SignatureMetadata() { }
 

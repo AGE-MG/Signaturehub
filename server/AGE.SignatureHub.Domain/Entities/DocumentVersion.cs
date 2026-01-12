@@ -10,9 +10,9 @@ namespace AGE.SignatureHub.Domain.Entities
     {
         public Guid DocumentId { get; private set; }
         public int VersionNumber { get; private set; }
-        public string StoragePath { get; private set; }
-        public string ContentHash { get; private set; }
-        public string changeDescription { get; private set; }
+        public string StoragePath { get; private set; } = string.Empty;
+        public string ContentHash { get; private set; } = string.Empty;
+        public string changeDescription { get; private set; } = string.Empty;
 
         private DocumentVersion() { }
 

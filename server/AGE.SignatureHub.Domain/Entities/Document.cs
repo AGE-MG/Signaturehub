@@ -9,16 +9,16 @@ namespace AGE.SignatureHub.Domain.Entities
 {
     public class Document : BaseEntity
     {
-        public string FileName { get; private set; }
-        public string OriginalFileName { get; private set; }
-        public string FileExtension { get; private set; }
+        public string FileName { get; private set; } = string.Empty;
+        public string OriginalFileName { get; private set; } = string.Empty;
+        public string FileExtension { get; private set; } = string.Empty;
         public long FileSizeInBytes { get; private set; }
-        public string StoragePath { get; private set; }
-        public string ContentHash { get; private set; }
-        public string MimeType { get; private set; }
+        public string StoragePath { get; private set; } = string.Empty;
+        public string ContentHash { get; private set; } = string.Empty;
+        public string MimeType { get; private set; } = string.Empty;
         public DocumentStatus Status { get; private set; }
-        public string Title { get; private set; }
-        public string Description { get; private set; }
+        public string Title { get; private set; } = string.Empty;
+        public string Description { get; private set; } = string.Empty;
         public DateTime? ExpiresAt { get; private set; }
         public Guid CreatedByUserId { get; private set; }
 

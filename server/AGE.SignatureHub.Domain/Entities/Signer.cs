@@ -11,19 +11,19 @@ namespace AGE.SignatureHub.Domain.Entities
     public class Signer : BaseEntity
     {
         public Guid SignatureFlowId { get; private set; }
-        public SignatureFlow SignatureFlow { get; private set; }
-        public string Name { get; private set; }
-        public string Email { get; private set; }
-        public string Document { get; private set; } //CPF/CNPJ
+        public SignatureFlow SignatureFlow { get; private set; } = null!;
+        public string Name { get; private set; } = string.Empty;
+        public string Email { get; private set; } = string.Empty;
+        public string Document { get; private set; } = string.Empty; //CPF/CNPJ
         public SignerRole Role { get; private set; }
         public int SignOrder { get; private set; }
         public SignatureStatus Status { get; private set; }
         public SignatureType? SignatureType { get; private set; }
         public DateTime? SignedAt { get; private set; }
-        public string RejectionReason { get; private set; }
-        public CertificateInfo CertificateInfo { get; private set; }
-        public SignatureMetadata SignatureMetadata { get; private set; }
-        public string SignatureImagePath { get; private set; }
+        public string RejectionReason { get; private set; } = string.Empty;
+        public CertificateInfo CertificateInfo { get; private set; } = null!;
+        public SignatureMetadata SignatureMetadata { get; private set; } = null!;
+        public string SignatureImagePath { get; private set; } = string.Empty;
 
         private Signer() { }
 
@@ -48,8 +48,8 @@ namespace AGE.SignatureHub.Domain.Entities
         public void Sign(
                 SignatureType signatureType, 
                 SignatureMetadata signatureMetadata, 
-                CertificateInfo certificateInfo = null, 
-                string signatureImagePath = null
+                CertificateInfo certificateInfo,
+                string signatureImagePath 
             )
         {
             if (Status != SignatureStatus.Pending)

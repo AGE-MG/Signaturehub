@@ -10,8 +10,8 @@ namespace AGE.SignatureHub.Domain.Entities
     public class SignatureFlow : BaseEntity
     {
         public Guid DocumentId { get; private set; }
-        public Document Document { get; private set; }
-        public string FlowName { get; private set; }
+        public Document Document { get; private set; } = null!;
+        public string FlowName { get; private set; } = string.Empty;
         public FlowType FlowType { get; private set; }
         public int CurrentStep { get; private set; }
         public int TotalSteps { get; private set; }

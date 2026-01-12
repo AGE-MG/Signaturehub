@@ -7,12 +7,12 @@ namespace AGE.SignatureHub.Domain.ValueObjects
 {
     public class CertificateInfo
     {
-        public string SerialNumber { get; private set; }
-        public string SubjectName { get; private set; }
-        public string IssuerName { get; private set; }
+        public string SerialNumber { get; private set; } = string.Empty;
+        public string SubjectName { get; private set; } = string.Empty;
+        public string IssuerName { get; private set; } = string.Empty;
         public DateTime ValidFrom { get; private set; }
         public DateTime ValidTo { get; private set; }
-        public string Thumbprint { get; private set; }
+        public string Thumbprint { get; private set; } = string.Empty;
         public bool isValid { get; private set; }
 
         private CertificateInfo() { }
