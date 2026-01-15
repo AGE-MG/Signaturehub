@@ -6,7 +6,7 @@ using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.DTOs.SignatureFlow;
 using MediatR;
 
-namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateSignatureFlow
+namespace AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSignatureFlow
 {
     public class CreateSignatureFlowCommand : IRequest<BaseResponse<SignatureFlowDto>>
     {

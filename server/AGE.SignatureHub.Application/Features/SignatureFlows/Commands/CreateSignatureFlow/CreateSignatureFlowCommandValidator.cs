@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation;
 
-namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateSignatureFlow
+namespace AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSignatureFlow
 {
     public class CreateSignatureFlowCommandValidator : AbstractValidator<CreateSignatureFlowCommand>
     {

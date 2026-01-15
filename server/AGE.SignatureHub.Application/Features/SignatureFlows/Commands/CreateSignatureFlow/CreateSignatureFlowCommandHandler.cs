@@ -15,7 +15,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateSignatureFlow
+namespace AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSignatureFlow
 {
     public class CreateSignatureFlowCommandHandler : IRequestHandler<CreateSignatureFlowCommand, BaseResponse<SignatureFlowDto>>
     {
