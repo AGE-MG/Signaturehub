@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using AGE.SignatureHub.Application.Configuration;
 using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.DTOs.SignatureFlow;
 using AGE.SignatureHub.Application.Exceptions;
 using AGE.SignatureHub.Domain.Entities;
+using AGE.SignatureHub.Domain.Enums;
 using AutoMapper;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateSignatureFlow
 {
@@ -20,12 +23,20 @@ namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateSignatu
         private readonly IEmailService _emailService;
         private readonly IWebhookService _webhookService;
         private readonly IMapper _mapper;
-        public CreateSignatureFlowCommandHandler(IUnitOfWork unitOfWork, IEmailService emailService, IWebhookService webhookService, IMapper mapper)
+        private readonly ApplicationSettings _settings;
+        
+        public CreateSignatureFlowCommandHandler(
+            IUnitOfWork unitOfWork, 
+            IEmailService emailService, 
+            IWebhookService webhookService, 
+            IMapper mapper,
+            IOptions<ApplicationSettings> settings)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
             _webhookService = webhookService;
             _mapper = mapper;
+            _settings = settings.Value;
         }
         
         public async Task<BaseResponse<SignatureFlowDto>> Handle(CreateSignatureFlowCommand request, CancellationToken cancellationToken)
@@ -105,11 +116,35 @@ namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateSignatu
             }
             catch (System.Exception ex )
             {
-                
+                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                response.Success = false;
+                response.Message = "An error occurred while creating the signature flow.";
+                response.Errors = new List<string> { ex.Message };
+                return response;
+            }
+        }
 
+        private async Task SendSignatureRequestNotification(SignatureFlow signatureFlow, Document document, CancellationToken cancellationToken)
+        {
+            var signersToNotify = signatureFlow.FlowType switch
+            {
+                FlowType.Sequential => signatureFlow.Signers.Where(s => s.SignOrder == 1).ToList(),
+                FlowType.Parallel => signatureFlow.Signers.ToList(),
+                FlowType.Hybrid => signatureFlow.Signers.Where(s => s.SignOrder == 1).ToList(),
+                _ => new List<Signer>()
+            };
 
+            foreach (var signer in signersToNotify)
+            {
+                var signatureUrl = $"{_settings.BaseUrl}{_settings.SignatureUrlPath}/{signer.Id}";
                 
-                throw;
+                await _emailService.SendSignatureRequestAsync(
+                    signer.Email,
+                    signer.Name,
+                    document.Title,
+                    signatureUrl,
+                    cancellationToken
+                );
             }
         }
     }
