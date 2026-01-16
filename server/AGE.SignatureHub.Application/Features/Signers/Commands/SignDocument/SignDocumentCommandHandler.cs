@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.DTOs.Signer;
 using AGE.SignatureHub.Application.Exceptions;
+using AGE.SignatureHub.Domain.Entities;
 using AGE.SignatureHub.Domain.Enums;
 using AGE.SignatureHub.Domain.ValueObjects;
 using AutoMapper;
@@ -170,11 +172,41 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                 await _unitOfWork.Signers.UpdateAsync(signer, cancellationToken);
                 await _unitOfWork.SignatureFlows.UpdateAsync(flow, cancellationToken);
                 await _unitOfWork.Documents.UpdateAsync(document, cancellationToken);
+
+                var auditLog = new AuditLog(
+                    action: "DOCUMENT_SIGNED",
+                    details: $"Signer {signer.Name} ({signer.Email}) signed the document '{document.FileName}' using signature type {request.SignData.SignatureType}.",
+                    ipAddress: request.SignData.IpAddress,
+                    userAgent: request.SignData.UserAgent,
+                    documentId: document.Id,
+                    signerId: signer.Id
+                );
+
+                await _unitOfWork.AuditLogs.AddAsync(auditLog, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await _unitOfWork.CommitTransactionAsync(cancellationToken);
+
+                await _webhookService.SendWebhookAsync("signature.signed", JsonSerializer.Serialize(new
+                {
+                    DocumentId = document.Id,
+                    SignerId = signer.Id,
+                    SignerName = signer.Name,
+                    DocumentTitle = document.Title,
+                    FlowCompleted = flow.IsCompleted
+                }), cancellationToken);
+
+                response.Success = true;
+                response.Message = "Document signed successfully.";
+                response.Data = _mapper.Map<SignerDto>(signer);
+                return response;
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
-                
-                throw;
+                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                response.Success = false;
+                response.Message = "An error occurred while signing the document.";
+                response.Errors = new List<string> { ex.Message };
+                return response;
             }
         }
     }
