@@ -11,7 +11,6 @@ namespace AGE.SignatureHub.Domain.ValueObjects
         public string UserAgent { get; private set; } = string.Empty;
         public string DeviceInfo { get; private set; } = string.Empty;
         public string Location { get; private set; } = string.Empty;
-        public DateTime SignedAt { get; private set; }
         public string DocumentHash { get; private set; } = string.Empty;
 
         private SignatureMetadata() { }
@@ -21,7 +20,6 @@ namespace AGE.SignatureHub.Domain.ValueObjects
                 string userAgent,
                 string deviceInfo,
                 string location,
-                DateTime signedAt,
                 string documentHash
             )
         {
@@ -29,7 +27,6 @@ namespace AGE.SignatureHub.Domain.ValueObjects
             UserAgent = userAgent;
             DeviceInfo = deviceInfo;
             Location = location;
-            SignedAt = signedAt;
             DocumentHash = documentHash ?? throw new ArgumentNullException(nameof(documentHash));
         }
     }

@@ -49,7 +49,7 @@ namespace AGE.SignatureHub.Domain.Entities
                 SignatureType signatureType, 
                 SignatureMetadata signatureMetadata, 
                 CertificateInfo certificateInfo,
-                string signatureImagePath 
+                string? signatureImagePath 
             )
         {
             if (Status != SignatureStatus.Pending)
@@ -59,7 +59,7 @@ namespace AGE.SignatureHub.Domain.Entities
             SignedAt = DateTime.UtcNow;
             CertificateInfo = certificateInfo;
             SignatureMetadata = signatureMetadata ?? throw new ArgumentNullException(nameof(signatureMetadata));
-            SignatureImagePath = signatureImagePath;
+            SignatureImagePath = signatureImagePath ?? string.Empty;
             Status = SignatureStatus.Signed;
             SetUpdatedAt();
         }
