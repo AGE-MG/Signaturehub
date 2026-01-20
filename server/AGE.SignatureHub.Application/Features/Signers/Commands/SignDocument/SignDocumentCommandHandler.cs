@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
+using AGE.SignatureHub.Application.Configuration;
 using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Common;
@@ -25,6 +26,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
         private readonly IEmailService _emailService;
         private readonly IWebhookService _webhookService;
         private readonly IMapper _mapper;
+        private readonly ApplicationSettings _settings;
 
         public SignDocumentCommandHandler(
             IUnitOfWork unitOfWork,
@@ -32,7 +34,8 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
             IStorageService storageService,
             IEmailService emailService,
             IWebhookService webhookService,
-            IMapper mapper)
+            IMapper mapper,
+            ApplicationSettings settings)
         {
             _unitOfWork = unitOfWork;
             _signatureService = signatureService;
@@ -40,6 +43,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
             _emailService = emailService;
             _webhookService = webhookService;
             _mapper = mapper;
+            _settings = settings;
         }
         
         public async Task<BaseResponse<SignerDto>> Handle(SignDocumentCommand request, CancellationToken cancellationToken)
@@ -207,6 +211,28 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                 response.Message = "An error occurred while signing the document.";
                 response.Errors = new List<string> { ex.Message };
                 return response;
+            }
+        }
+
+        private async Task NotifyNextSigners(SignatureFlow flow, Document document, CancellationToken cancellationToken)
+        {
+            var nextSigners = flow.Signers
+                .Where(s => s.SignOrder == flow.CurrentStep && s.Status == SignatureStatus.Pending)
+                .ToList();
+
+            foreach (var signer in nextSigners)
+            {
+                var signatureUrl = $"{_settings.BaseUrl}/{_settings.SignatureUrlPath}/{signer.Id}";
+
+                await _emailService.SendSignatureRequestAsync(signer.Email, signer.Name, document.Title, signatureUrl, cancellationToken);
+            }
+        }
+
+        private async Task NotifyFlowCompletion(SignatureFlow flow, Document document, CancellationToken cancellationToken)
+        {
+            foreach (var signer in flow.Signers)
+            {
+                await _emailService.SendSignatureCompletedAsync(signer.Email, signer.Name, document.Title, cancellationToken);
             }
         }
     }
