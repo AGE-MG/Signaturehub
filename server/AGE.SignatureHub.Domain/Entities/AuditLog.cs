@@ -11,7 +11,7 @@ namespace AGE.SignatureHub.Domain.Entities
         public Guid? DocumentId { get; private set; }
         public Guid? SignerId { get; private set; }
         public Guid? UserId { get; private set; }
-        public string Action { get; private set; }
+        public string Action { get; private set; } 
         public string Details { get; private set; }
         public string IpAddress { get; private set; }
         public string UserAgent { get; private set; }
