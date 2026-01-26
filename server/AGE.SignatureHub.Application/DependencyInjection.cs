@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using AGE.SignatureHub.Application.Behaviors;
+using FluentValidation;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AGE.SignatureHub.Application
@@ -17,6 +20,9 @@ namespace AGE.SignatureHub.Application
 
             services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
             return services;
         }
     }
