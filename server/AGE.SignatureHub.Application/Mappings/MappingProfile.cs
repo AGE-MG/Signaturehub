@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.DTOs.Document;
+using AGE.SignatureHub.Application.DTOs.SignatureFlow;
+using AGE.SignatureHub.Application.DTOs.Signer;
 using AGE.SignatureHub.Domain.Entities;
 using AutoMapper;
 
@@ -30,6 +32,41 @@ namespace AGE.SignatureHub.Application.Mappings
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+
+            CreateMap<SignatureFlow, SignatureFlowDto>()
+                .ForMember(dest => dest.Signers, opt => opt.MapFrom(src => src.Signers));
+
+            CreateMap<CreateSignatureFlowDto, SignatureFlow>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Document, opt => opt.Ignore())
+                .ForMember(dest => dest.CurrentStep, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalSteps, opt => opt.Ignore())
+                .ForMember(dest => dest.IsCompleted, opt => opt.Ignore())
+                .ForMember(dest => dest.CompletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.Signers, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+
+            CreateMap<Signer, SignerDto>();
+
+            CreateMap<CreateSignerDto, Signer>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.SignatureFlow, opt => opt.Ignore())
+                .ForMember(dest => dest.SignatureFlowId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.SignatureType, opt => opt.Ignore())
+                .ForMember(dest => dest.SignedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.RejectionReason, opt => opt.Ignore())
+                .ForMember(dest => dest.CertificateInfo, opt => opt.Ignore())
+                .ForMember(dest => dest.SignatureMetadata, opt => opt.Ignore())
+                .ForMember(dest => dest.SignatureImagePath, opt => opt.Ignore())
+                .ForMember(dest => dest.SignedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+
+            CreateMap<AuditLog, AuditLogDto>();
         }
     }
 }
