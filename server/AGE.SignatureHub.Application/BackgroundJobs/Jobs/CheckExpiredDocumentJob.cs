@@ -8,15 +8,15 @@ using AGE.SignatureHub.Domain.Entities;
 using AGE.SignatureHub.Domain.Enums;
 using Microsoft.Extensions.Logging;
 
-namespace AGE.SignatureHub.Application.BackgroundJobs
+namespace AGE.SignatureHub.Application.BackgroundJobs.Jobs
 {
-    public class CheckExpiredBackgroundJobs
+    public class CheckExpiredDocumentJob
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailService _emailService;
-        private readonly ILogger<CheckExpiredBackgroundJobs> _logger;
+        private readonly ILogger<CheckExpiredDocumentJob> _logger;
 
-        public CheckExpiredBackgroundJobs(IUnitOfWork unitOfWork, IEmailService emailService, ILogger<CheckExpiredBackgroundJobs> logger)
+        public CheckExpiredDocumentJob(IUnitOfWork unitOfWork, IEmailService emailService, ILogger<CheckExpiredDocumentJob> logger)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
@@ -27,7 +27,7 @@ namespace AGE.SignatureHub.Application.BackgroundJobs
         {
             try
             {
-                _logger.LogInformation("Starting CheckExpiredBackgroundJobs...");
+                _logger.LogInformation("Starting expired documents check job...");
     
                 var expiredDocuments = await _unitOfWork.Documents.GetExpiredDocumentsAsync();
     
@@ -70,7 +70,7 @@ namespace AGE.SignatureHub.Application.BackgroundJobs
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while executing CheckExpiredBackgroundJobs.");
+                _logger.LogError(ex, "An error occurred while executing expired documents check job.");
                 throw;
             }
         }
