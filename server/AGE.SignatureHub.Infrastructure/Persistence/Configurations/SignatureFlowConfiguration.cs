@@ -26,6 +26,36 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Configurations
             builder.Property(sf => sf.FlowType)
                 .IsRequired()
                 .HasConversion<string>();
+
+            builder.Property(sf => sf.CurrentStep)
+                .IsRequired();
+
+            builder.Property(sf => sf.TotalSteps)
+                .IsRequired();
+
+            builder.Property(sf => sf.IsCompleted)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            builder.Property(sf => sf.CompletedAt)
+                .IsRequired();
+
+            builder.Property(sf => sf.CreatedAt)
+                .IsRequired();
+
+            builder.Property(sf => sf.UpdatedAt);
+
+            builder.Property(sf => sf.IsDeleted)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            builder.HasMany(sf => sf.Signers)
+                .WithOne(s => s.SignatureFlow)
+                .HasForeignKey(s => s.SignatureFlowId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasIndex(sf => sf.DocumentId);
+            builder.HasIndex(sf => sf.IsCompleted);
         }
     }
 }
