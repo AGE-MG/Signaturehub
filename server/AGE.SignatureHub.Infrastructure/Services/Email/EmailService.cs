@@ -29,14 +29,20 @@ namespace AGE.SignatureHub.Infrastructure.Services.Email
             throw new NotImplementedException();
         }
 
-        public Task SendSignatureCompletedAsync(string toEmail, string toName, string documentTitle, CancellationToken cancellationToken = default)
+        public async Task SendSignatureCompletedAsync(string toEmail, string toName, string documentTitle, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var subject = $"Documento '{documentTitle}' Assinado com Sucesso";
+            var body = GetSignatureCompletedTemplate(toName, documentTitle);
+
+            await SendEmailAsync(toEmail, toName, subject, body, cancellationToken);
         }
 
-        public Task SendSignatureRejectedAsync(string toEmail, string toName, string documentTitle, string reason, CancellationToken cancellationToken = default)
+        public async Task SendSignatureRejectedAsync(string toEmail, string toName, string documentTitle, string reason, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var subject = $"Documento '{documentTitle}' Rejeitado";
+            var body = GetSignatureRejectedTemplate(toName, documentTitle, reason);
+
+            await SendEmailAsync(toEmail, toName, subject, body, cancellationToken);
         }
 
         public async Task SendSignatureRequestAsync(string toEmail, string toName, string documentTitle, string signatureUrl, CancellationToken cancellationToken = default)
