@@ -19,14 +19,20 @@ namespace AGE.SignatureHub.Infrastructure.Services.Email
             _settings = settings.Value;
             _logger = logger;
         }
-        public Task SendDocumentExpiredAsync(string toEmail, string toName, string documentTitle, CancellationToken cancellationToken = default)
+        public async Task SendDocumentExpiredAsync(string toEmail, string toName, string documentTitle, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var subject = $"Documento '{documentTitle}' Expirado";
+            var body = GetDocumentExpiredTemplate(toName, documentTitle);
+
+            await SendEmailAsync(toEmail, toName, subject, body, cancellationToken);
         }
 
-        public Task SendReminderAsync(string toEmail, string toName, string documentTitle, string signatureUrl, CancellationToken cancellationToken = default)
+        public async Task SendReminderAsync(string toEmail, string toName, string documentTitle, string signatureUrl, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            var subject = $"Lembrete: Assinatura pendente para '{documentTitle}'";
+            var body = GetReminderTemplate(toName, documentTitle, signatureUrl);
+
+            await SendEmailAsync(toEmail, toName, subject, body, cancellationToken);
         }
 
         public async Task SendSignatureCompletedAsync(string toEmail, string toName, string documentTitle, CancellationToken cancellationToken = default)

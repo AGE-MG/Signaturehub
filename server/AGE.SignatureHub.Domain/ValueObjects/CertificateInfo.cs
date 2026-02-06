@@ -14,6 +14,8 @@ namespace AGE.SignatureHub.Domain.ValueObjects
         public DateTime ValidTo { get; private set; }
         public string Thumbprint { get; private set; } = string.Empty;
         public bool isValid { get; private set; }
+        public byte[] RawData { get; private set; } = Array.Empty<byte>();
+        public string? Password { get; private set; }
 
         private CertificateInfo() { }
 
