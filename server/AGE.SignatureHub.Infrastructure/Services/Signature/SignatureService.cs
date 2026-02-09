@@ -16,6 +16,11 @@ using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 using AlterCertificateInfo = AGE.SignatureHub.Domain.ValueObjects.CertificateInfo;
 using Org.BouncyCastle.Crypto;
+using iText.Commons.Bouncycastle.Cert;
+using iText.Commons.Bouncycastle.Crypto;
+using iText.Bouncycastle.X509;
+using iText.Bouncycastle.Crypto;
+using iText.Forms.Form.Element;
 
 namespace AGE.SignatureHub.Infrastructure.Services.Signature
 {
@@ -35,7 +40,20 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
 
         public Task<byte[]> SignDocumentAsync(Stream documentStream, SignatureType signatureType, AlterCertificateInfo certificateInfo, SignatureMetadata metadata, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            try
+            {
+                return signatureType switch
+                {
+                    SignatureType.Eletronic => SignEletronicallyAsync(documentStream, metadata, cancellationToken),
+                    SignatureType.DigitalA1 or SignatureType.DigitalA3 => SignWithCertficateAsync(documentStream, certificateInfo, metadata, cancellationToken),
+                    _ => throw new ArgumentException("Tipo de assinatura não suportado.", nameof(signatureType))
+                };
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, $"Error signing document with signature type {signatureType}");
+                throw;
+            }
         }
 
         public Task<AlterCertificateInfo> ValidateCertificateAsync(byte[] certificateData, CancellationToken cancellationToken = default)
@@ -86,46 +104,48 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
         {
             try
             {
-                // Carregar o certificado X509 usando a nova API recomendada
                 var certificate = X509CertificateLoader.LoadPkcs12(
                     certificateInfo.RawData,
                     certificateInfo.Password,
                     X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
 
-                // Converter para formato BouncyCastle (requerido pelo iText)
                 var bcCert = DotNetUtilities.FromX509Certificate(certificate);
-                var bcCertChain = new[] { bcCert };
+                var bcPrivateKey = DotNetUtilities.GetKeyPair(certificate.PrivateKey).Private;
+                
+                var itextCert = new X509CertificateBC(bcCert);
+                var itextCertChain = new IX509Certificate[] { itextCert };
+                var itextPrivateKey = new PrivateKeyBC(bcPrivateKey);
 
-                // Obter chave privada
-                var privateKey = DotNetUtilities.GetKeyPair(certificate.PrivateKey).Private;
-
-                // Preparar streams
                 using var memoryStream = new MemoryStream();
                 var pdfReader = new PdfReader(documentStream);
                 var stamperProperties = new StampingProperties().UseAppendMode();
 
-                // Criar PdfSigner (substitui PdfStamper para assinaturas)
-                var signer = new PdfSigner(pdfReader, memoryStream, stamperProperties);
-
-                // Configurar aparência da assinatura
+                var signerProperties = new SignerProperties();
+                var fieldName = $"Signature_{DateTime.UtcNow:yyyyMMddHHmmss}";
                 
-                signer.SignatureAppearance
+                signerProperties
+                    .SetFieldName(fieldName)
                     .SetReason("Assinatura Digital")
                     .SetLocation(metadata.Location ?? "Brasil")
-                    .SetSignatureCreator("AGE SignatureHub")
-                    .SetPageRect(new Rectangle(36, 648, 200, 100)) // Posição no PDF
-                    .SetPageNumber(1);
+                    .SetSignatureCreator("AGE SignatureHub");
+            
+                var appearance = new SignatureFieldAppearance(fieldName)
+                    .SetContent("Assinado digitalmente por AGE SignatureHub");
+                
+                signerProperties
+                    .SetPageNumber(1)
+                    .SetPageRect(new Rectangle(36, 648, 200, 100))
+                    .SetSignatureAppearance(appearance);
 
-                // Configurar parâmetros da assinatura digital
-                signer.SetFieldName($"Signature_{DateTime.UtcNow:yyyyMMddHHmmss}");
+                var signer = new PdfSigner(pdfReader, memoryStream, stamperProperties);
+                signer.SetSignerProperties(signerProperties);
 
-                // Criar container de assinatura PAdES
-                IExternalSignature externalSignature = new PrivateKeySignature(privateKey, DigestAlgorithms.SHA256);
+                IExternalSignature externalSignature = new PrivateKeySignature(itextPrivateKey, DigestAlgorithms.SHA256);
 
                 // Assinar o documento usando PAdES (PDF Advanced Electronic Signatures)
                 signer.SignDetached(
                     externalSignature,
-                    bcCertChain,
+                    itextCertChain,
                     null, // CRL (Certificate Revocation List) - opcional
                     null, // OCSP (Online Certificate Status Protocol) - opcional
                     null, // TSA (Time Stamp Authority) - opcional
