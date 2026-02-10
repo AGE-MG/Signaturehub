@@ -33,9 +33,56 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
             _logger = logger;
             _cryptographyService = cryptographyService;
         }
-        public Task<byte[]> ComputeHashAsync(Stream documentStream, CancellationToken cancellationToken = default)
+        public async Task<byte[]> ComputeHashAsync(Stream documentStream, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var hashString = await _cryptographyService.ComputeHashAsync(documentStream);
+                var hash = ConvertHashStringToBytes(hashString);
+                _logger.LogInformation("Document hash computed successfully.");
+                return hash;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error computing document hash.");
+                throw;
+            }
+        }
+
+        private byte[] ConvertHashStringToBytes(string hashString)
+        {
+            if (string.IsNullOrWhiteSpace(hashString))
+                throw new ArgumentException("Hash string cannot be null or empty.", nameof(hashString));
+
+            
+            hashString = hashString.Trim();
+
+            if (System.Text.RegularExpressions.Regex.IsMatch(hashString, @"^[0-9a-fA-F]+$") && hashString.Length % 2 == 0)
+            {
+                try
+                {
+                    return Convert.FromHexString(hashString);
+                }
+                catch
+                {
+                    // Se falhar, continua para próximo formato
+                }
+            }
+
+            if (System.Text.RegularExpressions.Regex.IsMatch(hashString, @"^[A-Za-z0-9+/]*={0,2}$"))
+            {
+                try
+                {
+                    return Convert.FromBase64String(hashString);
+                }
+                catch
+                {
+                    // Se falhar, continua para próximo formato
+                }
+            }
+
+            _logger.LogWarning("Hash format not recognized, using UTF8 encoding as fallback.");
+            return System.Text.Encoding.UTF8.GetBytes(hashString);
         }
 
         public Task<byte[]> SignDocumentAsync(Stream documentStream, SignatureType signatureType, AlterCertificateInfo certificateInfo, SignatureMetadata metadata, CancellationToken cancellationToken = default)
@@ -56,14 +103,105 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
             }
         }
 
-        public Task<AlterCertificateInfo> ValidateCertificateAsync(byte[] certificateData, CancellationToken cancellationToken = default)
+        public async Task<AlterCertificateInfo> ValidateCertificateAsync(byte[] certificateData, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var x509Certificate = X509CertificateLoader.LoadPkcs12(certificateData, null, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
+
+                var validFrom = x509Certificate.NotBefore;
+                var validTo = x509Certificate.NotAfter;
+                var isValid = DateTime.UtcNow >= validFrom && DateTime.UtcNow <= validTo;
+
+                var chain = new X509Chain();
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
+                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag;
+                var isChainValid = chain.Build(x509Certificate);
+
+                if (!isChainValid)
+                {
+                    _logger.LogWarning("Certificate chain validation failed");
+                    foreach (var status in chain.ChainStatus)
+                    {
+                        _logger.LogWarning("Chain status: {Status} - {StatusInformation}", 
+                            status.Status, 
+                            status.StatusInformation);
+                    }
+                }
+
+                var certificateInfo = new AlterCertificateInfo(
+                    serialNumber: x509Certificate.SerialNumber,
+                    subjectName: x509Certificate.Subject,
+                    issuerName: x509Certificate.Issuer,
+                    validFrom: validFrom,
+                    validTo: validTo,
+                    thumbprint: x509Certificate.Thumbprint
+                );
+
+                _logger.LogInformation(
+                    "Certificate validated. Subject: {Subject}, Valid from: {ValidFrom}, Valid to: {ValidTo}, Is valid: {IsValid}",
+                    certificateInfo.SubjectName,
+                    certificateInfo.ValidFrom,
+                    certificateInfo.ValidTo,
+                    certificateInfo.isValid);
+                
+                return await Task.FromResult(certificateInfo);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating certificate");
+                throw new InvalidOperationException("Falha ao validar certificado digital. Verifique se o arquivo é um PKCS#12 válido e contém a chave privada.", ex);
+            }
         }
 
         public Task<bool> ValidateSignatureAsync(Stream signedDocumentStream, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using var pdfReader = new PdfReader(signedDocumentStream);
+                using var pdfDocument = new PdfDocument(pdfReader);
+                var signatureUtil = new SignatureUtil(pdfDocument);
+                var signatureNames = signatureUtil.GetSignatureNames();
+
+                if (!signatureNames.Any())
+                {
+                    _logger.LogWarning("No signatures found in the document.");
+                    return Task.FromResult(false);
+                }
+
+                foreach (var signatureName in signatureNames)
+                {
+                    var pdfPKCS7 = signatureUtil.ReadSignatureData(signatureName);
+
+                    if (pdfPKCS7 == null)
+                    {
+                        _logger.LogWarning("Signature {SignatureName} is not a valid PKCS#7 signature.", signatureName);
+                        return Task.FromResult(false);
+                    }
+
+                    var signatureCoversWholeDocument = signatureUtil.SignatureCoversWholeDocument(signatureName);
+                    if (!signatureCoversWholeDocument)
+                    {
+                        _logger.LogWarning("Signature {SignatureName} does not cover the whole document.", signatureName);
+                        return Task.FromResult(false);
+                    }
+
+                    var isSignatureValid = pdfPKCS7.VerifySignatureIntegrityAndAuthenticity();
+                    if (!isSignatureValid)
+                    {
+                        _logger.LogWarning("Signature {SignatureName} is invalid.", signatureName);
+                        return Task.FromResult(false);
+                    }
+                }
+                _logger.LogInformation("All signatures in the document are valid.");
+                return Task.FromResult(true);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error validating signature.");
+                throw;
+            }
         }
 
         private async Task<byte[]> SignEletronicallyAsync(Stream documentStream, SignatureMetadata metadata, CancellationToken cancellationToken = default)
