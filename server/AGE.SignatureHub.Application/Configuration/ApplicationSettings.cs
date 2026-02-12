@@ -23,7 +23,16 @@ namespace AGE.SignatureHub.Application.Configuration
 
     public class WebhookSettings
     {
+        public List<WebhookEndpoint> Endpoints { get; set; } = new List<WebhookEndpoint>();
         public string DefaultEndpoint { get; set; } = string.Empty;
         public int TimeoutSeconds { get; set; } = 30;
+    }
+
+    public class WebhookEndpoint
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Url { get; set; } = string.Empty;
+        public string Secret { get; set; } = string.Empty;
+        public List<string> Events { get; set; } = new List<string>();
     }
 }
