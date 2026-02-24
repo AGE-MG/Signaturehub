@@ -12,9 +12,6 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.GetPendingSign
     {
         public string Email { get; set; }
 
-        public GetPendingSignaturesByEmailQuery(string email)
-        {
-            Email = email;
-        }
+        
     }
 }
