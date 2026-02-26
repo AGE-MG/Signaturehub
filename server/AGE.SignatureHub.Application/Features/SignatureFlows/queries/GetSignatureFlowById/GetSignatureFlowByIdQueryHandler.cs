@@ -7,10 +7,11 @@ using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.DTOs.SignatureFlow;
 using AGE.SignatureHub.Application.Exceptions;
 using AutoMapper;
+using MediatR;
 
 namespace AGE.SignatureHub.Application.Features.SignatureFlows.queries.GetSignatureFlowById
 {
-    public class GetSignatureFlowByIdQueryHandler
+    public class GetSignatureFlowByIdQueryHandler : IRequestHandler<GetSignatureFlowByIdQuery, BaseResponse<SignatureFlowDto>>
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
