@@ -30,14 +30,45 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.DownloadDocume
                 throw new NotFoundException(nameof(Document), request.DocumentId);
             }
             
-            var response = new DownloadDocumentResponse
-            {
-                FileStream = new MemoryStream(), // Replace with actual file stream
-                FileName = "example.pdf", // Replace with actual file name
-                ContentType = "application/pdf" // Replace with actual content type
-            };
+            string storagePath;
+            string fileName;
 
-            return await Task.FromResult(response);
+            if (request.VersionNumber.HasValue)
+            {
+                var version = document.Versions.FirstOrDefault(v => v.VersionNumber == request.VersionNumber.Value);
+
+                if (version == null)
+                {
+                    throw new NotFoundException("DocumentVersion", request.VersionNumber.Value);
+                }
+
+                storagePath = version.StoragePath;
+                fileName = $"{document.OriginalFileName}_v{version.VersionNumber}{document.FileExtension}";
+            } 
+            else
+            {
+                var latestVersion = document.Versions.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
+
+                if (latestVersion == null)
+                {
+                    storagePath = document.StoragePath;
+                    fileName = document.OriginalFileName;
+                }
+                else
+                {
+                    storagePath = latestVersion.StoragePath;
+                    fileName = $"{document.OriginalFileName}_v{latestVersion.VersionNumber}{document.FileExtension}";
+                }
+            }
+
+            var fileStream = await _storageService.DownloadFileAsync(storagePath, cancellationToken);
+
+            return new DownloadDocumentResponse
+            {
+                FileStream = fileStream,
+                FileName = fileName,
+                ContentType = document.MimeType
+            };
         }
     }
 }

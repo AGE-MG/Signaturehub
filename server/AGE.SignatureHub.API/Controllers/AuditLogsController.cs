@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.DTOs.Document;
+using AGE.SignatureHub.Application.Features.AuditLogs.Queries.GetAuditLogsByDateRange;
 using AGE.SignatureHub.Application.Features.AuditLogs.Queries.GetAuditLogsByDocument;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -43,8 +44,13 @@ namespace AGE.SignatureHub.API.Controllers
         [ProducesResponseType(typeof(List<AuditLogDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAuditLogsByDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, CancellationToken cancellationToken)
         {
-            ///TODO: Implement GetAuditLogsByDateRangeQuery and handle the request
-            return NotFound();
+            var query = new GetAuditLogsByDateRangeQuery
+            {
+                StartDate = startDate,
+                EndDate = endDate
+            };
+            var result = await _mediator.Send(query, cancellationToken);
+            return Ok(result);
         }
     }
 }

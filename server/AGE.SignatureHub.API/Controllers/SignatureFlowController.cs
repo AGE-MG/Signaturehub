@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.DTOs.SignatureFlow;
 using AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSignatureFlow;
+using AGE.SignatureHub.Application.Features.SignatureFlows.queries.GetFlowsByDocument;
+using AGE.SignatureHub.Application.Features.SignatureFlows.queries.GetSignatureFlowById;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -53,20 +55,34 @@ namespace AGE.SignatureHub.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetSignatureFlowById(Guid id, CancellationToken cancellationToken)
         {
-            //TODO: Implement GetSignatureFlowByIdQuery and handle the request
-            return NotFound();
+            var query = new GetSignatureFlowByIdQuery { Id = id };
+
+            var result = await _mediator.Send(query, cancellationToken);
+
+            if (!result.Success)
+            {
+                return NotFound(result.Errors);
+            }
+            return Ok(result);
         }
 
         /// <summary>
         /// Gets all signature flows for a specific document.
-        /// </summary>
+        /// </summary> 
         [HttpGet("document/{documentId}")]
         [ProducesResponseType(typeof(List<SignatureFlowDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetSignatureFlowsByDocumentId(Guid documentId, CancellationToken cancellationToken)
         {
-            //TODO: Implement GetSignatureFlowsByDocumentIdQuery and handle the request
-            return NotFound();
+            var query = new GetFlowsByDocumentQuery { DocumentId = documentId };
+
+            var result = await _mediator.Send(query, cancellationToken);
+
+            if (!result.Success)
+            {
+                return NotFound(result.Errors);
+            }
+            return Ok(result);
         }
     }
 }

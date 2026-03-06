@@ -6,6 +6,7 @@ using AGE.SignatureHub.Application.DTOs.Signer;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetPendingSignaturesByEmail;
 using AGE.SignatureHub.Application.Features.Signers.Commands.RejectDocument;
 using AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument;
+using AGE.SignatureHub.Application.Features.Signers.Queries.GetSignerById;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -90,9 +91,15 @@ namespace AGE.SignatureHub.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetSignerById(Guid id, CancellationToken cancellationToken)
         {
-            //TODO: Implement GetSignerByIdQuery and handle the request
-        
-            return Ok();
+            var query = new GetSignerByIdQuery { SignerId = id };
+
+            var result = await _mediator.Send(query, cancellationToken);
+
+            if (!result.Success)
+            {
+                return NotFound(result.Errors);
+            }
+            return Ok(result);
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.DTOs.Document;
 using AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocument;
+using AGE.SignatureHub.Application.Features.Documents.Queries.DownloadDocument;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentById;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentByStatus;
 using AGE.SignatureHub.Domain.Enums;
@@ -105,8 +106,15 @@ namespace AGE.SignatureHub.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DownloadDocument(Guid id, [FromQuery] int? version, CancellationToken cancellationToken)
         {
-            // Implementation for downloading the document goes here
-            return Ok();
+            var query = new DownloadDocumentQuery
+            {
+                DocumentId = id,
+                VersionNumber = version
+            };
+
+            var result = await _mediator.Send(query, cancellationToken);
+
+            return File(result.FileStream, result.ContentType, result.FileName);
         }
     }
 }
