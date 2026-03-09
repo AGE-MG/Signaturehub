@@ -9,6 +9,10 @@ using System.Text;
 using AGE.SignatureHub.Application;
 using AGE.SignatureHub.Infrastructure;
 using Microsoft.OpenApi;
+using AGE.SignatureHub.Infrastructure.Persistence;
+using AGE.SignatureHub.API.Middleware;
+using AGE.SignatureHub.Application.BackgroundJobs;
+using Hangfire.Dashboard;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -91,14 +95,86 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.Http,
         Scheme = "Bearer"
     });
+    
 });
+
+var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+if (File.Exists(xmlPath))
+{
+    builder.Services.AddSwaggerGen(c => c.IncludeXmlComments(xmlPath));
+}
+
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "AGE SignatureHub API v1");
+        c.RoutePrefix = string.Empty;
+    });
+}
+
 app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthorizationFilter() }
+});
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
+
+    try
+    {
+        Log.Information("Applying database migrations...");
+        dbContext.Database.Migrate();
+        Log.Information("Database migrations applied successfully.");
+    }
+    catch (System.Exception ex)
+    {
+        Log.Error(ex, "An error occurred while applying database migrations.");
+    }
+}
+
+Log.Information("Starting AGE SignatureHub API...");
 app.Run();
+
+void ConfigureBackgroundJobs(IServiceProvider services)
+{
+    using var scope = services.CreateScope();
+    var backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobsService>();
+    backgroundJobService.CheckeExpiredDocuments();
+
+    backgroundJobService.CleanupOldAuditLogs(365);
+
+    Log.Information("Background jobs configured successfully.");
+}
+
+public class HangfireAuthorizationFilter : Hangfire.Dashboard.IDashboardAuthorizationFilter
+{
+    public bool Authorize(Hangfire.Dashboard.DashboardContext context)
+    {
+        // Implement your authorization logic here
+        // For example, you can check if the user is authenticated and has a specific role
+        var httpContext = context.GetHttpContext();
+        return httpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment() || (httpContext.User.Identity?.IsAuthenticated == true && httpContext.User.IsInRole("Admin"));
+    }
+}
 
