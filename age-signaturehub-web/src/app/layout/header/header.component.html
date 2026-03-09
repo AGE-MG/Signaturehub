@@ -2,18 +2,59 @@
   <div class="container">
     <div class="header-content">
       <!-- Logo -->
-        <div class="logo" (click)="navigateTo('/')">
-          <img src="assets/images/logo-age.png" alt="AGE Logo" class="logo-image">
+      <div class="logo" (click)="navigateTo('/')">
+        <img src="assets/images/logo-age.png" alt="AGE Logo" class="logo-image">
 
-          <div class="logo-text">
-            <h1>
-              SignatureHub
-            </h1>
-            <span>
-              Advocacia Geral do Estado
-            </span>
-          </div>
+        <div class="logo-text">
+          <h1>
+            SignatureHub
+          </h1>
+          <span>
+            Advocacia Geral do Estado
+          </span>
         </div>
+      </div>
+
+      <!-- Desktop Navigation -->
+      <nav class="nav-desktop">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          Início
+        </a>
+        <a routerLink="/faq" routerLinkActive="active">
+          FAQ
+        </a>
+        <a routerLink="/privacy-policy" routerLinkActive="active">
+          Política de Privacidade
+        </a>
+        <button mat-raised-button color="primary" class="login-btn">
+          <mat-icon>login</mat-icon>
+          Entrar
+        </button>
+      </nav>
+
+      <!-- Mobile Menu Button -->
+      <button class="menu-toggle" (click)="toggleMenu()" [class.open]="menuOpen">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
+
+    <!-- Mobile Navigation -->
+    <nav class="nav-mobile" [class.open]="menuOpen">
+      <a routerLink="/" (click)="toggleMenu()">
+        Início
+      </a>
+      <a routerLink="/faq" (click)="toggleMenu()">
+        FAQ
+      </a>
+      <a routerLink="/privacy-policy" (click)="toggleMenu()">
+        Política de Privacidade
+      </a>
+      <button mat-raised-button color="primary" class="login-btn-mobile" (click)="toggleMenu()">
+        <mat-icon>login</mat-icon>
+        Entrar
+      </button>
+    </nav>
   </div>
 </header>

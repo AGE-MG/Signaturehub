@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-header',
-  imports: [],
+  imports: [RouterLink, RouterLinkActive, MatButtonModule, MatIconModule],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
