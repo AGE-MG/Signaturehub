@@ -116,6 +116,51 @@
 }
 
 .nav-mobile {
-  
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+
+  &.open {
+    max-height: 400px; /* Arbitrary large value to allow for content */
+  }
+
+  a {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+  }
+
+  .login-btn-mobile {
+    width: 100%;
+    margin-top: 8px;
+
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-desktop {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .nav-mobile {
+    display: flex;
+  }
 }
 
