@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 interface Feature {
@@ -27,7 +28,7 @@ interface FloatingIcon {
   selector: 'app-home',
   templateUrl: 'home.component.html',
   styleUrls: ['home.component.scss'],
-  imports: [MatIconModule, CommonModule]
+  imports: [MatIconModule,MatButtonModule, CommonModule]
 })
 
 export class HomeComponent implements OnInit {
