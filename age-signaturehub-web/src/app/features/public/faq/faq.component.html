@@ -1,0 +1,136 @@
+<!-- Header -->
+<section class="faq-header">
+  <div class="container">
+    <h1 class="page-title">
+      Perguntas Frequentes
+    </h1>
+    <p class="page-subtitle">
+      Encontre respostas para as perguntas mais comuns sobre o SignatureHub
+    </p>
+  </div>
+
+  <!-- Search bar -->
+  <div class="search-container">
+    <mat-form-field
+      appearance="outline"
+      class="search-field"
+    >
+      <mat-icon
+        matPrefix
+      >
+        search
+      </mat-icon>
+      <input
+        matInput
+        type="text"
+        [(ngModel)]="searchQuery"
+        placeholder="Pesquisar perguntas frequentes"
+      />
+      <button
+        matSuffix
+        mat-icon-button
+        *ngIf="searchQuery"
+        (click)="clearSearch()"
+      >
+        <mat-icon>
+          close
+        </mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+</section>
+
+<!-- FAQ content -->
+<section class="faq-content section">
+  <div class="container">
+    <div class="faq-layout">
+      <!-- Categories(Sidebar) -->
+      <aside 
+        class="categories-sidebar" 
+        *ngIf="!searchQuery"
+      >
+        <h3
+          class="sidebar-title"
+        >
+          Categorias
+        </h3>
+        <nav class="categories-nav">
+          <button
+            *ngFor="let category of faqCategories; let i = index"
+            class="category-btn"
+            [class.active]="selectedCategory === i"
+            (click)="selectCategory(i)"
+          >
+            <mat-icon>{{ category.icon }}</mat-icon>
+            <span>{{ category.name }}</span>
+          </button>
+        </nav>
+      </aside>
+
+      <!-- Questions -->
+      <div class="questions-container">
+        <div 
+          class="category-header"
+          *ngIf="!searchQuery"
+        >
+          <mat-icon>{{ faqCategories[selectedCategory].icon }}</mat-icon>
+          <h2>{{ faqCategories[selectedCategory].name }}</h2>
+        </div>
+
+        <div
+          class="category-header"
+          *ngIf="searchQuery"
+        >
+          <mat-icon>search</mat-icon>
+          <h2>Resultados para "{{ searchQuery }}"</h2>
+          <span 
+            class="results-count"
+          >
+            ({{ filteredQuestions.length }} resultados)
+          </span>
+        </div>
+
+        <div
+          class="no-results"
+          *ngIf="searchQuery && filteredQuestions.length === 0"
+        >
+          <mat-icon>search_off</mat-icon>
+          <h3>Nenhum resultado encontrado para "{{ searchQuery }}"</h3>
+          <p>Tente usar termos diferentes ou navegue pelas categorias</p>
+          <button mat-raised-button color="primary" (click)="clearSearch()">
+            Limpar Pesquisa
+          </button>
+        </div>
+
+        <mat-accordion
+          class="faq-accordion"
+        >
+          <mat-expansion-panel
+            *ngFor="let question of filteredQuestions; let i = index"
+            class="faq-panel"
+          >
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                <span
+                  class="question-number"
+                >
+                  {{ i + 1 }}
+                </span>
+                <span
+                  class="question-text"
+                >
+                  {{ question.question }}
+                </span>
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+            <div
+              class="answer-content"
+            >
+              <p>{{ question.answer }}</p>
+            </div>
+          </mat-expansion-panel>
+        </mat-accordion>
+      </div>
+    </div>
+  </div>
+</section>
