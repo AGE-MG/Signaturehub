@@ -12,16 +12,17 @@
   <div class="grid-overlay"></div>
 
   <div class="floating-icons">
-    <div
-      class="floating-icon"
-      *ngFor="let item of floatingIcons"
-      [style.top]="item.top"
-      [style.left]="item.left"
-      [style.animationDelay]="item.delay + 's'"
-      [style.animationDuration]="item.duration + 's'"
-    >
-      <mat-icon>{{ item.icon }}</mat-icon>
-    </div>
+    @for (item of floatingIcons; track item.icon) {
+      <div
+        class="floating-icon"
+        [style.top]="item.top"
+        [style.left]="item.left"
+        [style.animationDelay]="item.delay + 's'"
+        [style.animationDuration]="item.duration + 's'"
+      >
+        <mat-icon>{{ item.icon }}</mat-icon>
+      </div>
+    }
   </div>
 
   <div class="container hero-content">
@@ -169,13 +170,15 @@
     </div>
 
     <div class="features-grid">
-      <div class="feature-card" *ngFor="let feature of features">
-        <div class="feature-icon">
-          <mat-icon>{{ feature.icon }}</mat-icon>
+      @for (feature of features; track feature.title) {
+        <div class="feature-card">
+          <div class="feature-icon">
+            <mat-icon>{{ feature.icon }}</mat-icon>
+          </div>
+          <h3 class="feature-title">{{ feature.title }}</h3>
+          <p class="feature-description">{{ feature.description }}</p>
         </div>
-        <h3 class="feature-title">{{ feature.title }}</h3>
-        <p class="feature-description">{{ feature.description }}</p>
-      </div>
+      }
     </div>
   </div>
 </section>
@@ -191,15 +194,19 @@
     </div>
 
     <div class="steps-container">
-      <div class="step" *ngFor="let step of steps; let i = index">
-        <div class="step-number">{{ step.number }}</div>
-        <div class="step-icon">
-          <mat-icon>{{ step.icon }}</mat-icon>
+      @for (step of steps; track step.number) {
+        <div class="step">
+          <div class="step-number">{{ step.number }}</div>
+          <div class="step-icon">
+            <mat-icon>{{ step.icon }}</mat-icon>
+          </div>
+          <h3 class="step-title">{{ step.title }}</h3>
+          <p class="step-description">{{ step.description }}</p>
+          @if ($index < steps.length - 1) {
+            <div class="step-connector"></div>
+          }
         </div>
-        <h3 class="step-title">{{ step.title }}</h3>
-        <p class="step-description">{{ step.description }}</p>
-        <div class="step-connector" *ngIf="i < steps.length - 1"></div>
-      </div>
+      }
     </div>
   </div>
 </section>
