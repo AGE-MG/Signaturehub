@@ -22,7 +22,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.BackgroundJobs
         {
             try
             {
-                RecurringJob.AddOrUpdate<CheckExpiredDocumentJob>("check-ecpired-documents",
+                RecurringJob.AddOrUpdate<CheckExpiredDocumentJob>("check-expired-documents",
                     job => job.ExecuteAsync(), Cron.Daily);
                 _logger.LogInformation("Scheduled recurring job for checking expired documents.");
             }
