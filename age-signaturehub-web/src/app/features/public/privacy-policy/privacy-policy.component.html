@@ -1,0 +1,120 @@
+<!-- Header -->
+<section class="privacy-header">
+  <div class="container">
+    <div class="header-content">
+      <mat-icon class="header-icon">privacy_tip</mat-icon>
+      <h1 class="page-title">Política de Privacidade</h1>
+      <p class="page-subtitle">
+        Informações sobre como coletamos, usamos e protegemos seus dados pessoais
+      </p>
+      <div class="header-meta">
+        <div class="meta-item">
+          <mat-icon>update</mat-icon>
+          <span>Última atualização: {{ lastUpdate | date:'dd/MM/yyyy' }}</span>
+        </div>
+        <div class="meta-item">
+          <mat-icon>gavel</mat-icon>
+          <span>Lei nº 13.709/2018 (LGPD)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Content -->
+<section class="privacy-content section">
+  <div class="container">
+    <div class="content-layout">
+      <!-- Table of Contents -->
+      <aside class="table-of-contents">
+        <div class="toc-sticky">
+          <h3 class="toc-title">Índice</h3>
+          <nav class="toc-nav">
+            <a
+              *ngFor="let section of sections"
+              [href]="'#' + section.id"
+              (click)="scrollToSection(section.id); $event.preventDefault()"
+              class="toc-link">
+              <mat-icon>{{ section.icon }}</mat-icon>
+              <span>{{ section.title }}</span>
+            </a>
+          </nav>
+
+          <div class="toc-actions">
+            <button mat-stroked-button (click)="printPolicy()">
+              <mat-icon>print</mat-icon>
+              Imprimir
+            </button>
+            <button mat-stroked-button (click)="downloadPolicy()">
+              <mat-icon>download</mat-icon>
+              PDF
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <article class="policy-content">
+        <div
+          *ngFor="let section of sections"
+          [id]="section.id"
+          class="content-section">
+          <div class="section-header">
+            <mat-icon>{{ section.icon }}</mat-icon>
+            <h2>{{ section.title }}</h2>
+          </div>
+          <div class="section-body">
+            <p
+              *ngFor="let paragraph of section.content"
+              [innerHTML]="paragraph">
+            </p>
+          </div>
+        </div>
+
+        <!-- Policy Footer -->
+        <div class="policy-footer">
+          <div class="footer-card">
+            <mat-icon>info</mat-icon>
+            <div class="footer-content">
+              <h4>Documento Oficial</h4>
+              <p>
+                Esta Política de Privacidade é um documento oficial da
+                Advocacia-Geral do Estado de Minas Gerais e possui validade jurídica.
+              </p>
+            </div>
+          </div>
+
+          <div class="footer-card">
+            <mat-icon>contact_support</mat-icon>
+            <div class="footer-content">
+              <h4>Dúvidas?</h4>
+              <p>
+                Entre em contato com nosso Encarregado de Dados através do
+                e-mail <a href="mailto:dpo@age.mg.gov.br">desenvolvimento@age.mg.gov.br</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- Consent Banner -->
+<section class="consent-banner">
+  <div class="container">
+    <div class="banner-content">
+      <div class="banner-text">
+        <mat-icon>verified_user</mat-icon>
+        <div>
+          <h3>Seus dados estão protegidos</h3>
+          <p>Seguimos rigorosamente a LGPD e adotamos as melhores práticas de segurança</p>
+        </div>
+      </div>
+      <button mat-raised-button color="primary">
+        <mat-icon>check_circle</mat-icon>
+        Entendi
+      </button>
+    </div>
+  </div>
+</section>

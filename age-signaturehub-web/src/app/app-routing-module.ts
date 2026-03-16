@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { PublicLayoutComponent } from './layout/public-layout/public-layout.component';
 import { HomeComponent } from './features/public/home/home.component';
 import { FaqComponent } from './features/public/faq/faq.component';
+import { PrivacyPolicyComponent } from './features/public/privacy-policy/privacy-policy.component';
 
 const routes: Routes = [
   {
@@ -16,6 +17,10 @@ const routes: Routes = [
       {
         path: 'faq',
         component: FaqComponent
+      },
+      {
+        path: 'privacy-policy',
+        component: PrivacyPolicyComponent
       }
     ]
   },
