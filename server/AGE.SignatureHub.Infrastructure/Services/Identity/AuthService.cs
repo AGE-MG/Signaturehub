@@ -7,6 +7,7 @@ using AGE.SignatureHub.Application.Contracts.Identity;
 using AGE.SignatureHub.Application.DTOs.Auth;
 using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.Exceptions;
+using AGE.SignatureHub.Application.Exceptions;
 using AGE.SignatureHub.Domain.Entities;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
@@ -38,15 +39,73 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             _mapper = mapper;
             _logger = logger;
         }
-
         public async Task<BaseResponse<bool>> ChangePasswordAsync(string userId, string currentPassword, string newPassword)
         {
-            throw new NotImplementedException();
+            var response = new BaseResponse<bool>();
+
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+
+                if (user == null)
+                {
+                    throw new NotFoundException(nameof(ApplicationUser), userId);
+                }
+
+                var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
+                if (!result.Succeeded)
+                {
+                    response.Success = false;
+                    response.Message = "Password change failed.";
+                    response.Errors = result.Errors.Select(e => e.Description).ToList();
+                    return response;
+                }
+
+                response.Success = true;
+                response.Message = "Password changed successfully.";
+                response.Data = true;
+                return response;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error changing password for user {UserId}", userId);
+                response.Success = false;
+                response.Message = "An error occurred while changing the password.";
+                response.Errors = new List<string> { ex.Message };
+                return response;
+            }
         }
 
-        public Task<BaseResponse<UserDto>> GetCurrentUserAsync(string userId)
+        public async Task<BaseResponse<UserDto>> GetCurrentUserAsync(string userId)
         {
-            throw new NotImplementedException();
+            var response = new BaseResponse<UserDto>();
+
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+
+                if (user == null)
+                {
+                    throw new NotFoundException(nameof(ApplicationUser), userId);
+                }
+
+                var roles = await _userManager.GetRolesAsync(user);
+                var userDto = _mapper.Map<UserDto>(user);
+
+                userDto.Roles = roles.ToList();
+                response.Success = true;
+                response.Data = userDto;
+                return response;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving current user with ID {UserId}", userId);
+                response.Success = false;
+                response.Message = "An error occurred while retrieving the current user.";
+                response.Errors = new List<string> { ex.Message };
+                return response;
+            }
         }
 
         public async Task<BaseResponse<LoginResponse>> LoginAsync(LoginRequest request)
@@ -127,11 +186,38 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 return response;
             }
         }
-
         public async Task<BaseResponse<bool>> LogoutAsync(string userId)
         {
             var response = new BaseResponse<bool>();
             
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+
+                if (user == null)
+                {
+                    throw new NotFoundException(nameof(ApplicationUser), userId);
+                }
+
+                user.RefreshToken = null;
+                user.RefreshTokenExpiryTime = null;
+
+                await _userManager.UpdateAsync(user);
+                await _signInManager.SignOutAsync();
+                response.Success = true;
+                response.Message = "Logout successful.";
+                response.Data = true;
+                _logger.LogInformation("User {UserId} logged out successfully", userId);
+                return response;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error during logout for user {UserId}", userId);
+                response.Success = false;
+                response.Message = "An error occurred during logout.";
+                response.Errors = new List<string> { ex.Message };
+                return response;
+            }
         }
 
         public async Task<BaseResponse<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request)
@@ -191,10 +277,60 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 return response;
             }
         }
-
         public async Task<BaseResponse<UserDto>> RegisterAsync(RegisterRequest request)
         {
-            throw new NotImplementedException();
+            var response = new BaseResponse<UserDto>();
+
+            try
+            {
+                var existingUser = await _userManager.FindByEmailAsync(request.Email);
+                if (existingUser != null)
+                {
+                    response.Success = false;
+                    response.Message = "Email is already registered.";
+                    return response;
+                }
+
+                var user = new ApplicationUser
+                {
+                    UserName = request.Email,
+                    Email = request.Email,
+                    FullName = request.FullName,
+                    Department = request.Department,
+                    Position = request.Position,
+                    RegistrationNumber = request.RegistrationNumber,
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var result = await _userManager.CreateAsync(user, request.Password);
+
+                if (!result.Succeeded)
+                {
+                    response.Success = false;
+                    response.Message = "User registration failed.";
+                    response.Errors = result.Errors.Select(e => e.Description).ToList();
+                    return response;
+                }
+
+                await _userManager.AddToRoleAsync(user, "User");
+                var userDto = _mapper.Map<UserDto>(user);
+                userDto.Roles = new List<string> { "User" };
+
+                response.Success = true;
+                response.Message = "User registered successfully.";
+                response.Data = userDto;
+                return response;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error during user registration for email {Email}", request.Email);
+                response.Success = false;
+                response.Message = "An error occurred during user registration.";
+                response.Errors = new List<string> { ex.Message };
+                return response;
+            }
         }
     }
 }
