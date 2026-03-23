@@ -3,19 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.BackgroundJobs;
+using AGE.SignatureHub.Application.Contracts.Identity;
 using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Application.Contracts.Persistence;
+using AGE.SignatureHub.Domain.Entities;
 using AGE.SignatureHub.Infrastructure.Configuration;
 using AGE.SignatureHub.Infrastructure.Persistence;
 using AGE.SignatureHub.Infrastructure.Services.BackgroundJobs;
 using AGE.SignatureHub.Infrastructure.Services.Cryptography;
 using AGE.SignatureHub.Infrastructure.Services.Email;
+using AGE.SignatureHub.Infrastructure.Services.Identity;
 using AGE.SignatureHub.Infrastructure.Services.Signature;
 using AGE.SignatureHub.Infrastructure.Services.Storage;
 using AGE.SignatureHub.Infrastructure.Services.Timestamp;
 using AGE.SignatureHub.Infrastructure.Services.Webhook;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +37,25 @@ namespace AGE.SignatureHub.Infrastructure
                     b => b.MigrationsAssembly(typeof(ApplicationDBContext).Assembly.FullName)
                 )
             );
+
+            services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequiredLength = 8;
+
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.AllowedForNewUsers = true;
+
+                options.User.RequireUniqueEmail = true;
+                options.SignIn.RequireConfirmedEmail = true;
+            })
+            .AddEntityFrameworkStores<ApplicationDBContext>()
+            .AddDefaultTokenProviders();
+
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.Configure<StorageSettings>(configuration.GetSection("Storage"));
@@ -58,6 +81,9 @@ namespace AGE.SignatureHub.Infrastructure
             {
                 throw new Exception($"Unsupported storage provider: {storageProvider}");
             }
+
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ITokenService, TokenService>();
 
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<ICryptographyService, CryptographyService>();

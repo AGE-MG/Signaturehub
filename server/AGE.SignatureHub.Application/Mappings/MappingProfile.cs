@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AGE.SignatureHub.Application.DTOs.Auth;
 using AGE.SignatureHub.Application.DTOs.Document;
 using AGE.SignatureHub.Application.DTOs.SignatureFlow;
 using AGE.SignatureHub.Application.DTOs.Signer;
@@ -14,6 +15,8 @@ namespace AGE.SignatureHub.Application.Mappings
     {
         public MappingProfile()
         {
+            CreateMap<ApplicationUser, UserDto>()
+                .ForMember(dest => dest.Roles, opt => opt.Ignore());
             CreateMap<Document, DocumentDto>()
                 .ForMember(dest => dest.SignatureFlows, opt => opt.MapFrom(src => src.SignatureFlows));
             
