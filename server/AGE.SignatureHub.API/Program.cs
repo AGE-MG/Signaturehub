@@ -13,6 +13,7 @@ using AGE.SignatureHub.Infrastructure.Persistence;
 using AGE.SignatureHub.API.Middleware;
 using AGE.SignatureHub.Application.BackgroundJobs;
 using Hangfire.Dashboard;
+using AGE.SignatureHub.Infrastructure.Persistence.Seed;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -139,13 +140,19 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
+    var services = scope.ServiceProvider;
+    var dbContext = services.GetRequiredService<ApplicationDBContext>();
+    var seeder = services.GetRequiredService<DatabaseSeeder>();
 
     try
     {
         Log.Information("Applying database migrations...");
         dbContext.Database.Migrate();
         Log.Information("Database migrations applied successfully.");
+
+        Log.Information("Seeding database...");
+        await seeder.SeedAsync();
+        Log.Information("Database seeding completed successfully.");
     }
     catch (System.Exception ex)
     {
