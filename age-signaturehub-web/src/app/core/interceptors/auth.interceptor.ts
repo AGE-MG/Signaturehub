@@ -3,5 +3,5 @@ import { AuthService } from "../services/auth.service";
 
 export const authInterceptor = (req, next) => {
   const authService = inject(AuthService);
-  const authToken = authService.getToken();
+  |
 }
