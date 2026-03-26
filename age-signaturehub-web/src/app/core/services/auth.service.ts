@@ -145,13 +145,39 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     const token = this.getToken();
-    const expiration = localStorage.getTokenExpiration();
+    const expiration = this.getTokenExpiration();
 
     if (!token || !expiration) {
       return false;
     }
 
     return new Date(expiration) > new Date();
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refreshToken');
+  }
+
+  getTokenExpiration(): string | null {
+    return localStorage.getItem('tokenExpiration');
+  }
+
+  getUserValue(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  hasRole(role: string): boolean {
+    const user = this.getUserValue();
+    return user ? user.roles.includes(role) : false;
+  }
+
+  hasAnyRole(roles: string[]): boolean {
+    const user = this.getUserValue();
+    return user ? roles.some(role => user.roles.includes(role)) : false;
   }
 }
 
