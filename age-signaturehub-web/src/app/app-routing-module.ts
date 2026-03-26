@@ -4,6 +4,7 @@ import { PublicLayoutComponent } from './layout/public-layout/public-layout.comp
 import { HomeComponent } from './features/public/home/home.component';
 import { FaqComponent } from './features/public/faq/faq.component';
 import { PrivacyPolicyComponent } from './features/public/privacy-policy/privacy-policy.component';
+import { LoginComponent } from './features/auth/login/login.component';
 
 const routes: Routes = [
   {
@@ -25,8 +26,8 @@ const routes: Routes = [
     ]
   },
   {
-    path: '**',
-    redirectTo: '',
+    path: 'login',
+    component: LoginComponent,
   }
 ];
 

@@ -3,6 +3,9 @@ import { BrowserModule, provideClientHydration, withEventReplay } from '@angular
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
+import { HttpClientModule, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { errorInterceptor } from './core/interceptors/error.interceptor';
 
 @NgModule({
   declarations: [
@@ -11,11 +14,16 @@ import { App } from './app';
   imports: [
     BrowserModule,
     AppRoutingModule,
-    AppRoutingModule
+    AppRoutingModule,
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideClientHydration(withEventReplay()),
+    provideHttpClient(
+      withInterceptors([
+        authInterceptor, errorInterceptor
+      ])
+    )
   ],
   bootstrap: [App]
 })
