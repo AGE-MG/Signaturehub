@@ -9,6 +9,8 @@ using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Domain.Entities;
 using AGE.SignatureHub.Infrastructure.Configuration;
 using AGE.SignatureHub.Infrastructure.Persistence;
+using AGE.SignatureHub.Infrastructure.Persistence.Repositories;
+using AGE.SignatureHub.Infrastructure.Persistence.Seed;
 using AGE.SignatureHub.Infrastructure.Services.BackgroundJobs;
 using AGE.SignatureHub.Infrastructure.Services.Cryptography;
 using AGE.SignatureHub.Infrastructure.Services.Email;
@@ -51,29 +53,36 @@ namespace AGE.SignatureHub.Infrastructure
                 options.Lockout.AllowedForNewUsers = true;
 
                 options.User.RequireUniqueEmail = true;
-                options.SignIn.RequireConfirmedEmail = true;
+                options.SignIn.RequireConfirmedEmail = false;
             })
             .AddEntityFrameworkStores<ApplicationDBContext>()
             .AddDefaultTokenProviders();
 
+            services.AddScoped<IDocumentRepository, DocumentRepository>();
+            services.AddScoped<ISignatureFlowRepository, SignatureFlowRepository>();
+            services.AddScoped<ISignerRepository, SignerRepository>();
+            services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            services.AddScoped<DatabaseSeeder>();
 
             services.Configure<StorageSettings>(configuration.GetSection("Storage"));
             services.Configure<EmailSettings>(configuration.GetSection("Email"));
             services.Configure<WebhookSettings>(configuration.GetSection("Webhooks"));
 
-            var storageProvider = configuration["Storage:Provider"];
+            var storageProvider = configuration.GetValue<string>("Storage:Provider") ?? "LocalFileSystem";
 
             if (string.IsNullOrEmpty(storageProvider))
             {
                 throw new Exception("Storage provider is not configured. Please set 'Storage:Provider' in the configuration.");
             }
 
-            if (storageProvider == "AzureBlob")
+            if (storageProvider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase))
             {
                 services.AddScoped<IStorageService, AzureBlobStorageService>();
             }
-            else if (storageProvider == "LocalFileSystem")
+            else if (storageProvider.Equals("LocalFileSystem", StringComparison.OrdinalIgnoreCase) || storageProvider.Equals("Local", StringComparison.OrdinalIgnoreCase))
             {
                 services.AddScoped<IStorageService, LocalFileStorageService>();
             }

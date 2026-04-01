@@ -26,7 +26,12 @@
         <a routerLink="/privacy-policy" routerLinkActive="active">
           Política de Privacidade
         </a>
-        <button mat-raised-button color="primary" class="login-btn">
+        <button
+          mat-raised-button
+          color="primary"
+          class="login-btn"
+          (click)="navigateTo('/login')"
+          >
           <mat-icon>login</mat-icon>
           Entrar
         </button>
@@ -52,8 +57,13 @@
         Política de Privacidade
       </a>
       <button mat-raised-button color="primary" class="login-btn-mobile" (click)="toggleMenu()">
-        <mat-icon>login</mat-icon>
-        Entrar
+        <div
+          (click)="navigateTo('/login')"
+          >
+        >
+          <mat-icon>login</mat-icon>
+          Entrar
+        </div>
       </button>
     </nav>
   </div>

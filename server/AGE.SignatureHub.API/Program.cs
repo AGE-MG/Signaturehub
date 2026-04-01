@@ -15,153 +15,182 @@ using AGE.SignatureHub.Application.BackgroundJobs;
 using Hangfire.Dashboard;
 using AGE.SignatureHub.Infrastructure.Persistence.Seed;
 
+try
+{
+    
+    var builder = WebApplication.CreateBuilder(args);
 
-var builder = WebApplication.CreateBuilder(args);
-
-Log.Logger = new LoggerConfiguration()
+    Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .WriteTo.File(
-        "logs/signaturehub-.txt",
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 30
-    )
-.CreateLogger();
+    .CreateLogger();
 
-builder.Host.UseSerilog();
+    builder.WebHost.UseUrls("http://localhost:5000", "https://localhost:5001");
 
-builder.Services.AddControllers();
-builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Host.UseSerilog((context, services, configuration) => configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+    );
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(c =>
     {
-        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-        policy.WithOrigins(allowedOrigins)
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
-    });
-});
-
-builder.Services.Configure<ApplicationSettings>(builder.Configuration.GetSection(ApplicationSettings.SectionName));
-
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"];
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ClockSkew = TimeSpan.Zero
-    };
-});
-
-builder.Services.AddAuthorization();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "AGE SignatureHub API",
-        Version = "v1",
-        Description = "API for managing signature flows and documents in AGE(Advocacia Geral do Estado).",
-        Contact = new OpenApiContact
+        c.SwaggerDoc("v1", new OpenApiInfo
         {
-            Name = "AGE Development Team",
-            Email = "desenvolvimento@advocaciageral.mg.gov.br"
+            Title = "AGE SignatureHub API",
+            Version = "v1",
+            Description = "API for managing digital signatures and document workflows.",
+            Contact = new OpenApiContact
+            {
+                Name = "AGE Support",
+                Email = "desenvolvimento@advocaciageral.mg.gov.br"
+            }
+        });
+    });
+
+    builder.Services.AddApplication();
+    builder.Services.AddApplicationServices(builder.Configuration);
+    builder.Services.AddInfrastructure(builder.Configuration);
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowAll", policy =>
+        {
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        });
+    });
+
+    builder.Services.Configure<ApplicationSettings>(builder.Configuration.GetSection(ApplicationSettings.SectionName));
+
+    var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+    var secretKey = jwtSettings["SecretKey"];
+
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    }).AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+    builder.Services.AddAuthorization();
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        builder.Services.AddSwaggerGen(c => c.IncludeXmlComments(xmlPath));
+    }
+
+    builder.Services.AddHttpContextAccessor();
+
+    var app = builder.Build();
+
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
+    app.UseMiddleware<RequestLoggingMiddleware>();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(
+                c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "AGE SignatureHub API V1");
+                    c.RoutePrefix = string.Empty; // Set Swagger UI at the app's root
+                }
+        );
+    }
+
+    app.UseCors("AllowAll");
+
+    app.UseHttpsRedirection();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new HangfireAuthorizationFilter() }
+    });
+
+    if (app.Environment.IsDevelopment())
+    {
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+        var dbContext = services.GetRequiredService<ApplicationDBContext>();
+        var seeder = services.GetRequiredService<DatabaseSeeder>();
+
+        try
+        {
+            Log.Information("Applying database migrations...");
+            dbContext.Database.Migrate();
+            Log.Information("Database migrations applied successfully.");
+
+            Log.Information("Seeding database...");
+            await seeder.SeedAsync();
+            Log.Information("Database seeding completed successfully.");
         }
-    });
-
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer"
-    });
-    
-});
-
-var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-if (File.Exists(xmlPath))
-{
-    builder.Services.AddSwaggerGen(c => c.IncludeXmlComments(xmlPath));
-}
-
-builder.Services.AddHttpContextAccessor();
-
-var app = builder.Build();
-
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseMiddleware<RequestLoggingMiddleware>();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "AGE SignatureHub API v1");
-        c.RoutePrefix = string.Empty;
-    });
-}
-
-app.UseHttpsRedirection();
-
-app.UseCors("AllowAll");
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    Authorization = new[] { new HangfireAuthorizationFilter() }
-});
-
-if (app.Environment.IsDevelopment())
-{
-    using var scope = app.Services.CreateScope();
-    var services = scope.ServiceProvider;
-    var dbContext = services.GetRequiredService<ApplicationDBContext>();
-    var seeder = services.GetRequiredService<DatabaseSeeder>();
-
-    try
-    {
-        Log.Information("Applying database migrations...");
-        dbContext.Database.Migrate();
-        Log.Information("Database migrations applied successfully.");
-
-        Log.Information("Seeding database...");
-        await seeder.SeedAsync();
-        Log.Information("Database seeding completed successfully.");
+        catch (System.Exception ex)
+        {
+            Log.Error(ex, "An error occurred while applying database migrations.");
+        }
     }
-    catch (System.Exception ex)
-    {
-        Log.Error(ex, "An error occurred while applying database migrations.");
-    }
-}
 
-Log.Information("Starting AGE SignatureHub API...");
-app.Run();
+    ConfigureBackgroundJobs(app.Services);
+
+    Log.Information("Starting AGE SignatureHub API...");
+
+    var urls = app.Urls.ToList();
+    if (urls.Count == 0)
+    {
+        urls.Add("http://localhost:5000");
+        urls.Add("https://localhost:5001");
+    }
+
+    var primaryUrl = urls[0];
+    Log.Information("╔════════════════════════════════════════════════════════════╗");
+    Log.Information("║          AGE SignatureHub API is running at:               ║");
+    Log.Information("╠════════════════════════════════════════════════════════════╣");
+
+    foreach (var url in urls)
+    {
+        Log.Information("║  {Url,-55} ║", url);
+    }
+
+    Log.Information("╠════════════════════════════════════════════════════════════╣");
+    Log.Information("║  Swagger UI: {Url,-44}║", $"{primaryUrl}/swagger");
+    Log.Information("║  Health Check: {Url,-42}║", $"{primaryUrl}/health");
+    Log.Information("║  Hangfire: {Url,-46}║", $"{primaryUrl}/hangfire");
+    Log.Information("╚════════════════════════════════════════════════════════════╝");
+
+    await app.RunAsync();
+}
+catch (System.Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    await Log.CloseAndFlushAsync();
+}
 
 void ConfigureBackgroundJobs(IServiceProvider services)
 {

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Infrastructure.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AGE.SignatureHub.Infrastructure.Services.Storage
@@ -11,15 +12,18 @@ namespace AGE.SignatureHub.Infrastructure.Services.Storage
     public class LocalFileStorageService : IStorageService
     {
         private readonly StorageSettings _storageSettings;
+        private readonly ILogger<LocalFileStorageService> _logger;
         private readonly string _basePath;
-        public LocalFileStorageService(IOptions<StorageSettings> settings)
+        public LocalFileStorageService(IOptions<StorageSettings> settings, ILogger<LocalFileStorageService> logger)
         {
             _storageSettings = settings.Value;
+            _logger = logger;
             _basePath = _storageSettings.LocalPath ?? Path.Combine(Directory.GetCurrentDirectory(), "Storage");
             
             if (!Directory.Exists(_basePath))
             {
                 Directory.CreateDirectory(_basePath);
+                _logger.LogInformation($"Created local storage directory at '{_basePath}'", _basePath);
             }
         }
         public Task<bool> DeleteFileAsync(string filePath, CancellationToken cancellationToken = default)

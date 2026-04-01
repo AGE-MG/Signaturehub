@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AGE.SignatureHub.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class AuditLogsController : ControllerBase
     {
         private readonly IMediator _mediator;

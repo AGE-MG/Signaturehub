@@ -47,15 +47,15 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 claims.Add(new Claim("Position", user.Position));
             }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
 
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var ExpirationMinutes = int.Parse(_configuration["Jwt:ExpirationInMinutes"]);
+            var ExpirationMinutes = int.Parse(_configuration["JwtSettings:ExpirationInMinutes"]);
 
             var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
+                issuer: _configuration["JwtSettings:Issuer"],
+                audience: _configuration["JwtSettings:Audience"],
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(ExpirationMinutes),
                 signingCredentials: credentials
@@ -81,7 +81,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 ValidateAudience = false,
                 ValidateIssuer = false,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"])),
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"])),
                 ValidateLifetime = false
             };
 

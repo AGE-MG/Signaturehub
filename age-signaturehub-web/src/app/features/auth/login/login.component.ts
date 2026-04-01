@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -33,15 +33,20 @@ export class LoginComponent {
   loading = false;
   errorMessage: string | null = null;
   returnUrl: string;
+  private isBrowser: boolean;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    @Inject(PLATFORM_ID) private platformId: Object
+
   ) {
-    if (this.authService.isAuthenticated()) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+
+    if (this.isBrowser && this.authService.isAuthenticated()) {
       this.router.navigate(['/dashboard']);
     }
 
@@ -107,5 +112,14 @@ export class LoginComponent {
 
   togglePasswordVisibility(): void {
     this.hidePassword = !this.hidePassword;
+  }
+
+  loginWithCertificate(): void {
+    this.snackBar.open('Funcionalidade de login com certificado digital ainda não implementada.', 'Fechar', {
+      duration: 3000,
+      horizontalPosition: 'end',
+      verticalPosition: 'top',
+      panelClass: ['info-snackbar']
+    });
   }
 }

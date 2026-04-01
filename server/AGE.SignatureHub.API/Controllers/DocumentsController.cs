@@ -32,9 +32,10 @@ namespace AGE.SignatureHub.API.Controllers
         /// Creates a new document for signing.
         /// </summary>
         [HttpPost]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(DocumentDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> CreateDocument([FromForm] IFormFile file, [FromForm] CreateDocumentDto documentData, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateDocument(IFormFile file, [FromForm] CreateDocumentDto documentData, CancellationToken cancellationToken)
         {
             if (file == null || file.Length == 0)
             {

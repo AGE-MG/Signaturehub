@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AGE.SignatureHub.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class HealthController : ControllerBase
     {
         private readonly ApplicationDBContext _dbContext;

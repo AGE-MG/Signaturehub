@@ -1,1 +1,143 @@
-<p>login works!</p>
+<div class="login-container">
+  <div class="login-content">
+    <!-- Side Panel -->
+    <div class="login-side-panel">
+      <div class="panel-content">
+        <div class="logo-section">
+          <div class="logo">
+            <mat-icon class="logo-icon">verified_user</mat-icon>
+            <h1>SignatureHub</h1>
+          </div>
+          <p class="tagline">Assinaturas Digitais Seguras</p>
+        </div>
+
+        <div class="features">
+          <div class="feature">
+            <mat-icon>security</mat-icon>
+            <div>
+              <h3>Segurança Total</h3>
+              <p>Certificação ICP-Brasil</p>
+            </div>
+          </div>
+          <div class="feature">
+            <mat-icon>speed</mat-icon>
+            <div>
+              <h3>Processo Rápido</h3>
+              <p>Assinatura em minutos</p>
+            </div>
+          </div>
+          <div class="feature">
+            <mat-icon>gavel</mat-icon>
+            <div>
+              <h3>Validade Jurídica</h3>
+              <p>Conformidade com LGPD</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="decorative-pattern"></div>
+      </div>
+    </div>
+
+    <!-- Login Form -->
+    <div class="login-form-panel">
+      <div class="form-container">
+        <div class="form-header">
+          <h2>Bem-vindo de volta</h2>
+          <p>Entre com suas credenciais da AGE-MG</p>
+        </div>
+
+        <div *ngIf="errorMessage" class="error-alert">
+          <mat-icon>error</mat-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>E-mail</mat-label>
+            <input
+              matInput
+              type="email"
+              formControlName="email"
+              placeholder="seu.email@age.mg.gov.br"
+              autocomplete="email">
+            <mat-icon matPrefix>email</mat-icon>
+            <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
+              E-mail é obrigatório
+            </mat-error>
+            <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
+              E-mail inválido
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Senha</mat-label>
+            <input
+              matInput
+              [type]="hidePassword ? 'password' : 'text'"
+              formControlName="password"
+              placeholder="Digite sua senha"
+              autocomplete="current-password">
+            <mat-icon matPrefix>lock</mat-icon>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="'Alternar visibilidade da senha'"
+              [attr.aria-pressed]="!hidePassword">
+              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+              Senha é obrigatória
+            </mat-error>
+            <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
+              Senha deve ter no mínimo 6 caracteres
+            </mat-error>
+          </mat-form-field>
+
+          <div class="form-options">
+            <mat-checkbox formControlName="rememberMe">
+              Lembrar-me
+            </mat-checkbox>
+            <a href="#" class="forgot-password" (click)="$event.preventDefault()">
+              Esqueceu a senha?
+            </a>
+          </div>
+
+          <button
+            mat-raised-button
+            color="primary"
+            type="submit"
+            class="login-button"
+            [disabled]="loading || loginForm.invalid">
+            <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+            <span *ngIf="!loading">Entrar</span>
+          </button>
+
+          <div class="form-footer">
+            <p class="help-text">
+              <mat-icon>help_outline</mat-icon>
+              Problemas para acessar?
+              <a href="mailto:suporte@age.mg.gov.br">Entre em contato</a>
+            </p>
+          </div>
+        </form>
+
+        <div class="external-login">
+          <div class="divider">
+            <span>Ou entre com</span>
+          </div>
+          <button
+            mat-stroked-button
+            class="cert-button"
+            type="button"
+            (click)="loginWithCertificate()">
+            <mat-icon>verified_user</mat-icon>
+            Certificado Digital
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { Router, RouterModule } from '@angular/router';
 
 interface Feature {
   icon: string;
@@ -28,10 +29,15 @@ interface FloatingIcon {
   selector: 'app-home',
   templateUrl: 'home.component.html',
   styleUrls: ['home.component.scss'],
-  imports: [MatIconModule,MatButtonModule, CommonModule]
+  imports: [MatIconModule, MatButtonModule, CommonModule, RouterModule]
 })
 
 export class HomeComponent implements OnInit {
+  constructor(private router: Router) {}
+
+  navigateTo(path: string): void {
+    this.router.navigate([path]);
+  }
 
   floatingIcons: FloatingIcon[] = [
     { icon: 'verified_user', top: '10%', left: '10%', delay: 0, duration: 3 },

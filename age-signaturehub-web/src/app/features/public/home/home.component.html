@@ -61,7 +61,7 @@
       </div>
 
       <div class="hero-actions">
-        <button mat-raised-button color="primary" class="btn-large btn-primary">
+        <button mat-raised-button color="primary" class="btn-large btn-primary" (click)="navigateTo('/login')">
           <mat-icon>login</mat-icon>
           Acessar Sistema
         </button>
@@ -261,7 +261,7 @@
     <p class="cta-description">
       Faça login e comece a assinar documentos digitalmente de forma segura
     </p>
-    <button mat-raised-button color="primary" class="btn-large">
+    <button mat-raised-button color="primary" class="btn-large" (click)="navigateTo('/login')">
       <mat-icon>login</mat-icon>
       Acessar Agora
     </button>

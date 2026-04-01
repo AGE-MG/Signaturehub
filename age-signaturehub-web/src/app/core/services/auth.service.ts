@@ -1,10 +1,10 @@
-import { Injectable } from "@angular/core";
+import { Inject, Injectable, PLATFORM_ID } from "@angular/core";
 import { Router } from "@angular/router";
 import { BehaviorSubject, catchError, Observable, tap, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { ApiResponse, ChangePasswordRequest, LoginRequest, LoginResponse, RegisterRequest, User } from "../models/user.model";
 import { HttpClient } from "@angular/common/http";
-import { error } from "console";
+import { isPlatformBrowser } from "@angular/common";
 
 @Injectable({
   providedIn: 'root'
@@ -13,15 +13,23 @@ export class AuthService {
   private readonly API_URL = `${environment.apiUrl}/auth`;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
+  private isBrowser: boolean;
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
     this.LoadUserFromStorage();
   }
 
   private LoadUserFromStorage(): void {
+
+    if (!this.isBrowser) {
+      return;
+    }
+
     const savedUser = localStorage.getItem('currentUser');
     const token = localStorage.getItem('token');
     if (savedUser && token) {
@@ -137,6 +145,10 @@ export class AuthService {
   }
 
   private ClearStorage(): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('tokenExpiration');
@@ -144,6 +156,10 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
+    if (!this.isBrowser) {
+      return false;
+    }
+
     const token = this.getToken();
     const expiration = this.getTokenExpiration();
 
@@ -155,14 +171,23 @@ export class AuthService {
   }
 
   getToken(): string | null {
+    if (!this.isBrowser) {
+      return null;
+    }
     return localStorage.getItem('token');
   }
 
   getRefreshToken(): string | null {
+    if (!this.isBrowser) {
+      return null;
+    }
     return localStorage.getItem('refreshToken');
   }
 
   getTokenExpiration(): string | null {
+    if (!this.isBrowser) {
+      return null;
+    }
     return localStorage.getItem('tokenExpiration');
   }
 

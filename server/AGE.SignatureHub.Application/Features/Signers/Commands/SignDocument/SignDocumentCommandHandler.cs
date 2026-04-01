@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.Configuration;
@@ -15,6 +14,7 @@ using AGE.SignatureHub.Domain.Enums;
 using AGE.SignatureHub.Domain.ValueObjects;
 using AutoMapper;
 using MediatR;
+using Microsoft.Extensions.Options; // ADICIONAR
 
 namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
 {
@@ -35,7 +35,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
             IEmailService emailService,
             IWebhookService webhookService,
             IMapper mapper,
-            ApplicationSettings settings)
+            IOptions<ApplicationSettings> settings)
         {
             _unitOfWork = unitOfWork;
             _signatureService = signatureService;
@@ -43,7 +43,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
             _emailService = emailService;
             _webhookService = webhookService;
             _mapper = mapper;
-            _settings = settings;
+            _settings = settings.Value;
         }
         
         public async Task<BaseResponse<SignerDto>> Handle(SignDocumentCommand request, CancellationToken cancellationToken)
@@ -138,7 +138,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                     request.SignData.SignatureType,
                     metadata,
                     certificateInfo,
-                    string.Empty // No signature image path provided
+                    string.Empty
                 );
 
                 var allSignersInCurrentStep = flow.Signers
@@ -162,14 +162,14 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                         flow.UpdateCurrentStep(flow.CurrentStep + 1);
                         document.UpdateStatus(DocumentStatus.PartiallyCompleted);
 
-                        await NotifyNextSigners(flow,document,cancellationToken);
+                        await NotifyNextSigners(flow, document, cancellationToken);
                     }
                     else
                     {
                         flow.MarkAsCompleted();
                         document.UpdateStatus(DocumentStatus.Completed);
 
-                        await NotifyFlowCompletion(flow,document,cancellationToken);
+                        await NotifyFlowCompletion(flow, document, cancellationToken);
                     }
                 }
 
@@ -204,7 +204,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                 response.Data = _mapper.Map<SignerDto>(signer);
                 return response;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
                 response.Success = false;
@@ -222,7 +222,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
 
             foreach (var signer in nextSigners)
             {
-                var signatureUrl = $"{_settings.BaseUrl}/{_settings.SignatureUrlPath}/{signer.Id}";
+                var signatureUrl = $"{_settings.ApplicationUrl}/sign/{signer.Id}"; // AJUSTAR conforme suas propriedades
 
                 await _emailService.SendSignatureRequestAsync(signer.Email, signer.Name, document.Title, signatureUrl, cancellationToken);
             }
