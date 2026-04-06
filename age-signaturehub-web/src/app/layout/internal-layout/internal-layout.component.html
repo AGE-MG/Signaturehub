@@ -1,0 +1,17 @@
+<div
+  class="internal-layout"
+>
+  <app-sidebar (toggleSidebar)="onSidebarToggle($event)"></app-sidebar>
+
+  <div
+    class="main-content"
+    [class.sidebar-collapsed]="sidebarCollapsed"
+  >
+    <app-topbar></app-topbar>
+
+    <main class="content-area">
+      <router-outlet></router-outlet>
+    </main>
+
+  </div>
+</div>

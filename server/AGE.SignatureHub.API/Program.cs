@@ -55,13 +55,15 @@ try
 
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy("AllowAll", policy =>
+        options.AddPolicy("AllowAngularApp", policy =>
         {
-            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
             policy.WithOrigins(allowedOrigins)
                 .AllowAnyMethod()
                 .AllowAnyHeader()
-                .AllowCredentials();
+                .AllowCredentials()
+                .SetIsOriginAllowed(origin => allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                .WithExposedHeaders("Content-Disposition");
         });
     });
 
@@ -117,7 +119,7 @@ try
         );
     }
 
-    app.UseCors("AllowAll");
+    app.UseCors("AllowAngularApp");
 
     app.UseHttpsRedirection();
 

@@ -1,0 +1,79 @@
+<aside
+  class="sidebar"
+  [class.collapsed]="collapsed"
+>
+  <div
+    class="sidebar-header"
+  >
+    <div
+      class="logo"
+    >
+      @if (!collapsed) {
+        <mat-icon class="logo-icon">verified_user</mat-icon>
+        <span class="logo-text">SignatureHub</span>
+      }
+    </div>
+    @if (collapsed) {
+      <mat-icon class="logo-icon-collapsed">verified_user</mat-icon>
+    }
+
+    <button
+      mat-icon-button
+      class="toggle-btn"
+      (click)="toggleCollapse()"
+      [matTooltip]="collapsed ? 'Expandir menu' : 'Recolher menu'"
+      matTooltipPosition="right"
+    >
+      <mat-icon>{{ collapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+    </button>
+  </div>
+
+  <nav
+    class="sidebar-nav"
+  >
+    @for (item of menuItems; track item.route) {
+      <a
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        class="nav-item"
+        [matTooltip]="collapsed ? item.label : ''"
+        matTooltipPosition="right"
+      >
+        <mat-icon>{{ item.icon }}</mat-icon>
+
+        @if (!collapsed) {
+          <span class="nav-label">{{ item.label }}</span>
+        }
+
+        @if (item.badge && !collapsed) {
+          <span class="badge">{{ item.badge }}</span>
+        }
+      </a>
+    }
+  </nav>
+
+  <div
+    class="sidebar-footer"
+  >
+    <button
+      mat-button
+      class="logout-btn"
+      (click)="Logout()"
+      [disabled]="loggingOut"
+      [matTooltip]="collapsed ? 'Sair' : ''"
+      matTooltipPosition="right"
+    >
+      @if (!loggingOut) {
+        <mat-icon>logout</mat-icon>
+      } @else {
+        <mat-icon class="spinning">sync</mat-icon>
+      }
+
+      @if (!collapsed) {
+        <span class="nav-label">
+          {{ loggingOut ? 'Saindo...' : 'Sair' }}
+        </span>
+      }
+    </button>
+  </div>
+</aside>
