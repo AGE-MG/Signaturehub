@@ -1,1 +1,36 @@
-<p>dashboard works!</p>
+<div
+  class="dashboard"
+>
+  <div
+    class="welcome-section"
+  >
+    <div>
+      <h1>
+        Olá, {{ userName }}!
+      </h1>
+      <p>
+        Aqui está um resumo das suas atividades recentes.
+      </p>
+    </div>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="goToDocuments()"
+    >
+      <mat-icon>add</mat-icon>
+      Novo Documento
+    </button>
+  </div>
+
+  <div
+    class="stats-grid"
+  >
+    @for (stat of stats; track stat.title) {
+      <mat-card
+        class="stat-card"
+      >
+
+      </mat-card>
+    }
+  </div>
+</div>
