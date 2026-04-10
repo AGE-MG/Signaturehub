@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { MatAnchor } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatCard } from "@angular/material/card";
+import { Router } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
 
 interface StatCard {
   title: string;
@@ -20,7 +22,7 @@ interface RecentDocument {
   status: 'pending' | 'signed' | 'rejected' | 'expired';
   createdAt: Date;
   signers: number;
-  signedcount: number;
+  signedCount: number;
 }
 
 
@@ -36,7 +38,73 @@ export class DashboardComponent implements OnInit {
 
   stats: StatCard[] = [
     {
-      
+      title: 'Documentos Pendentes',
+      value: 5,
+      icon: 'pending_actions',
+      color: '#FFA000',
+      trend: { value: '+2', isPositive: false }
+    },
+    {
+      title: 'Assinados Hoje',
+      value: 12,
+      icon: 'check_circle',
+      color: '#4CAF50',
+      trend: { value: '+5', isPositive: true }
+    },
+    {
+      title: 'Total de Documentos',
+      value: 156,
+      icon: 'description',
+      color: '#1565C0',
+      trend: { value: '+18', isPositive: true }
+    },
+    {
+      title: 'Aguardando Outros',
+      value: 8,
+      icon: 'hourglass_empty',
+      color: '#757575'
     }
   ]
+
+  recentDocuments: RecentDocument[] = [
+    {
+      id: '1',
+      title: 'Contrato de Prestação de Serviços - Empresa X',
+      status: 'pending',
+      createdAt: new Date(2024, 2, 10),
+      signers: 3,
+      signedCount: 1
+    },
+    {
+      id: '2',
+      title: 'Termo de Confidencialidade - Projeto Y',
+      status: 'signed',
+      createdAt: new Date(2024, 2, 9),
+      signers: 2,
+      signedCount: 2
+    },
+    {
+      id: '3',
+      title: 'Relatório Mensal - Março/2024',
+      status: 'pending',
+      createdAt: new Date(2024, 2, 8),
+      signers: 5,
+      signedCount: 3
+    }
+  ]
+
+  displayedColumns: string[] = ['title', 'status', 'progress', 'date', 'actions'];
+
+  constructor(
+    private router: Router,
+    private authService: AuthService
+  ) { }
+
+  ngOnInit(): void {
+    this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.userName = user.fullName.split(' ')[0]; //
+      }
+    });
+  }
 }
