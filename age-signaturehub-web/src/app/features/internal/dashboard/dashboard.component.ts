@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { MatAnchor } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatCard } from "@angular/material/card";
+import { MatTableModule } from "@angular/material/table";
+import { MatChip } from "@angular/material/chips";
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -28,7 +30,7 @@ interface RecentDocument {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [MatAnchor, MatIcon, MatCard],
+  imports: [MatAnchor, MatIcon, MatCard, MatTableModule, MatChip],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
@@ -106,5 +108,37 @@ export class DashboardComponent implements OnInit {
         this.userName = user.fullName.split(' ')[0]; //
       }
     });
+  }
+
+  getStatusColor(status: string): string {
+    const colors: { [key: string]: string } = {
+      pending: 'warn',
+      signed: 'primary',
+      rejected: 'accent',
+      expired: ''
+    };
+    return colors[status] || '';
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: { [key: string]: string } = {
+      pending: 'Pendente',
+      signed: 'Assinado',
+      rejected: 'Rejeitado',
+      expired: 'Expirado'
+    };
+    return labels[status] || status;
+  }
+
+  viewDocument(doc: RecentDocument): void {
+    this.router.navigate(['/documents', doc.id]);
+  }
+
+  goToPendingSignatures(): void {
+    this.router.navigate(['/pending-signatures']);
+  }
+
+  goToDocuments(): void {
+    this.router.navigate(['/documents']);
   }
 }

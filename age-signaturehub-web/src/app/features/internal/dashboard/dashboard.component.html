@@ -29,8 +29,108 @@
       <mat-card
         class="stat-card"
       >
+        <mat-card
+          class="stat-card"
+          [style.border-left-color]="stat.color"
+        >
+          <div
+            class="stat-header"
+          >
+            <div
+              class="stat-icon"
+              [style.background-color]="stat.color + '20'"
+            >
+              <mat-icon
+                [style.color]="stat.color"
+              >
+                {{ stat.icon }}
+              </mat-icon>
+            </div>
+            @if (stat.trend) {
+              <div
+                class="stat-trend"
+                [class.positive]="stat.trend.isPositive"
+              >
+                <mat-icon
 
+                >
+                  {{ stat.trend.isPositive ? 'trending_up' : 'trending_down' }}
+                </mat-icon>
+                <span>{{ stat.trend.value }}</span>
+              </div>
+            }
+          </div>
+          <div
+            class="stat-content"
+          >
+            <h3>{{ stat.value }}</h3>
+            <p>{{ stat.title }}</p>
+          </div>
+        </mat-card>
       </mat-card>
     }
   </div>
+
+  <!-- Recent Documents Section -->
+  <mat-card
+    class="documents-card"
+  >
+    <div
+      class="card-header"
+    >
+      <h2>Documentos Recentes</h2>
+      <button
+        mat-button
+        color="primary"
+        (click)="goToDocuments()"
+      >
+        Ver Todos
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </div>
+
+    <div
+      class="table-container"
+      >
+        <table
+          mat-table
+          [dataSource]="recentDocuments"
+          class="documents-table"
+        >
+          <!-- Title Column -->
+          <ng-container
+            matColumnDef="title"
+          >
+            <th mat-header-cell *matHeaderCellDef> Documento </th>
+            <td
+              mat-cell
+              *matCellDef="let doc"
+              class="title-cell"
+            >
+              <div
+                class="doc-title"
+              >
+                <mat-icon>description</mat-icon>
+                <span>{{ doc.title }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef> Status </th>
+            <td mat-cell *matCellDef="let doc">
+              <mat-chip
+                [color]="getStatusColor(doc.status)"
+                highlighted
+              >
+                {{ getStatusLabel(doc.status) }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Progress Column -->
+        </table>
+    </div>
+  </mat-card>
 </div>
