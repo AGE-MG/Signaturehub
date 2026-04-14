@@ -130,6 +130,57 @@
           </ng-container>
 
           <!-- Progress Column -->
+          <ng-container
+            matColumnDef="progress"
+          >
+            <th
+              mat-header-cell
+              *matHeaderCellDef
+            >
+              Progresso
+            </th>
+            <td
+              mat-cell
+              *matCellDef="let doc"
+            >
+              <div
+                class="progress-info"
+              >
+                <span>
+                  {{ doc.signedCount}}/{{ doc.signers }} assinaturas
+                </span>
+                <div
+                  class="progress-bar"
+                >
+                  <div
+                    class="progress-fill"
+                    [style.width.%]="(doc.signedCount / doc.signers) * 100"
+                  >
+                  </div>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Date Column -->
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef> Data </th>
+            <td mat-cell *matCellDef="let doc"> {{ doc.createdAt | date:'dd/MM/yyyy' }} </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let doc">
+              <button
+                mat-icon-button
+                matTooltip="Ver detalhes"
+                (click)="viewDocument(doc)"
+              >
+                <mat-icon>visibility</mat-icon>
+              </button>
+            </td>
+          </ng-container>
         </table>
     </div>
   </mat-card>
