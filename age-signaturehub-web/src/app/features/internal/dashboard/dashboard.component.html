@@ -193,4 +193,45 @@
         </table>
     </div>
   </mat-card>
+
+  <!-- Quick Actions Section -->
+  <div
+    class="quick-actions"
+  >
+    <h2>Ações Rápidas</h2>
+    <div
+      class="actions-grid"
+    >
+      <button
+        mat-raised-button
+        class="action-btn"
+        (click)="goToPendingSignatures()"
+      >
+        <mat-icon>pending_actions</mat-icon>
+        Minhas Assinaturas Pendentes
+      </button>
+      <button
+        mat-raised-button
+        class="action-btn"
+        (click)="goToDocuments()"
+      >
+        <mat-icon>upload_file</mat-icon>
+        Enviar Documento
+      </button>
+      <button
+        mat-raised-button
+        class="action-btn"
+      >
+        <mat-icon>history</mat-icon>
+        Histórico
+      </button>
+      <button
+        mat-raised-button
+        class="action-btn"
+      >
+        <mat-icon>help</mat-icon>
+        Central de Ajuda
+      </button>
+    </div>
+  </div>
 </div>
