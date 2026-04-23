@@ -11,6 +11,7 @@ namespace AGE.SignatureHub.Application.Contracts.Persistence
         ISignatureFlowRepository SignatureFlows { get; }
         ISignerRepository Signers { get; }
         IAuditLogRepository AuditLogs { get; }
+        INotificationRepository Notifications { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
         Task BeginTransactionAsync(CancellationToken cancellationToken = default);
