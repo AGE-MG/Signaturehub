@@ -1,12 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
+using AGE.SignatureHub.Application.DTOs.Dashboard;
+using AGE.SignatureHub.Application.Features.Dashboard.Commands.MarkAllNotificationsAsRead;
+using AGE.SignatureHub.Application.Features.Dashboard.Commands.MarkNotificationAsRead;
+using AGE.SignatureHub.Application.Features.Dashboard.Queries.GetDashboardStats;
+using AGE.SignatureHub.Application.Features.Dashboard.Queries.GetRecentDocuments;
+using AGE.SignatureHub.Application.Features.Dashboard.Queries.GetUserNotifications;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Org.BouncyCastle.Bcpg;
 
 namespace AGE.SignatureHub.API.Controllers
 {

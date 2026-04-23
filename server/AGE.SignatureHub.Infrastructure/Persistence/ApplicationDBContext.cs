@@ -34,6 +34,7 @@ namespace AGE.SignatureHub.Infrastructure.Persistence
         public DbSet<SignatureFlow> SignatureFlows { get; set; }
         public DbSet<Signer> Signers { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

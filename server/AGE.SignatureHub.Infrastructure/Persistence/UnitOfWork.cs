@@ -11,9 +11,11 @@ namespace AGE.SignatureHub.Infrastructure.Persistence
     {
         private readonly ApplicationDBContext _context;
         private IDocumentRepository? _documents;
-        private ISignatureFlowRepository? _signatureFlows; 
+        private ISignatureFlowRepository? _signatureFlows;
         private ISignerRepository? _signers;
         private IAuditLogRepository? _auditLogs;
+        private INotificationRepository? _notifications;
+
         public UnitOfWork(ApplicationDBContext context)
         {
             _context = context;
@@ -25,6 +27,7 @@ namespace AGE.SignatureHub.Infrastructure.Persistence
 
         public ISignerRepository Signers => _signers ??= new SignerRepository(_context);
         public IAuditLogRepository AuditLogs => _auditLogs ??= new AuditLogRepository(_context);
+        public INotificationRepository Notifications => _notifications ??= new NotificationRepository(_context);
 
         public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
