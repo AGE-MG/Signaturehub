@@ -1,52 +1,49 @@
 export interface DashboardStats {
-  pendingDocuments: number;
-  signedToday: number;
   totalDocuments: number;
-  waitingForOthers: number;
-  trends?: {
-    pendingTrend: number;
-    signedTrend: number;
-    totalTrend: number;
-  };
+  draftDocuments: number;
+  pendingDocuments: number;
+  completedDocuments: number;
+  rejectedDocuments: number;
+  expiredDocuments: number;
+  unreadNotifications: number;
 }
 
 export interface RecentDocument {
   id: string;
   title: string;
-  fileName: string;
+  originalFileName: string;
+  fileExtension: string;
   status: DocumentStatus;
-  createdAt: Date;
-  totalSigners: number;
-  signedCount: number;
-  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export enum DocumentStatus {
-  Draft = 'Draft',
-  PendingSignatures = 'PendingSignatures',
-  PartiallyCompleted = 'PartiallyCompleted',
-  Completed = 'Completed',
-  Rejected = 'Rejected',
-  Expired = 'Expired',
-  Cancelled = 'Cancelled'
+  Draft = 0,
+  PendingSignatures = 1,
+  PartiallyCompleted = 2,
+  Completed = 3,
+  Rejected = 4,
+  Expired = 5,
+  Cancelled = 6
 }
 
-export interface Notification {
+export interface NotificationDto {
   id: string;
-  type: NotificationType;
   title: string;
   message: string;
-  read: boolean;
-  createdAt: Date;
-  documentId?: string;
-  actionUrl?: string;
+  type: NotificationType;
+  isRead: boolean;
+  relatedDocumentId?: string;
+  createdAt: string;
 }
 
 export enum NotificationType {
-  NewDocument = 'NewDocument',
-  DocumentSigned = 'DocumentSigned',
-  DocumentRejected = 'DocumentRejected',
-  DocumentCompleted = 'DocumentCompleted',
-  DocumentExpiring = 'DocumentExpiring',
-  DocumentExpired = 'DocumentExpired'
+  DocumentCreated = 1,
+  DocumentSigned = 2,
+  DocumentRejected = 3,
+  DocumentExpired = 4,
+  DocumentCompleted = 5,
+  SignatureRequested = 6,
+  System = 7
 }

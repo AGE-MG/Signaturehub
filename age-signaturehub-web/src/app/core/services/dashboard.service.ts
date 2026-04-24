@@ -2,8 +2,8 @@ import { Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { HttpClient } from "@angular/common/http";
 import { map, Observable } from "rxjs";
-import { DashboardStats, RecentDocument } from "../models/dasboard.model";
-import { ApiResponse } from "../models/user.model";
+import { DashboardStats, NotificationDto, RecentDocument } from "../models/dasboard.model";
+import { ApiResponse } from "../models/api-response.model";
 
 @Injectable({
     providedIn: 'root'
@@ -26,18 +26,18 @@ export class DashboardService {
     .pipe(map(response => response.data as RecentDocument[]));
   }
 
-  getNotifications(count: number = 5): Observable<Notification[]> {
-    return this.http.get<ApiResponse<Notification[]>>(`${this.API_URL}/notifications?count=${count}`)
-    .pipe(map(response => response.data as Notification[]));
+  getNotifications(unreadOnly: boolean = false): Observable<NotificationDto[]> {
+    return this.http.get<ApiResponse<NotificationDto[]>>(`${this.API_URL}/notifications?unreadOnly=${unreadOnly}`)
+    .pipe(map(response => response.data as NotificationDto[]));
   }
 
-  markNotificationAsRead(notificationId: string): Observable<boolean> {
-    return this.http.put<ApiResponse<boolean>>(`${this.API_URL}/notifications/${notificationId}/read`, {})
-    .pipe(map(response => response.data));
+  markNotificationAsRead(notificationId: string): Observable<void> {
+    return this.http.put<ApiResponse<void>>(`${this.API_URL}/notifications/${notificationId}/read`, {})
+    .pipe(map(() => undefined) );
   }
 
-  markAllNotificationsAsRead(): Observable<boolean> {
-    return this.http.put<ApiResponse<boolean>>(`${this.API_URL}/notifications/mark-all-read`, {})
-    .pipe(map(response => response.data));
+  markAllNotificationsAsRead(): Observable<void> {
+    return this.http.put<ApiResponse<void>>(`${this.API_URL}/notifications/mark-all-read`, {})
+    .pipe(map(() => undefined));
   }
 }

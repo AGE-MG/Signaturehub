@@ -4,12 +4,17 @@ import { MatIcon } from "@angular/material/icon";
 import { MatCard } from "@angular/material/card";
 import { MatTableModule } from "@angular/material/table";
 import { MatChip } from "@angular/material/chips";
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
+import { DatePipe } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { DashboardService } from '../../../core/services/dashboard.service';
+import { forkJoin } from 'rxjs';
+import { DashboardStats, DocumentStatus, RecentDocument } from '../../../core/models/dasboard.model';
 
 interface StatCard {
   title: string;
-  value: string | number;
+  value: number;
   icon: string;
   color: string;
   trend?: {
@@ -17,117 +22,115 @@ interface StatCard {
     isPositive: boolean;
   }
 }
-
-interface RecentDocument {
-  id: string;
-  title: string;
-  status: 'pending' | 'signed' | 'rejected' | 'expired';
-  createdAt: Date;
-  signers: number;
-  signedCount: number;
-}
-
-
 @Component({
   selector: 'app-dashboard',
-  imports: [MatAnchor, MatIcon, MatCard, MatTableModule, MatChip],
+  imports: [MatAnchor, MatIcon, MatCard, MatTableModule, MatChip, MatProgressSpinner, DatePipe],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
 
-  userName = '';
 
-  stats: StatCard[] = [
-    {
-      title: 'Documentos Pendentes',
-      value: 5,
-      icon: 'pending_actions',
-      color: '#FFA000',
-      trend: { value: '+2', isPositive: false }
-    },
-    {
-      title: 'Assinados Hoje',
-      value: 12,
-      icon: 'check_circle',
-      color: '#4CAF50',
-      trend: { value: '+5', isPositive: true }
-    },
-    {
-      title: 'Total de Documentos',
-      value: 156,
-      icon: 'description',
-      color: '#1565C0',
-      trend: { value: '+18', isPositive: true }
-    },
-    {
-      title: 'Aguardando Outros',
-      value: 8,
-      icon: 'hourglass_empty',
-      color: '#757575'
-    }
-  ]
-
-  recentDocuments: RecentDocument[] = [
-    {
-      id: '1',
-      title: 'Contrato de Prestação de Serviços - Empresa X',
-      status: 'pending',
-      createdAt: new Date(2024, 2, 10),
-      signers: 3,
-      signedCount: 1
-    },
-    {
-      id: '2',
-      title: 'Termo de Confidencialidade - Projeto Y',
-      status: 'signed',
-      createdAt: new Date(2024, 2, 9),
-      signers: 2,
-      signedCount: 2
-    },
-    {
-      id: '3',
-      title: 'Relatório Mensal - Março/2024',
-      status: 'pending',
-      createdAt: new Date(2024, 2, 8),
-      signers: 5,
-      signedCount: 3
-    }
-  ]
-
+  userName: string = '';
+  loading = true;
+  stats: StatCard[] = [];
+  recentDocuments: RecentDocument[] = [];
   displayedColumns: string[] = ['title', 'status', 'progress', 'date', 'actions'];
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private dashboardService: DashboardService
   ) { }
 
   ngOnInit(): void {
-    this.authService.currentUser$.subscribe(user => {
+    this.loadUserName();
+    this.loadDashboardData();
+  }
+
+  private loadUserName(): void {
+    this.authService.getCurrentUser().subscribe(user => {
       if (user) {
-        this.userName = user.fullName.split(' ')[0]; //
+        const firstName = user.fullName.split(' ')[0];
+        this.userName = firstName;
+      }
+    })
+  }
+
+  private loadDashboardData(): void {
+    this.loading = true;
+
+    forkJoin({
+    stats: this.dashboardService.getStats(),
+    documents: this.dashboardService.getRecentDocuments(5)
+    }).subscribe({
+      next: ({ stats, documents }) => {
+        this.buildStatsCards(stats);
+        this.recentDocuments = documents;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading dashboard data', error);
+        this.loading = false;
       }
     });
   }
 
-  getStatusColor(status: string): string {
-    const colors: { [key: string]: string } = {
-      pending: 'warn',
-      signed: 'primary',
-      rejected: 'accent',
-      expired: ''
-    };
-    return colors[status] || '';
+  private buildStatsCards(stats: DashboardStats): void {
+    this.stats = [
+      {
+        title: 'Documentos Pendentes',
+        value: stats.pendingDocuments,
+        icon: 'pending_actions',
+        color: '#FFA000'
+      },
+      {
+        title: 'Documentos Concluídos',
+        value: stats.completedDocuments,
+        icon: 'check_circle',
+        color: '#4CAF50'
+      },
+      {
+        title: 'Total de Documentos',
+        value: stats.totalDocuments,
+        icon: 'description',
+        color: '#1565C0'
+      },
+      {
+        title: 'Notificações Não Lidas',
+        value: stats.unreadNotifications,
+        icon: 'notifications',
+        color: '#F44336'
+      }
+    ]
   }
 
-  getStatusLabel(status: string): string {
+  getStatusColor(status: DocumentStatus): 'warn' | 'primary' | 'accent' | undefined {
+    switch (status) {
+      case DocumentStatus.Completed:
+        return 'primary';
+      case DocumentStatus.PendingSignatures:
+      case DocumentStatus.PartiallyCompleted:
+        return 'warn';
+      case DocumentStatus.Rejected:
+      case DocumentStatus.Expired:
+        return 'accent';
+      default:
+        return undefined;
+    }
+  }
+
+  getStatusLabel(status: DocumentStatus): string {
     const labels: { [key: string]: string } = {
-      pending: 'Pendente',
-      signed: 'Assinado',
-      rejected: 'Rejeitado',
-      expired: 'Expirado'
+      [DocumentStatus.Draft]: 'Rascunho',
+      [DocumentStatus.PendingSignatures]: 'Pendente',
+      [DocumentStatus.PartiallyCompleted]: 'Parcialmente Concluído',
+      [DocumentStatus.Completed]: 'Concluído',
+      [DocumentStatus.Rejected]: 'Rejeitado',
+      [DocumentStatus.Expired]: 'Expirado',
+      [DocumentStatus.Cancelled]: 'Cancelado'
     };
-    return labels[status] || status;
+    return labels[status] || 'Desconhecido';
   }
 
   viewDocument(doc: RecentDocument): void {
