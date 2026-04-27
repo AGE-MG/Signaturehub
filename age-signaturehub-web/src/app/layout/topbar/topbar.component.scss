@@ -79,7 +79,8 @@
 ::ng-deep {
   .notification-menu,
   .user-menu {
-    min-width: 320px;
+    min-width: 380px;
+    max-width: 420px;
 
     .menu-header {
       padding: 16px;
@@ -94,27 +95,100 @@
       }
     }
 
+    .loading-notifications,
+    .empty-notifications {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        opacity: 0.5;
+        margin-bottom: 12px;
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+      }
+    }
+
     .notification-item {
       height: auto;
       padding: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      position: relative;
+      transition: background 0.2s;
 
-      mat-icon {
-        margin-right: 12px;
-        color: var(--primary-color);
+      &.unread {
+        background: rgba(21, 101, 192, 0.05);
+        border-left: 3px solid var(--primary-color);
+      }
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      > mat-icon {
+        margin-right: 0;
+        flex-shrink: 0;
+        margin-top: 2px;
       }
 
       .notification-content {
+        flex: 1;
+        min-width: 0;
+
         .notification-title {
           margin: 0 0 4px 0;
           font-size: 14px;
-          font-weight: 500;
+          font-weight: 600;
           color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .notification-message {
+          margin: 0 0 6px 0;
+          font-size: 13px;
+          color: var(--text-secondary);
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         .notification-time {
           font-size: 12px;
           color: var(--text-secondary);
+          opacity: 0.8;
         }
+      }
+
+      .mark-read-btn {
+        position: absolute;
+        top: 12px;
+        right: 8px;
+        width: 28px;
+        height: 28px;
+        opacity: 0;
+        transition: opacity 0.2s;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      &:hover .mark-read-btn {
+        opacity: 1;
       }
     }
 
@@ -123,6 +197,36 @@
       text-align: center;
       color: var(--primary-color);
       font-weight: 500;
+      padding: 14px;
+    }
+  }
+
+  .user-menu {
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    padding: 0 16px;
+  }
+
+  .topbar-left {
+    .page-title {
+      font-size: 20px;
+    }
+  }
+
+  .user-btn {
+    .user-info {
+      display: none;
+    }
+  }
+
+  ::ng-deep {
+    .notification-menu {
+      min-width: calc(100vw - 32px);
+      max-width: calc(100vw - 32px);
     }
   }
 }
