@@ -10,10 +10,13 @@ import { interval, startWith, Subject, switchMap, takeUntil } from 'rxjs';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatButtonModule } from "@angular/material/button";
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: 'app-topbar',
-  imports: [MatIconModule, MatBadgeModule, MatMenuModule, MatMenuTrigger, MatDividerModule, MatSnackBarModule],
+  imports: [MatIconModule, MatBadgeModule, MatMenuModule, MatMenuTrigger, MatDividerModule, MatSnackBarModule, MatButtonModule, MatProgressSpinnerModule, MatTooltip],
   templateUrl: './topbar.component.html',
   styleUrls: ['./topbar.component.scss'],
 })
@@ -174,6 +177,61 @@ export class TopbarComponent implements OnInit, OnDestroy {
         })
       }
     });
+  }
+
+  markAllAsRead(): void {
+    this.dashboardService.markAllNotificationsAsRead().subscribe({
+      next: () => {
+        this.notifications.forEach(n => n.isRead = true);
+        this.unreadCount = 0;
+        this.snackBar.open('Todas as notificações foram marcadas como lidas', 'Fechar', {
+          duration: 3000,
+          horizontalPosition: 'end',
+          verticalPosition: 'top',
+          panelClass: ['success-snackbar']
+        })
+      },
+      error: (error) => {
+        console.error('Failed to mark all notifications as read', error);
+        this.snackBar.open('Falha ao marcar todas as notificações como lidas', 'Fechar', {
+          duration: 3000,
+          horizontalPosition: 'end',
+          verticalPosition: 'top',
+          panelClass: ['error-snackbar']
+        })
+      }
+    })
+  }
+
+  viewNotification(notification: NotificationDto): void {
+    this.markAsRead(notification);
+
+    if (notification.relatedDocumentId) {
+      this.router.navigate(['/documents', notification.relatedDocumentId]);
+    } else {
+      this.snackBar.open('Notificação sem documento relacionado', 'Fechar', {
+        duration: 3000,
+        horizontalPosition: 'end',
+        verticalPosition: 'top',
+        panelClass: ['info-snackbar']
+      })
+    }
+  }
+
+  viewAllNotifications(): void {
+    this.router.navigate(['/notifications']);
+  }
+
+  goToProfile(): void {
+    this.router.navigate(['/profile']);
+  }
+
+  goToSettings(): void {
+    this.router.navigate(['/settings']);
+  }
+
+  goToHelp(): void {
+    this.router.navigate(['/help']);
   }
 
 }

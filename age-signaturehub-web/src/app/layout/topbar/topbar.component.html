@@ -1,9 +1,9 @@
 <header
   class="topbar"
 >
-    <div
-      class="topbar-left"
-    >
+  <div
+    class="topbar-left"
+  >
     <h1
       class="page-title"
     >
@@ -14,101 +14,141 @@
   <div
     class="topbar-right"
   >
+    <!-- Notifications -->
     <button
       mat-icon-button
       [matMenuTriggerFor]="notificationMenu"
       class="notification-btn"
     >
-      <mat-icon [matBadge]="notificationCount" matBadgeColor="warn">notifications</mat-icon>
+      @if (
+        unreadCount > 0
+      ) {
+        <mat-icon
+          matBadge="{{ unreadCount }}"
+          matBadgeColor="warn"
+          >notifications</mat-icon
+        >
+      } @else {
+        <mat-icon>notifications_none</mat-icon>
+      }
     </button>
 
+    <!-- User Menu -->
     <button
-      mat-button
+      mat-icon-button
       [matMenuTriggerFor]="userMenu"
       class="user-btn"
     >
       <div class="user-avatar">{{ getUserInitials() }}</div>
-      <div
-        class="user-info"
-      >
+      <div class="user-info">
         <span class="user-name">{{ currentUser?.fullName }}</span>
         <span class="user-role">{{ currentUser?.position }}</span>
       </div>
-      <mat-icon>keyboard_arrow_down</mat-icon>
+      <mat-icon>arrow_drop_down</mat-icon>
     </button>
   </div>
 </header>
 
+<!-- Notification Menu -->
 <mat-menu
   #notificationMenu="matMenu"
   class="notification-menu"
 >
   <div
     class="menu-header"
+    (click)="$event.stopPropagation()"
   >
     <h3>
       Notificações
     </h3>
-    <button
-      mat-button
-      color="primary"
-    >
-      Marcar todas como lidas
-    </button>
+    @if (unreadCount > 0) {
+      <button
+        mat-button
+        color="primary"
+        (click)="markAllAsRead()"
+      >
+        Marcar todas como lidas
+      </button>
+    }
   </div>
   <mat-divider></mat-divider>
 
-  <button mat-menu-item class="notification-item">
-    <mat-icon>description</mat-icon>
-    <div class="notification-content">
-      <p class="notification-title">Novo documento para assinar</p>
-      <span class="notification-time">Há 5 minutos</span>
+  @if (loadingNotifications) {
+    <div
+      class="loading-notifications"
+      (click)="$event.stopPropagation()"
+    >
+      <mat-spinner diameter="30"></mat-spinner>
     </div>
-  </button>
-
-  <button mat-menu-item class="notification-item">
-    <mat-icon>check_circle</mat-icon>
-    <div class="notification-content">
-      <p class="notification-title">Documento assinado com sucesso</p>
-      <span class="notification-time">Há 2 horas</span>
+  } @else if (notifications.length === 0) {
+    <div
+      class="empty-notifications"
+      (click)="$event.stopPropagation()"
+    >
+      <p>Nenhuma notificação</p>
     </div>
-  </button>
+  } @else {
+    @for (notification of notifications.slice(0, 5); track notification.id) {
+      <button
+        mat-menu-item
+        class="notification-item"
+        [class.unread]="!notification.isRead"
+        (click)="viewNotification(notification)"
+      >
+        <mat-icon
+          [style.color]="getNotificationColor(notification.type)"
+        >
+          {{ getNotificationIcon(notification.type) }}
+        </mat-icon>
+        <div
+          class="notification-content"
+        >
+          <p class="notification-title">{{ notification.title }}</p>
+          <p class="notification-message">{{ notification.message }}</p>
+          <span class="notification-time">{{ getRelativeTime(notification.createdAt) }}</span>
+        </div>
+        @if (!notification.isRead) {
+          <button
+            mat-icon-button
+            class="mark-read-btn"
+            (click)="markAsRead(notification, $event)"
+            matTooltip="Marcar como lida"
+          >
+            <mat-icon>check</mat-icon>
+          </button>
+        }
+      </button>
+    }
 
-  <mat-divider></mat-divider>
-
-  <button
-    mat-menu-item
-    class="view-all"
-  >
-    Ver todas as notificações
-  </button>
+    @if (notifications.length > 5) {
+      <mat-divider></mat-divider>
+      <button
+        mat-menu-item
+        class="view-all"
+        (click)="viewAllNotifications()"
+      >
+        Ver todas as notificações ({{ notifications.length }})
+      </button>
+    }
+  }
 </mat-menu>
 
+<!-- User Menu -->
 <mat-menu
   #userMenu="matMenu"
   class="user-menu"
 >
-  <button
-    mat-menu-item
-  >
+  <button mat-menu-item (click)="goToProfile()">
     <mat-icon>person</mat-icon>
-    <span>Perfil</span>
+    <span>Meu Perfil</span>
   </button>
-
-  <button
-    mat-menu-item
-  >
+  <button mat-menu-item (click)="goToSettings()">
     <mat-icon>settings</mat-icon>
     <span>Configurações</span>
   </button>
-
   <mat-divider></mat-divider>
-
-  <button
-    mat-menu-item
-  >
+  <button mat-menu-item (click)="goToHelp()">
     <mat-icon>help</mat-icon>
     <span>Ajuda</span>
   </button>
 </mat-menu>
-
