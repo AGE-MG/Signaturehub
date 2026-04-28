@@ -2,9 +2,10 @@ import { Inject, Injectable, PLATFORM_ID } from "@angular/core";
 import { Router } from "@angular/router";
 import { BehaviorSubject, catchError, Observable, tap, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
-import { ApiResponse, ChangePasswordRequest, LoginRequest, LoginResponse, RegisterRequest, User } from "../models/user.model";
+import { ChangePasswordRequest, LoginRequest, LoginResponse, RegisterRequest, User } from "../models/user.model";
 import { HttpClient } from "@angular/common/http";
 import { isPlatformBrowser } from "@angular/common";
+import { ApiResponse } from "../models/api-response.model";
 
 @Injectable({
   providedIn: 'root'

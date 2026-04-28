@@ -2,7 +2,6 @@ import { Component, EventEmitter, Output } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { BrowserModule } from "@angular/platform-browser";
 import { MatIcon } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -16,7 +15,7 @@ interface menuItem {
 
 @Component({
   selector: 'app-sidebar',
-  imports: [BrowserModule, MatIcon, MatButtonModule, MatTooltipModule, RouterLink],
+  imports: [ MatIcon, MatButtonModule, MatTooltipModule, RouterLink],
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss'],
 })

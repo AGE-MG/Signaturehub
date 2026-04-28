@@ -49,7 +49,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadUserName(): void {
-    this.authService.getCurrentUser().subscribe(user => {
+    this.authService.currentUser$.subscribe(user => {
       if (user) {
         const firstName = user.fullName.split(' ')[0];
         this.userName = firstName;
