@@ -22,8 +22,8 @@ export interface SignatoryDto {
   userId: string;
   userName: string;
   email: string;
-  signedAt: Date | null;
-  status: DocumentStatus;
+  signedAt?: string;
+  completedAt?: string;
 }
 
 export interface SignatureFlowDto {
@@ -46,18 +46,18 @@ export interface DocumentDto {
   status: DocumentStatus;
   title: string;
   description?: string;
-  expiresAt?: Date;
+  expiresAt?: string;
   createdByUserId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  source: DocumentSource;
+  createdAt: string;
+  updatedAt: string;
+  source?: DocumentSource;
   signatureFlows: SignatureFlowDto[];
 }
 
 export interface CreateDocumentDto {
   title: string;
   description?: string;
-  expiresAt?: Date;
+  expiresAt?: string;
   createdByUserId: string;
   source?: DocumentSource;
 }
@@ -80,7 +80,7 @@ export interface DocumentFilterParams {
 
 // Helpers
 
-export const DocumentStatusLabels: Record<DocumentStatus, string> = {
+export const DocumentStatusLabel: Record<DocumentStatus, string> = {
   [DocumentStatus.Draft]: 'Rascunho',
   [DocumentStatus.PendingSignatures]: 'Aguardando Assinaturas',
   [DocumentStatus.PartiallyCompleted]: 'Parcialmente Assinado',
@@ -98,6 +98,16 @@ export const DocumentStatusColor: Record<DocumentStatus, string> = {
   [DocumentStatus.Rejected]: '#EF4444',
   [DocumentStatus.Expired]: '#8B5CF6',
   [DocumentStatus.Cancelled]: '#6B7280',
+}
+
+export const DocumentStatusMatColor: Record<DocumentStatus, 'warn' | 'primary' | 'accent' | undefined> = {
+  [DocumentStatus.Draft]: undefined,
+  [DocumentStatus.PendingSignatures]: 'warn',
+  [DocumentStatus.PartiallyCompleted]: 'accent',
+  [DocumentStatus.Completed]: 'primary',
+  [DocumentStatus.Rejected]: 'warn',
+  [DocumentStatus.Expired]: 'accent',
+  [DocumentStatus.Cancelled]: undefined,
 }
 
 export function formatFileSize(bytes: number): string {

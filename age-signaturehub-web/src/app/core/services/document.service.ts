@@ -49,12 +49,39 @@ export class DocumentService {
       formData.append('description', data.description);
     }
     if (data.expiresAt) {
-      formData.append('expiresAt', data.expiresAt.toISOString());
+      formData.append('expiresAt', data.expiresAt);
     }
     formData.append('createdByUserId', data.createdByUserId);
     if (data.source) {
       formData.append('source', data.source);
     }
     return this.http.post<DocumentDto>(this.baseUrl, formData);
+  }
+
+  downloadDocument(id: string, filename: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/${id}/download`, { responseType: 'blob' });
+  }
+
+  triggerDownload(blob: Blob, filename: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+
+  deleteDocument(documentId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${documentId}`);
+  }
+
+  archiveDocument(documentId: string): Observable<DocumentDto> {
+    return this.http.patch<DocumentDto>(`${this.baseUrl}/${documentId}/archive`, {});
+  }
+
+  signDocument(id: string, signatureData?: unknown): Observable<DocumentDto> {
+    return this.http.post<DocumentDto>(`${this.baseUrl}/${id}/sign`, signatureData || {});
   }
 }
