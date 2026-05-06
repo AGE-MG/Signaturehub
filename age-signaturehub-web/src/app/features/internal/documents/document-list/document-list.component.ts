@@ -1,26 +1,27 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortModule,  } from '@angular/material/sort';
-import { MatTableDataSource } from '@angular/material/table';
+import { MatTableDataSource, MatHeaderCell, MatColumnDef, MatTableModule } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
 import { DocumentDto, DocumentSource, DocumentStatusLabel, DocumentStatusMatColor, formatFileSize } from '../../../../core/models/document.model';
 import { DocumentStatus } from '../../../../core/models/dasboard.model';
 import { Router } from '@angular/router';
 import { DocumentService } from '../../../../core/services/document.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatAnchor } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatAnchor } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
 import { MatSelect, MatOption } from "@angular/material/select";
 import { FormsModule } from "@angular/forms";
 import { MatChipSet, MatChip } from "@angular/material/chips";
 import { MatCard } from "@angular/material/card";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { MatInput } from '@angular/material/input';
+import { A11yModule } from "@angular/cdk/a11y";
 
 @Component({
   selector: 'app-document-list',
-  imports: [MatPaginatorModule, MatSortModule, MatAnchor, MatIconModule, MatFormField, MatLabel, MatInput, MatSelect, FormsModule, MatOption, MatChipSet, MatChip, MatCard, MatProgressSpinner],
+  imports: [MatPaginatorModule, MatSortModule, MatAnchor, MatIconModule, MatFormField, MatLabel, MatInput, MatSelect, FormsModule, MatOption, MatChipSet, MatChip, MatCard, MatProgressSpinner, MatHeaderCell, MatColumnDef, MatTableModule, MatSort, A11yModule],
   templateUrl: './document-list.component.html',
   styleUrls: ['./document-list.component.scss'],
 })
