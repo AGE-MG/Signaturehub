@@ -235,8 +235,116 @@
               </div>
             </td>
           </ng-container>
+
+          <!-- Source Column -->
+          <ng-container matColumnDef="source">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              Origem
+            </th>
+            <td mat-cell *matCellDef="let doc">
+              <span
+                class="source-chip source-{{ (doc.source ?? 'Interno') | lowercase }}"
+              >
+                {{ doc.source ?? 'Interno' }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              Status
+            </th>
+            <td mat-cell *matCellDef="let doc">
+              <span
+                class="status-chip"
+                [style.background]="getStatusColor(doc.status) + '18'"
+                [style.color]="getStatusColor(doc.status)"
+                [style.border-color]="getStatusColor(doc.status) + '50'"
+              >
+                {{ getStatusLabel(doc.status) }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Size Column -->
+          <ng-container matColumnDef="size">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              Tamanho
+            </th>
+            <td mat-cell *matCellDef="let doc" class="meta-cell">
+              {{ formatFileSize(doc.fileSizeInBytes) }}
+            </td>
+          </ng-container>
+
+          <!-- Date Column -->
+          <ng-container matColumnDef="updatedAt">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              Atualizado em
+            </th>
+            <td mat-cell *matCellDef="let doc" class="meta-cell">
+              {{ doc.updatedAt | date: 'dd/MM/yyyy HH:mm' }}
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td
+              mat-cell
+              *matCellDef="let doc"
+              class="actions-cell"
+            >
+              <button mat-icon-button matTooltip="Baixar" (click)="downloadDocument(doc, $event)">
+                <mat-icon>download</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                [mat-menu-trigger-for]="docMenu"
+                (click)="$event.stopPropagation()"
+                matTooltip="Mais ações"
+              >
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu
+                #docMenu="matMenu"
+                (click)="$event.stopPropagation()"
+              >
+                @if (canSign(doc)) {
+                  <button mat-menu-item (click)="signDocument(doc, $event)">
+                    <mat-icon>draw</mat-icon>
+                    <span>Assinar</span>
+                  </button>
+                  <mat-divider></mat-divider>
+                }
+                @if (canDelete(doc)) {
+                  <button mat-menu-item (click)="deleteDocument(doc, $event)", class="menu-danger">
+                    <mat-icon color="warn">delete</mat-icon>
+                    <span class="warn-text">Excluir</span>
+                  </button>
+                }
+              </mat-menu>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: displayedColumns"
+            (click)="viewDocument(row)"
+            class="data-row"
+          ></tr>
         </table>
       </div>
+
+      <mat-paginator
+        [length]="totalCount"
+        [pageSize]="pageSize"
+        [pageIndex]="pageIndex"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons
+      ></mat-paginator>
     }
   </mat-card>
 </div>
