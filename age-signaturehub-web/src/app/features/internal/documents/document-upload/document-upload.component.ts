@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -9,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
@@ -17,6 +17,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { MatChipsModule } from '@angular/material/chips';
 import { DocumentSource, formatFileSize } from '../../../../core/models/document.model';
+import { Router } from '@angular/router';
+import { DocumentService } from '../../../../core/services/document.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-document-upload',
@@ -59,6 +62,22 @@ export class DocumentUploadComponent implements OnInit {
 
   readonly sourceOptions = Object.values(DocumentSource).map((v) => ({ value: v, label: v }));
   readonly formatFileSize = formatFileSize;
+  readonly minDate = new Date()
 
-  
+  private readonly allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain'];
+  private readonly maxFileSize = 50 * 1024 * 1024; // 50 MB
+
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private documentService: DocumentService,
+    private authService: AuthService,
+    private snackBar: MatSnackBar
+  ) {}
+ngOnInit(): void {
+  this.metadataForm = this.fb.group({
+    title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(255)]],
+  })
+}
+
 }
