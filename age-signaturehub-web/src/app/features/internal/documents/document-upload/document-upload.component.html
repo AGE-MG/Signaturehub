@@ -1,1 +1,177 @@
-<p>document-upload works!</p>
+<div
+  class="upload-page"
+>
+  <!-- Header -->
+  <div
+    class="page-header"
+  >
+    <button
+      mat-icon-button
+      (click)="cancel()"
+      matTooltip="Voltar"
+    >
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div>
+      <h1
+        class="page-title"
+      >
+        Novo Documento
+      </h1>
+      <p
+        class="page-subtitle"
+      >
+        Envie e configure seu documento para assinatura
+      </p>
+    </div>
+  </div>
+
+  <!-- Stepper -->
+
+  <mat-stepper #stepper linear orientation="horizontal" class="upload-stepper">
+    <!-- Step 1: Arquivo -->
+    <mat-step
+      [completed]="fileStepComplete"
+      label="Selecionar Arquivo"
+    >
+      <ng-template matStepLabel>
+        Selecionar Arquivo
+      </ng-template>
+
+      <div
+        class="step-content"
+      >
+        <!-- Drop zone -->
+        <div
+          class="dropzone"
+          [class.dragover]="dragOver"
+          [class.has-file]="!!selectedFile"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+          (click)="!selectedFile && fileInput.click()"
+        >
+          @if (!selectedFile) {
+            <div
+              class="dropzone-placeholder"
+            >
+              <mat-icon
+                class="upload-icon"
+              >
+                cloud_upload
+              </mat-icon>
+              <h3>
+                Arraste seu arquivo aqui
+              </h3>
+              <p>
+                ou
+                <strong>
+                  clique para selecionar
+                </strong>
+              </p>
+              <div
+                class="format-chips"
+              >
+                <mat-chip-set>
+                  <mat-chip>
+                    PDF
+                  </mat-chip>
+                  <mat-chip>
+                    DOCX
+                  </mat-chip>
+                  <mat-chip>
+                    ODT
+                  </mat-chip>
+                  <mat-chip>
+                    TXT
+                  </mat-chip>
+                </mat-chip-set>
+              </div>
+              <p
+                class="size-hint"
+              >
+                Tamanho máximo: 50MB
+              </p>
+            </div>
+          } @else {
+            <div
+              class="file-preview"
+            >
+              <mat-icon
+                [style.color]="getFileIconColor()"
+                class="file-type-icon"
+              >
+                {{ getFileIcon()}}
+              </mat-icon>
+              <div
+                class="file-details"
+              >
+                <div
+                  class="file-details"
+                >
+                  <span
+                    class="file-name"
+                  >
+                    {{ selectedFile.name }}
+                  </span>
+                  <span
+                    class="file-size"
+                  >
+                    {{ formatFileSize(selectedFile.size) }}
+                  </span>
+                </div>
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="$event.stopPropagation(); removeFile()"
+                  matTooltip="Remover arquivo"
+                >
+                  <mat-icon>
+                    close
+                  </mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <input type="file" accept=".pdf, .doc, .docx, .odt, .txt" hidden #fileInput (change)="onFileSelected($event)" />
+
+        @if (fileError) {
+          <div
+            class="file-error"
+          >
+            <mat-icon>
+              error_outline
+            </mat-icon>
+            {{ fileError }}
+          </div>
+        }
+
+        <div
+          class="step-actions"
+        >
+          <button
+            mat-button
+            (click)="cancel()"
+          >
+            Cancelar
+          </button>
+          <button
+            mat-raised-button
+            color="primary"
+            [disabled]="!fileStepComplete"
+            matStepperNext
+          >
+            Próximo
+            <mat-icon>
+              arrow_forward
+            </mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-step>
+
+    <!-- Step 2: Metadados -->
+  </mat-stepper>
+</div>
