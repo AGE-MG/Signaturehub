@@ -180,8 +180,41 @@
       <ng-template
         matStepLabel
       >
-
+        Informações do Documento
       </ng-template>
+
+      <!-- Título -->
+      <mat-form-field
+        appearance="outline"
+        class="full-width"
+      >
+        <mat-label>
+          Título *
+        </mat-label>
+        <mat-icon
+          matPrefix
+        >
+          title
+        </mat-icon>
+        <input matInput formControlName="title" required placeholder="Nome do Documento" maxlength="200" />
+        <mat-hint
+          align="end"
+        >
+          {{ metadataForm.get('title')?.value?.length || 0 }}/200
+        </mat-hint>
+        @if (metadataForm.get('title')?.hasError('required') && metadataForm.get('title')?.touched) {
+          <mat-error>
+            O título é obrigatório
+          </mat-error>
+        }
+        @if (metadataForm.get('title')?.hasError('minlength')) {
+          <mat-error>
+            O título deve conter pelo menos 3 caracteres
+          </mat-error>
+        }
+      </mat-form-field>
+
+      
     </mat-step>
   </mat-stepper>
 </div>
