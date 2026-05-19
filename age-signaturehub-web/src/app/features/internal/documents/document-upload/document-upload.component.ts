@@ -20,6 +20,7 @@ import { DocumentSource, formatFileSize } from '../../../../core/models/document
 import { Router } from '@angular/router';
 import { DocumentService } from '../../../../core/services/document.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { MatAccordion } from "@angular/material/expansion";
 
 interface FileValidation {
   valid: boolean;
@@ -45,8 +46,9 @@ interface FileValidation {
     MatSnackBarModule,
     MatTooltipModule,
     MatChipsModule,
-    MatDividerModule
-  ],
+    MatDividerModule,
+    MatAccordion
+],
   templateUrl: './document-upload.component.html',
   styleUrls: ['./document-upload.component.scss'],
 })
