@@ -182,126 +182,163 @@
       >
         Informações do Documento
       </ng-template>
-
-      <!-- Título -->
-      <mat-form-field
-        appearance="outline"
-        class="full-width"
-      >
-        <mat-label>
-          Título *
-        </mat-label>
-        <mat-icon
-          matPrefix
-        >
-          title
-        </mat-icon>
-        <input matInput formControlName="title" required placeholder="Nome do Documento" maxlength="200" />
-        <mat-hint
-          align="end"
-        >
-          {{ metadataForm.get('title')?.value?.length || 0 }}/200
-        </mat-hint>
-        @if (metadataForm.get('title')?.hasError('required') && metadataForm.get('title')?.touched) {
-          <mat-error>
-            O título é obrigatório
-          </mat-error>
-        }
-        @if (metadataForm.get('title')?.hasError('minlength')) {
-          <mat-error>
-            O título deve conter pelo menos 3 caracteres
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <!-- Descrição -->
-      <mat-form-field
-        appearance="outline"
-        class="full-width"
-      >
-        <mat-label>
-          Descrição
-        </mat-label>
-        <mat-icon
-          matPrefix
-        >
-          notes
-        </mat-icon>
-        <textarea matInput formControlName="description" placeholder="Descrição do Documento" maxlength="1000" rows="3"></textarea>
-        <mat-hint
-          align="end"
-        >
-          {{ metadataForm.get('description')?.value?.length || 0 }}/1000
-        </mat-hint>
-      </mat-form-field>
-
       <div
-        class="form-row"
+        class="step-content"
       >
-        <!-- Origem -->
-        <mat-form-field
-          appearance="outline"
-          class="half-width"
-        >
-          <mat-label>
-            Origem *
-          </mat-label>
-          <mat-icon
-            matPrefix
+        <form [formGroup]="metadataForm">
+          <!-- Título -->
+          <mat-form-field
+            appearance="outline"
+            class="full-width"
           >
-            source
-          </mat-icon>
-          <mat-select
-            formControlName="source"
-          >
-            @for (opt of sourceOptions; track opt.value) {
-              <mat-option [value]="opt.value">
-                {{ opt.label }}
-              </mat-option>
+            <mat-label>
+              Título *
+            </mat-label>
+            <mat-icon
+              matPrefix
+            >
+              title
+            </mat-icon>
+            <input matInput formControlName="title" required placeholder="Nome do Documento" maxlength="200" />
+            <mat-hint
+              align="end"
+            >
+              {{ metadataForm.get('title')?.value?.length || 0 }}/200
+            </mat-hint>
+            @if (metadataForm.get('title')?.hasError('required') && metadataForm.get('title')?.touched) {
+              <mat-error>
+                O título é obrigatório
+              </mat-error>
             }
-          </mat-select>
-        </mat-form-field>
+            @if (metadataForm.get('title')?.hasError('minlength')) {
+              <mat-error>
+                O título deve conter pelo menos 3 caracteres
+              </mat-error>
+            }
+          </mat-form-field>
 
-        <!-- Data de expiração -->
-        <mat-form-field
-          appearance="outline"
-          class="half-width"
-        >
-          <mat-label>
-            Expira em (opcional)
-          </mat-label>
-          <mat-icon
-            matPrefix
+          <!-- Descrição -->
+          <mat-form-field
+            appearance="outline"
+            class="full-width"
           >
-            event
-          </mat-icon>
-          <input matInput [matDatepicker]="picker" formControlName="expiresAt" [min]="minDate" placeholder="DD/MM/AAAA" />
-          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-          <mat-datepicker #picker></mat-datepicker>
-        </mat-form-field>
-      </div>
+            <mat-label>
+              Descrição
+            </mat-label>
+            <mat-icon
+              matPrefix
+            >
+              notes
+            </mat-icon>
+            <textarea matInput formControlName="description" placeholder="Descrição do Documento" maxlength="1000" rows="3"></textarea>
+            <mat-hint
+              align="end"
+            >
+              {{ metadataForm.get('description')?.value?.length || 0 }}/1000
+            </mat-hint>
+          </mat-form-field>
 
-      <!-- Resumo do arquivo selecionado -->
-      <div
-        class="file-summary"
-      >
-        <mat-icon
-          [style.color]="getFileIconColor()"
+          <div
+            class="form-row"
+          >
+            <!-- Origem -->
+            <mat-form-field
+              appearance="outline"
+              class="half-width"
+            >
+              <mat-label>
+                Origem *
+              </mat-label>
+              <mat-icon
+                matPrefix
+              >
+                source
+              </mat-icon>
+              <mat-select
+                formControlName="source"
+              >
+                @for (opt of sourceOptions; track opt.value) {
+                  <mat-option [value]="opt.value">
+                    {{ opt.label }}
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <!-- Data de expiração -->
+            <mat-form-field
+              appearance="outline"
+              class="half-width"
+            >
+              <mat-label>
+                Expira em (opcional)
+              </mat-label>
+              <mat-icon
+                matPrefix
+              >
+                event
+              </mat-icon>
+              <input matInput [matDatepicker]="picker" formControlName="expiresAt" [min]="minDate" placeholder="DD/MM/AAAA" />
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+            </mat-form-field>
+          </div>
+
+          <!-- Resumo do arquivo selecionado -->
+          <div
+            class="file-summary"
+          >
+            <mat-icon
+              [style.color]="getFileIconColor()"
+            >
+              {{ getFileIcon() }}
+            </mat-icon>
+            <div>
+              <span
+                class="summary-name"
+              >
+                {{ selectedFile?.name }}
+              </span>
+              <span
+                class="summary-size"
+              >
+                {{ formatFileSize(selectedFile?.size ?? 0) }}
+              </span>
+            </div>
+            <button
+              mat-button
+              color="primary"
+              matStepperPrevious
+              type="button"
+            >
+              Alterar arquivo
+            </button>
+          </div>
+        </form>
+
+        <div
+          class="step-actions"
         >
-          {{ getFileIcon() }}
-        </mat-icon>
-        <div>
-          <span
-            class="summary-name"
-          >
-            {{ selectedFile?.name }}
-          </span>
-          <span
-            class="summary-size"
-          >
-            {{ formatFileSize(selectedFile?.size ?? 0) }}
-          </span>
+          <button mat-button matStepperPrevious>
+            <mat-icon>arrow_back</mat-icon>
+            Anterior
+          </button>
+          <button mat-raised-button color="primary"
+            [disabled]="metadataForm.invalid || uploading"
+            (click)="submit()">
+            @if (uploading) {
+              <mat-progress-spinner diameter="20" mode="indeterminate" color="accent">
+              </mat-progress-spinner>
+            } @else {
+              <mat-icon>send</mat-icon>
+            }
+            {{ uploading ? 'Enviando...' : 'Enviar Documento' }}
+          </button>
         </div>
+        @if (uploading) {
+          <mat-progress-bar mode="determinate" [value]="uploadProgress" class="upload-progress">
+          </mat-progress-bar>
+        }
       </div>
     </mat-step>
   </mat-stepper>
