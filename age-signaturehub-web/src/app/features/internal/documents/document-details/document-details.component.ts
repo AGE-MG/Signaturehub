@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { DocumentDto, DocumentStatusColor, DocumentStatusLabel, formatFileSize } from '../../../../core/models/document.model';
+import { DocumentDto, DocumentSource, DocumentStatusColor, DocumentStatusLabel, formatFileSize } from '../../../../core/models/document.model';
 import { DocumentStatus } from '../../../../core/models/dasboard.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DocumentService } from '../../../../core/services/document.service';
@@ -125,5 +125,78 @@ export class DocumentDetailsComponent implements OnInit {
     if (!confirm('Tem certeza que deseja assinar este documento?')) return;
 
     this.actionLoading = true;
+
+    this.documentService.signDocument(this.document.id).subscribe({
+      next: (updatedDoc) => {
+        this.document = updatedDoc;
+        this.actionLoading = false;
+        this.snackBar.open('Documento assinado com sucesso', 'Fechar', { duration: 3000 });
+      },
+      error: () => {
+        this.actionLoading = false;
+        this.snackBar.open('Falha ao assinar o documento', 'Fechar', { duration: 3000 });
+      }
+    })
+  }
+
+  confirmDelete(): void {
+    if (!this.document || !this.canDelete) return;
+    if (!confirm('Tem certeza que deseja excluir este documento? Esta ação não pode ser desfeita.')) return;
+
+    this.actionLoading = true;
+    this.documentService.deleteDocument(this.document.id).subscribe({
+      next: () => {
+        this.snackBar.open('Documento excluído com sucesso', 'Fechar', { duration: 3000 });
+        this.router.navigate(['/documents']);
+      },
+      error: () => {
+        this.actionLoading = false;
+        this.snackBar.open('Falha ao excluir o documento', 'Fechar', { duration: 3000 });
+      }
+    })
+  }
+
+  getFileIcon(): string {
+    const ext = this.document?.fileExtension?.toLowerCase();
+    const map: Record<string, string> = {
+      '.pdf': 'picture_as_pdf',
+      '.doc': 'description',
+      '.docx': 'description',
+      '.txt': 'article',
+    };
+    return map[ext ?? ''] ?? 'insert_drive_file';
+  }
+
+  getFileIconColor(): string {
+    const ext = this.document?.fileExtension?.toLowerCase();
+    const map: Record<string, string> = {
+      '.pdf': '#e53935',
+      '.doc': '#1565c0',
+      '.docx': '#1565c0',
+      '.txt': '#757575',
+    };
+    return map[ext ?? ''] ?? '#94a3b8';
+  }
+
+  getSourceClass(source?: DocumentSource): string {
+    const map: Record<string, string> = {
+      [DocumentSource.internal]: 'source-interno',
+      [DocumentSource.Tribunus]: 'source-tribunus',
+      [DocumentSource.TJMG]: 'source-tjmg',
+      [DocumentSource.external]: 'source-externo',
+    };
+    return map[source ?? ''] ?? 'source-externo';
+  }
+
+  getSignatoryInitials(name: string): string {
+    return name
+      .split(' ')
+      .slice(0, 2)
+      .map((n) => n.charAt(0).toUpperCase())
+      .join('');
+  }
+
+  goBack(): void {
+    this.router.navigate(['/documents']);
   }
 }
