@@ -72,4 +72,58 @@ export class DocumentDetailsComponent implements OnInit {
       )
     )
   }
+
+  get canDelete(): boolean {
+    return (
+      !!this.document &&
+      (
+        this.document.status === DocumentStatus.Draft ||
+        this.document.status === DocumentStatus.Cancelled
+      )
+    )
+  }
+
+  get totalSignatories(): number {
+    return (
+      this.document?.signatureFlows.reduce(
+        (acc, flow) => acc + (flow.signatories.length ?? 0),
+        0
+      ) ?? 0
+    )
+  }
+
+  get signedCount(): number {
+    return (
+      this.document?.signatureFlows.reduce(
+        (acc, flow) => acc + (flow.signatories?.filter(s => !!s.signedAt).length ?? 0),
+        0
+      ) ?? 0
+    )
+  }
+
+  get signatureProcess(): number {
+    if (!this.totalSignatories) return 0;
+    return Math.round((this.signedCount / this.totalSignatories) * 100);
+  }
+
+  download(): void {
+    if (!this.document) return;
+    this.documentService
+      .downloadDocument(this.document.id, this.document.originalFilename)
+      .subscribe({
+        next: (blob) => {
+          this.documentService.triggerDownload(blob, this.document?.originalFilename ?? 'documento');
+        },
+        error: () => {
+          this.snackBar.open('Falha ao baixar o documento', 'Fechar', { duration: 3000 });
+        }
+      })
+  }
+
+  confirmSign(): void {
+    if (!this.document || !this.canSign) return;
+    if (!confirm('Tem certeza que deseja assinar este documento?')) return;
+
+    this.actionLoading = true;
+  }
 }
