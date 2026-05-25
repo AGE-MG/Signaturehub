@@ -5,10 +5,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DocumentService } from '../../../../core/services/document.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { MatIconModule } from "@angular/material/icon";
+import { MatCardModule } from "@angular/material/card";
 
 @Component({
   selector: 'app-document-details',
-  imports: [],
+  imports: [MatProgressSpinner, MatIconModule, MatCardModule],
   templateUrl: './document-details.component.html',
   styleUrls: ['./document-details.component.scss'],
 })

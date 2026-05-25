@@ -1,1 +1,129 @@
-<p>document-details works!</p>
+<div
+class="details-page">
+  @if (loading) {
+    <div>
+      <mat-spinner
+        mode="indeterminate"
+        diameter="48"
+      ></mat-spinner>
+      <p>Carregando documento...</p>
+    </div>
+  } @else if (document) {
+    <div
+      class="page-header"
+    >
+      <div
+        class="header-nav"
+      >
+        <button
+          mat-icon-button
+          (click)="goBack()"
+          matTooltip="Voltar para documentos"
+        >
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div
+          class="breadcrumbs"
+        >
+          <span
+            class="breadcrumb-link"
+            (click)="goBack()"
+          >
+            Documentos
+          </span>
+          <span class="breadcrumb-sep">chevron_right</span>
+          <span
+            class="breadcrumb-current"
+          >
+            {{ document.title }}
+          </span>
+        </div>
+      </div>
+
+      <div
+        class="header-actions"
+      >
+        <button
+          mat-stroked-button
+          (click)="download()"
+        >
+          <mat-icon>download</mat-icon>
+          Baixar
+        </button>
+        @if (canSign) {
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="confirmSign()"
+            [disabled]="actionLoading"
+          >
+            @if (actionLoading) {
+              <mat-spinner
+                mode="indeterminate"
+                diameter="18"
+              ></mat-spinner>
+            } @else {
+              <mat-icon>draw</mat-icon>
+              Assinar Documento
+            }
+          </button>
+        }
+        @if (canDelete) {
+          <button
+            mat-stroked-button
+            color="warn"
+            (click)="confirmDelete()"
+            [disabled]="actionLoading"
+          >
+            @if (actionLoading) {
+              <mat-spinner
+                mode="indeterminate"
+                diameter="18"
+              ></mat-spinner>
+            } @else {
+              <mat-icon>delete</mat-icon>
+              Excluir Documento
+            }
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Title card -->
+    <mat-card
+      class="title-card"
+    >
+      <div
+        class="title-card-content"
+      >
+        <mat-icon
+          [style.color]="getFileIconColor()"
+          class="doc-main-icon"
+        >
+          {{getFileIcon()}}
+        </mat-icon>
+        <div
+          class="title-info"
+        >
+          <h2
+            class="doc-title"
+          >
+            {{ document.title }}
+          </h2>
+          <p
+            class="doc-filename"
+          >
+            {{ document.originalFilename }}
+          </p>
+          @if (document.description) {
+            <p
+              class="doc-description"
+            >
+              {{ document.description }}
+            </p>
+          }
+        </div>
+      </div>
+    </mat-card>
+  }
+</div>
