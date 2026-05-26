@@ -123,7 +123,100 @@ class="details-page">
             </p>
           }
         </div>
+        <div
+          class="title-badges"
+        >
+          <span
+            class="source-chip {{getSourceClass(document.source)}}"
+          >
+            {{  document.source ?? 'interno'}}
+          </span>
+          <span
+            class="status-chip"
+            [style.background]="DocumentStatusColor[document.status] + '18'"
+            [style.color]="DocumentStatusColor[document.status]"
+            [style.border-color]="DocumentStatusColor[document.status] + '50'"
+          >
+            {{DocumentStatusLabel[document.status]}}
+          </span>
+        </div>
       </div>
     </mat-card>
+
+    <!-- tabs -->
+    <mat-tab-group
+      animationDuration="200ms"
+      class="details-tabs"
+    >
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">info</mat-icon>
+          detalhes
+        </ng-template>
+
+        <div
+          class="tab-content"
+        >
+          <div
+            class="details-grid"
+          >
+
+          <div
+            class="detail-group"
+          >
+            <h3
+              class="group-title"
+            >
+              Informações do Arquivo
+            </h3>
+            <mat-divider></mat-divider>
+            <div
+              class="detail-list"
+            >
+              <div
+                class="detail-row"
+              >
+                <span class="detail-label">Nome do Arquivo</span>
+                <span
+                  class="detail-value"
+                >
+                  {{document.originalFilename}}
+                </span>
+              </div>
+              <div
+                class="detail-row"
+              >
+                <span
+                  class="detail-label"
+                >
+                  Extensão
+                </span>
+                <span
+                  class="detail-value"
+                >
+                  {{document.fileExtension.toUpperCase()}}
+                </span>
+              </div>
+              <div
+                class="detail-row"
+              >
+                <span
+                  class="detail-label"
+                >
+                  Tamanho
+                </span>
+                <span
+                  class="detail-value"
+                >
+                  {{formatFileSize(document.fileSizeInBytes)}}
+                </span>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
   }
 </div>

@@ -8,10 +8,13 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatIconModule } from "@angular/material/icon";
 import { MatCardModule } from "@angular/material/card";
+import {MatTabsModule} from "@angular/material/tabs"
+import { CdkNoDataRow } from "@angular/cdk/table";
+import { MatDivider } from "@angular/material/divider";
 
 @Component({
   selector: 'app-document-details',
-  imports: [MatProgressSpinner, MatIconModule, MatCardModule],
+  imports: [MatProgressSpinner, MatIconModule, MatCardModule, MatTabsModule, CdkNoDataRow, MatDivider],
   templateUrl: './document-details.component.html',
   styleUrls: ['./document-details.component.scss'],
 })
