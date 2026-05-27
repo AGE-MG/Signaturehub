@@ -211,6 +211,80 @@ class="details-page">
                   {{formatFileSize(document.fileSizeInBytes)}}
                 </span>
               </div>
+              <div
+                class="detail-row"
+              >
+                <span
+                  class="detail-label"
+                >
+                  Tipo MIME
+                </span>
+                <span
+                  class="detail-value"
+                >
+                  {{document.mimeType}}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="detail-group"
+          >
+            <h3
+              class="group-title"
+            >
+              Metadados
+            </h3>
+            <mat-divider></mat-divider>
+            <div
+              class="detail-list"
+            >
+              <div
+                class="detail-row"
+              >
+                <span
+                  class="detail-label"
+                >
+                  Origem
+                </span>
+                <span
+                  class="source-chip {{getSourceClass(document.source)}}"
+                >
+                  {{document.source ?? 'interno'}}
+                </span>
+              </div>
+              <div
+                class="detail-row"
+              >
+                <span
+                  class="detail-label"
+                >
+                  Status
+                </span>
+                <span
+                  class="status-chip"
+                  [style.background]="DocumentStatusColor[document.status] + '18'"
+                  [style.color]="DocumentStatusColor[document.status]"
+                  [style.border-color]="DocumentStatusColor[document.status] + '50'"
+                >
+                  {{DocumentStatusLabel[document.status]}}
+                </span>
+              </div>
+              <div
+                class="detail-row"
+              >
+                <span
+                  class="detail-label"
+                >
+                  Criado em
+                </span>
+                <span
+                  class="detail-value"
+                >
+                  {{document.createdAt | date:'dd/MM/yyyy HH:mm'}}
+                </span>
+              </div>
             </div>
           </div>
           </div>
