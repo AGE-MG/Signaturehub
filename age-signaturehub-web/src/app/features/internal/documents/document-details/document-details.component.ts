@@ -12,10 +12,11 @@ import {MatTabsModule} from "@angular/material/tabs"
 import { CdkNoDataRow } from "@angular/cdk/table";
 import { MatDivider } from "@angular/material/divider";
 import { DatePipe } from '@angular/common';
+import { MatProgressBar } from "@angular/material/progress-bar";
 
 @Component({
   selector: 'app-document-details',
-  imports: [MatProgressSpinner, MatIconModule, MatCardModule, MatTabsModule, CdkNoDataRow, MatDivider, DatePipe],
+  imports: [MatProgressSpinner, MatIconModule, MatCardModule, MatTabsModule, CdkNoDataRow, MatDivider, DatePipe, MatProgressBar],
   templateUrl: './document-details.component.html',
   styleUrls: ['./document-details.component.scss'],
 })

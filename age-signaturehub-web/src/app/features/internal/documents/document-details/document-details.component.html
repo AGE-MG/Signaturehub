@@ -285,9 +285,198 @@ class="details-page">
                   {{document.createdAt | date:'dd/MM/yyyy HH:mm'}}
                 </span>
               </div>
+              <div
+                class="detail-row"
+              >
+                <span
+                  class="detail-label"
+                >
+                  Última Modificação
+                </span>
+                <span
+                  class="detail-value"
+                >
+                  {{document.updatedAt | date:'dd/MM/yyyy HH:mm'}}
+                </span>
+              </div>
+              @if (document.expiresAt) {
+                <div
+                  class="detail-row"
+                >
+                  <span
+                    class="detail-label"
+                  >
+                    Expira em
+                  </span>
+                  <span
+                    class="detail-value warn-text"
+                  >
+                    {{document.expiresAt | date:'dd/MM/yyyy HH:mm'}}
+                  </span>
+                </div>
+              }
             </div>
           </div>
           </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab 2: Assinaturas -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">draw</mat-icon>
+          assinaturas
+          @if (totalSignatories > 0) {
+            <span
+              class="tab-count"
+              [class.complete]="signedCount === totalSignatories"
+            >
+              {{signedCount}} / {{totalSignatories}}
+            </span>
+          }
+        </ng-template>
+
+        <div
+          class="tab-content"
+        >
+          @if(!document.signatureFlows.length) {
+            <div
+              class="empty-tab-state"
+            >
+              <mat-icon>draw</mat-icon>
+              <p>Este documento não possui assinaturas.</p>
+            </div>
+          } @else {
+
+            <!-- Progress Bar -->
+            <div
+              class="signature-progress-card"
+            >
+              <div
+                class="progress-header"
+              >
+                <span>
+                  Progresso das Assinaturas
+                </span>
+                <strong>{{signedCount}} de {{totalSignatories}} assinado{{ totalSignatories !== 1 ? 's' : '' }}</strong>
+              </div>
+
+              <mat-progress-bar
+                mode="determinate"
+                [value]="signatureProcess"
+                [color]="signatureProcess === 100 ? 'primary' : 'accent'"
+              ></mat-progress-bar>
+            </div>
+
+            <!-- Flows -->
+            @for (flow of document.signatureFlows; track flow.id) {
+              <div
+                class="flow-card"
+              >
+                <div
+                  class="flow-header"
+                >
+                  <div
+                    class="flow-title"
+                  >
+                    <mat-icon>
+                      account_tree
+                    </mat-icon>
+                    <span>
+                      Fluxo {{flow.order + 1}}
+                    </span>
+                  </div>
+                  <span
+                    class="flow-status-badge"
+                  >
+                    {{ flow.status}}
+                  </span>
+                </div>
+
+                <mat-divider></mat-divider>
+
+                <div
+                  class="signatories-list"
+                >
+                  @for (sig of flow.signatories; track sig.id) {
+                    <div
+                      class="signatory-row"
+                      [class.signed]="!!sig.signedAt"
+                    >
+                      <div
+                        class="signatory-avatar"
+                      >
+                        {{getSignatoryInitials(sig.userName)}}
+                      </div>
+                      <div
+                        class="signatory-info"
+                        >
+                        <span
+                          class="signatory-name"
+                        >
+                          {{sig.userName}}
+                        </span>
+                        <span
+                          class="signatory-email"
+                        >
+                          {{sig.email}}
+                        </span>
+                      </div>
+                      <div
+                        class="signatory-status"
+                      >
+                        @if (sig.signedAt) {
+                          <mat-icon
+                            class="signed-icon"
+                          >
+                            check-circle
+                          </mat-icon>
+                          <div
+                            class="signed-details"
+                          >
+                            <span
+                              class="signed-label"
+                            >
+                              Assinado
+                            </span>
+                            <span
+                              class="signed-date"
+                            >
+                              {{sig.signedAt | date:'dd/MM/yyyy HH:mm'}}
+                            </span>
+                          </div>
+                        } @else {
+                          <mat-icon
+                            class="pending-icon"
+                          >
+                            schedule
+                          </mat-icon>
+                          <span
+                            class="pending-label"
+                          >
+                            Pendente
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                @if (flow.completedAt) {
+                  <div
+                    class="flow-footer"
+                  >
+                    <mat-icon>
+                      check
+                    </mat-icon>
+                    <span>
+                      Fluxo concluído em {{flow.completedAt | date:'dd/MM/yyyy HH:mm'}}
+                    </span>
+                  </div>
+                }
+              </div>
+            }
+          }
         </div>
       </mat-tab>
 
