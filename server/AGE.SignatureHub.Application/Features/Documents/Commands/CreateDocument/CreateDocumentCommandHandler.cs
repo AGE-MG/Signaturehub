@@ -8,10 +8,11 @@ using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.DTOs.Document;
 using AGE.SignatureHub.Domain.Entities;
 using AutoMapper;
+using MediatR;
 
 namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocument
 {
-    public class CreateDocumentCommandHandler
+    public class CreateDocumentCommandHandler : IRequestHandler<CreateDocumentCommand, BaseResponse<DocumentDto>>
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStorageService _storageService;

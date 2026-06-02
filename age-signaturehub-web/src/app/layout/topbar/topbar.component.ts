@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, Inject, NgZone, OnDestroy, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { User } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { MatIconModule } from "@angular/material/icon";
@@ -25,19 +26,25 @@ export class TopbarComponent implements OnInit, OnDestroy {
   notifications: NotificationDto[] = [];
   unreadCount: number = 0;
   loadingNotifications: boolean = false;
+  private readonly isBrowser: boolean;
   private destroy$ = new Subject<void>();
 
   constructor(
     private authService: AuthService,
     private dashboardService: DashboardService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private ngZone: NgZone,
+    @Inject(PLATFORM_ID) private platformId: object
   ) {
-
+    this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
   ngOnInit(): void {
     this.loadCurrentUser();
+    if (!this.isBrowser) {
+      return;
+    }
     this.loadNotifications();
     this.startNotificationsPolling();
   }
@@ -62,13 +69,17 @@ export class TopbarComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe({
       next: (notifications) => {
-        this.notifications = notifications;
-        this.unreadCount = notifications.filter(n => !n.isRead).length;
-        this.loadingNotifications = false;
+        this.ngZone.run(() => {
+          this.notifications = notifications;
+          this.unreadCount = notifications.filter(n => !n.isRead).length;
+          this.loadingNotifications = false;
+        });
       },
       error: () => {
-        console.error('Failed to load notifications');
-        this.loadingNotifications = false;
+        this.ngZone.run(() => {
+          console.error('Failed to load notifications');
+          this.loadingNotifications = false;
+        });
       }}
     )
   }
@@ -80,22 +91,24 @@ export class TopbarComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe({
       next: (notifications) => {
-        const previousUnreadCount = this.unreadCount;
-        this.notifications = notifications;
-        this.unreadCount = notifications.filter(n => !n.isRead).length;
+        this.ngZone.run(() => {
+          const previousUnreadCount = this.unreadCount;
+          this.notifications = notifications;
+          this.unreadCount = notifications.filter(n => !n.isRead).length;
 
-        if (this.unreadCount > previousUnreadCount) {
-          this.snackBar.open(
-            `Você tem ${this.unreadCount - previousUnreadCount} nova(s) notificação(ões)`,
-            'Fechar',
-            {
-              duration: 5000,
-              horizontalPosition: 'end',
-              verticalPosition: 'top',
-              panelClass: ['info-snackbar']
-            }
-          )
-        }
+          if (this.unreadCount > previousUnreadCount) {
+            this.snackBar.open(
+              `Você tem ${this.unreadCount - previousUnreadCount} nova(s) notificação(ões)`,
+              'Fechar',
+              {
+                duration: 5000,
+                horizontalPosition: 'end',
+                verticalPosition: 'top',
+                panelClass: ['info-snackbar']
+              }
+            )
+          }
+        });
       },
       error: (err) => {
         console.error('Error polling notifications', err);

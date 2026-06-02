@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, Inject, NgZone, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortModule,  } from '@angular/material/sort';
 import { MatTableDataSource, MatHeaderCell, MatColumnDef, MatTableModule } from '@angular/material/table';
@@ -18,6 +18,7 @@ import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatInput } from '@angular/material/input';
 import { A11yModule } from "@angular/cdk/a11y";
 import { DatePipe, LowerCasePipe } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { MatMenuModule } from "@angular/material/menu";
 import { MatDividerModule } from '@angular/material/divider';
 
@@ -57,7 +58,7 @@ export class DocumentListComponent implements OnInit {
   dataSource = new MatTableDataSource<DocumentDto>([]);
   displayedColumns = ['icon', 'title', 'source', 'status', 'size', 'updatedAt', 'actions'];
 
-  loading = false;
+  loading = true;
   totalCount = 0;
   pageSize = 10;
   pageIndex = 0;
@@ -75,15 +76,23 @@ export class DocumentListComponent implements OnInit {
 
   readonly statusOptions = Object.entries(DocumentStatusLabel).map(([value, label]) => ({ value: Number(value) as DocumentStatus, label }));
   readonly sourceOptions = Object.values(DocumentSource).map((v) => ({ value: v, label: v }));
+  private isBrowser = false;
 
   constructor(
     private router: Router,
     private documentService: DocumentService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-  ) { }
+    private ngZone: NgZone,
+    @Inject(PLATFORM_ID) private platformId: object
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
   ngOnInit(): void {
+    if (!this.isBrowser) {
+      return;
+    }
     this.loadDocuments();
   }
 
@@ -97,19 +106,23 @@ export class DocumentListComponent implements OnInit {
       pageSize: this.pageSize,
     }).subscribe({
       next: (result) => {
-        if (Array.isArray(result)) {
-          this.dataSource.data = result;
-          this.totalCount = result.length;
-        } else {
-          this.dataSource.data = result.items ?? [];
-          this.totalCount = result.totalCount ?? 0;
-        }
-        this.loading = false;
+        this.ngZone.run(() => {
+          if (Array.isArray(result)) {
+            this.dataSource.data = result;
+            this.totalCount = result.length;
+          } else {
+            this.dataSource.data = result.items ?? [];
+            this.totalCount = result.totalCount ?? 0;
+          }
+          this.loading = false;
+        });
       },
       error: (error) => {
-        console.error('Error loading documents', error);
-        this.snackBar.open('Erro ao carregar documentos', 'Fechar', { duration: 3000 });
-        this.loading = false;
+        this.ngZone.run(() => {
+          console.error('Error loading documents', error);
+          this.snackBar.open('Erro ao carregar documentos', 'Fechar', { duration: 3000 });
+          this.loading = false;
+        });
       }
     })
   }

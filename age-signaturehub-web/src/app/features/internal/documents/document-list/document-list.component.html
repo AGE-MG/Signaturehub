@@ -52,7 +52,7 @@
         </mat-icon>
         <input
           matInput
-          ngModel="searchQuery"
+          [(ngModel)]="searchQuery"
           (keyup.enter)="onSearch()"
           placeholder="Título, arquivo ou origem..."
         />
@@ -72,7 +72,7 @@
       >
         <mat-label>Status</mat-label>
         <mat-select
-          ngModel="selectedStatus"
+          [(ngModel)]="selectedStatus"
           (ngModelChange)="onStatusFilter($event)"
         >
           <mat-option
@@ -96,7 +96,7 @@
       >
         <mat-label>Status</mat-label>
         <mat-select
-          ngModel="selectedSource"
+          [(ngModel)]="selectedSource"
           (ngModelChange)="onSourceFilter()"
         >
           <mat-option [value]="null">

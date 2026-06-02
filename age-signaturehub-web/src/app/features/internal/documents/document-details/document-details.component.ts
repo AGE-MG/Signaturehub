@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, NgZone, OnInit } from '@angular/core';
 import { DocumentDto, DocumentSource, DocumentStatusColor, DocumentStatusLabel, formatFileSize } from '../../../../core/models/document.model';
 import { DocumentStatus } from '../../../../core/models/dasboard.model';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -36,7 +36,8 @@ export class DocumentDetailsComponent implements OnInit {
     private route: ActivatedRoute,
     private documentService: DocumentService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private ngZone: NgZone
   ) {}
 
   ngOnInit(): void {
@@ -46,7 +47,7 @@ export class DocumentDetailsComponent implements OnInit {
 
     this.loadDocument(() => {
       if (action === 'sign' && this.canSign) {
-        this.confirmSign();
+        setTimeout(() => this.confirmSign(), 0);
       }
     });
   }
@@ -60,13 +61,18 @@ export class DocumentDetailsComponent implements OnInit {
     this.loading = true;
     this.documentService.getDocumentById(this.documentId).subscribe({
       next: (doc) => {
-        this.document = doc;
-        this.loading = false;
-        callback?.();
+        this.ngZone.run(() => {
+          this.document = doc;
+          this.loading = false;
+          callback?.();
+        });
       },
       error: () => {
-        this.snackBar.open('Falha ao carregar os detalhes do documento', 'Fechar', { duration: 3000 });
-        this.router.navigate(['/documents']);
+        this.ngZone.run(() => {
+          this.loading = false;
+          this.snackBar.open('Falha ao carregar os detalhes do documento', 'Fechar', { duration: 3000 });
+          this.router.navigate(['/documents']);
+        });
       },
     });
   }
@@ -132,13 +138,31 @@ export class DocumentDetailsComponent implements OnInit {
     if (!this.document || !this.canSign) return;
     if (!confirm('Tem certeza que deseja assinar este documento?')) return;
 
+    const pendingSigner = this.document.signatureFlows
+      .flatMap(flow => flow.signatories ?? [])
+      .find(s => !s.signedAt);
+
+    if (!pendingSigner) {
+      this.snackBar.open('Nenhum signatário pendente encontrado para assinatura.', 'Fechar', { duration: 3000 });
+      return;
+    }
+
     this.actionLoading = true;
 
-    this.documentService.signDocument(this.document.id).subscribe({
-      next: (updatedDoc) => {
-        this.document = updatedDoc;
+    const signPayload = {
+      signerId: pendingSigner.id,
+      signatureType: 1,
+      certificateData: [],
+      pin: '',
+      deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
+      location: 'WebApp'
+    };
+
+    this.documentService.signDocument(signPayload).subscribe({
+      next: () => {
         this.actionLoading = false;
         this.snackBar.open('Documento assinado com sucesso', 'Fechar', { duration: 3000 });
+        this.loadDocument();
       },
       error: () => {
         this.actionLoading = false;

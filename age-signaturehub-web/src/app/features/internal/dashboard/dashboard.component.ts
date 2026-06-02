@@ -6,7 +6,8 @@ import { MatTableModule } from "@angular/material/table";
 import { MatChip } from "@angular/material/chips";
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
-import { DatePipe } from '@angular/common';
+import { DatePipe, isPlatformBrowser } from '@angular/common';
+import { Inject, NgZone, PLATFORM_ID } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { DashboardService } from '../../../core/services/dashboard.service';
 import { forkJoin } from 'rxjs';
@@ -36,14 +37,22 @@ export class DashboardComponent implements OnInit {
   stats: StatCard[] = [];
   recentDocuments: RecentDocument[] = [];
   displayedColumns: string[] = ['title', 'status', 'progress', 'date', 'actions'];
+  private readonly isBrowser: boolean;
 
   constructor(
     private router: Router,
     private authService: AuthService,
-    private dashboardService: DashboardService
-  ) { }
+    private dashboardService: DashboardService,
+    private ngZone: NgZone,
+    @Inject(PLATFORM_ID) private platformId: object
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
   ngOnInit(): void {
+    if (!this.isBrowser) {
+      return;
+    }
     this.loadUserName();
     this.loadDashboardData();
   }
@@ -65,13 +74,17 @@ export class DashboardComponent implements OnInit {
     documents: this.dashboardService.getRecentDocuments(5)
     }).subscribe({
       next: ({ stats, documents }) => {
-        this.buildStatsCards(stats);
-        this.recentDocuments = documents;
-        this.loading = false;
+        this.ngZone.run(() => {
+          this.buildStatsCards(stats);
+          this.recentDocuments = documents;
+          this.loading = false;
+        });
       },
       error: (error) => {
-        console.error('Error loading dashboard data', error);
-        this.loading = false;
+        this.ngZone.run(() => {
+          console.error('Error loading dashboard data', error);
+          this.loading = false;
+        });
       }
     });
   }

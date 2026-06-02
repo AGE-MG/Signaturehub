@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Document;
 using AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocument;
 using AGE.SignatureHub.Application.Features.Documents.Queries.DownloadDocument;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentById;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentByStatus;
+using AutoMapper;
 using AGE.SignatureHub.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -21,11 +24,15 @@ namespace AGE.SignatureHub.API.Controllers
     {
         private readonly ILogger<DocumentsController> _logger;
         private readonly IMediator _mediator;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public DocumentsController(ILogger<DocumentsController> logger, IMediator mediator)
+        public DocumentsController(ILogger<DocumentsController> logger, IMediator mediator, IUnitOfWork unitOfWork, IMapper mapper)
         {
             _logger = logger;
             _mediator = mediator;
+            _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -55,12 +62,33 @@ namespace AGE.SignatureHub.API.Controllers
 
             if (result.Success)
             {
-                return CreatedAtAction(nameof(GetDocumentByIdQuery), new { id = result.Data.Id }, result);
+                return CreatedAtAction(nameof(GetDocumentById), new { id = result.Data.Id }, result);
             }
             else
             {
                 return BadRequest(result.Errors);
             }
+        }
+
+        /// <summary>
+        /// Gets documents for the authenticated user, with optional status filter.
+        /// </summary>
+        [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<DocumentDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetDocuments([FromQuery] DocumentStatus? status, CancellationToken cancellationToken)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            var documents = status.HasValue
+                ? await _unitOfWork.Documents.GetByStatusAsync(status.Value, cancellationToken)
+                : await _unitOfWork.Documents.GetByCreatorAsync(parsedUserId, cancellationToken);
+
+            var result = _mapper.Map<List<DocumentDto>>(documents);
+            return Ok(result);
         }
 
         /// <summary>

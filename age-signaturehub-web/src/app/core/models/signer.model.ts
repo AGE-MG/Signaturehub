@@ -1,0 +1,179 @@
+// Enums
+
+export enum SignerRole {
+  Approver = 1,
+  Signer = 2,
+  Witness = 3,
+  Notary = 4,
+  Observer = 5,
+}
+
+export enum SignatureStatus {
+  Pending = 1,
+  Signed = 2,
+  Rejected = 3,
+  Cancelled = 4,
+  Expired = 5,
+}
+
+export enum SignatureType {
+  Electronic = 1,
+  DigitalA1 = 2,
+  DigitalA3 = 3,
+  Biometric = 4,
+}
+
+// DTOs
+
+export interface CertificateInfo {
+  serialNumber?: string;
+  subjectName?: string;
+  issuerName?: string;
+  validFrom?: Date;
+  validTo?: Date;
+  thumbprint?: string;
+  isValid?: boolean;
+  rawData?: string;
+  password?: string;
+}
+
+export interface SignerDto {
+  id: string;
+  name?: string;
+  email?: string;
+  document?: string;
+  role: SignerRole;
+  signOrder: number;
+  status: SignatureStatus;
+  signatureType: SignatureType;
+  signedAt?: string;
+  rejectionReason?: string;
+  certificateInfo?: CertificateInfo;
+}
+
+export interface SignRequest {
+  signerId: string;
+  signatureType: SignatureType;
+  certificateData?: string;
+  pin?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  deviceInfo?: string;
+  location?: string;
+}
+
+export interface RejectRequest {
+  signerId: string;
+  reason?: string;
+}
+
+// Signature Flow
+
+export interface CreateSignatureFlowDto {
+  documentId: string;
+  signers: CreateSignerDto[];
+}
+
+export interface CreateSignerDto {
+  name: string;
+  email: string;
+  role: SignerRole;
+  signOrder: number;
+  signatureType: SignatureType;
+}
+
+export interface SignatureFlowDetailDto {
+  id: string;
+  documentId: string;
+  status: string;
+  order: number;
+  signatories: SignerDto[];
+  createdAt: string;
+  completedAt?: string;
+}
+
+// Audit Log
+
+export interface AuditLogDto {
+  id: string;
+  documentId: string;
+  signerId?: string;
+  userId?: string;
+  action?: string;
+  details?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  timestamp: string;
+}
+
+export interface AuditLogFilter {
+  startDate: string;
+  endDate: string
+}
+
+// User
+
+export interface UserDto {
+  id: string;
+  fullName: string;
+  email: string;
+  profilePicture?: string;
+  department?: string;
+  position?: string;
+  registrationNumber?: string;
+  roles: string[];
+}
+
+export interface UpdateProfileDto {
+  fullName: string;
+  department?: string;
+  position?: string;
+  registrationNumber?: string;
+}
+
+
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+// Display helper
+
+export const SignerRoleLabel: Record<SignerRole, string> = {
+  [SignerRole.Approver]: 'Aprovador',
+  [SignerRole.Signer]: 'Assinante',
+  [SignerRole.Witness]: 'Testemunha',
+  [SignerRole.Notary]: 'Tabelião',
+  [SignerRole.Observer]: 'Observador',
+}
+
+export const SignatureStatusLabel: Record<SignatureStatus, string> = {
+  [SignatureStatus.Pending]: 'Pendente',
+  [SignatureStatus.Signed]: 'Assinado',
+  [SignatureStatus.Rejected]: 'Rejeitado',
+  [SignatureStatus.Cancelled]: 'Cancelado',
+  [SignatureStatus.Expired]: 'Expirado',
+};
+
+export const SignatureStatusColor: Record<SignatureStatus, string> = {
+  [SignatureStatus.Pending]: '#F59E0B',
+  [SignatureStatus.Signed]: '#10B981',
+  [SignatureStatus.Rejected]: '#EF4444',
+  [SignatureStatus.Cancelled]: '#6B7280',
+  [SignatureStatus.Expired]: '#8B5CF6',
+};
+
+export const SignatureTypeLabel: Record<SignatureType, string> = {
+  [SignatureType.Electronic]: 'Assinatura Eletrônica',
+  [SignatureType.DigitalA1]: 'Certificado Digital A1',
+  [SignatureType.DigitalA3]: 'Certificado Digital A3',
+  [SignatureType.Biometric]: 'Biometria',
+};
+
+export const SignatureTypeIcon: Record<SignatureType, string> = {
+  [SignatureType.Electronic]: 'draw',
+  [SignatureType.DigitalA1]: 'verified_user',
+  [SignatureType.DigitalA3]: 'security',
+  [SignatureType.Biometric]: 'fingerprint',
+};

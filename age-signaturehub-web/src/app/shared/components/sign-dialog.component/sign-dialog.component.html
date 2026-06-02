@@ -1,0 +1,53 @@
+<div class="dialog-wrap">
+  <h2 class="dialog-title">
+    <mat-icon>draw</mat-icon>
+    Assinar Documento
+  </h2>
+  <p class="dialog-subtitle">{{ data.signer.document }}</p>
+  <mat-divider></mat-divider>
+
+  <form [formGroup]="form" class="dialog-body">
+    <mat-form-field appearance="outline" class="full-w">
+      <mat-label>Tipo de Assinatura</mat-label>
+      <mat-select formControlName="signatureType">
+        @for (opt of signatureTypeOptions; track opt.value) {
+          <mat-option [value]="opt.value">
+            <mat-icon>{{ opt.icon }}</mat-icon>
+            {{ opt.label }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (requiresCertificate) {
+      <mat-form-field appearance="outline" class="full-w">
+        <mat-label>Dados do Certificado (Base64)</mat-label>
+        <mat-icon matPrefix>security</mat-icon>
+        <textarea matInput formControlName="certificateData" rows="3"
+          placeholder="Cole os dados do certificado aqui..."></textarea>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-w">
+        <mat-label>PIN / Senha do Certificado</mat-label>
+        <mat-icon matPrefix>pin</mat-icon>
+        <input matInput type="password" formControlName="pin" placeholder="••••••" />
+      </mat-form-field>
+    }
+
+    <div class="legal-notice">
+      <mat-icon>gavel</mat-icon>
+      <p>Ao confirmar, você atesta que leu e concorda com o conteúdo deste documento.
+      A assinatura possui validade jurídica conforme a MP 2.200-2/2001 e Lei 14.063/2020.</p>
+    </div>
+  </form>
+
+  <div class="dialog-actions">
+    <button mat-button (click)="dialogRef.close()">Cancelar</button>
+    <button mat-raised-button color="primary"
+      [disabled]="form.invalid || loading"
+      (click)="confirm()">
+      @if (loading) { <mat-progress-spinner diameter="18" mode="indeterminate"></mat-progress-spinner> }
+      @else { <mat-icon>check_circle</mat-icon> }
+      Confirmar Assinatura
+    </button>
+  </div>
+</div>

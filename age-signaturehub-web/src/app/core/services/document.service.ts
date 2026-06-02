@@ -2,7 +2,8 @@ import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { CreateDocumentDto, DocumentDto, DocumentFilterParams, DocumentPagedResult, DocumentStatus } from "../models/document.model";
-import { Observable } from "rxjs";
+import { map, Observable } from "rxjs";
+import { ApiResponse } from "../models/api-response.model";
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +12,14 @@ export class DocumentService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/documents`;
 
-  getDocuments(filters?: DocumentFilterParams): Observable<DocumentPagedResult> {
+  private unwrapApiResponse<T>(response: T | ApiResponse<T>): T {
+    if (response && typeof response === 'object' && 'data' in response) {
+      return (response as ApiResponse<T>).data;
+    }
+    return response as T;
+  }
+
+  getDocuments(filters?: DocumentFilterParams): Observable<DocumentPagedResult | DocumentDto[]> {
     let params = new HttpParams();
     if (filters?.status !== undefined) {
       params = params.set('status', filters.status.toString());
@@ -30,15 +38,22 @@ export class DocumentService {
     if (filters?.pageSize !== undefined) {
       params = params.set('pageSize', filters.pageSize.toString());
     }
-    return this.http.get<DocumentPagedResult>(this.baseUrl, { params });
+    return this.http.get<DocumentPagedResult | DocumentDto[] | ApiResponse<DocumentPagedResult | DocumentDto[]>>(this.baseUrl, { params })
+      .pipe(
+        map((response) => this.unwrapApiResponse<DocumentPagedResult | DocumentDto[]>(response))
+      );
   }
 
   getDocumentById(documentId: string): Observable<DocumentDto> {
-    return this.http.get<DocumentDto>(`${this.baseUrl}/${documentId}`);
+    return this.http
+      .get<DocumentDto | ApiResponse<DocumentDto>>(`${this.baseUrl}/${documentId}`)
+      .pipe(map((response) => this.unwrapApiResponse<DocumentDto>(response)));
   }
 
   getDocumentByStatus(status: DocumentStatus): Observable<DocumentDto[]> {
-    return this.http.get<DocumentDto[]>(`${this.baseUrl}/status/${status}`);
+    return this.http
+      .get<DocumentDto[] | ApiResponse<DocumentDto[]>>(`${this.baseUrl}/by-status/${status}`)
+      .pipe(map((response) => this.unwrapApiResponse<DocumentDto[]>(response)));
   }
 
   createDocument(file: File, data: CreateDocumentDto): Observable<DocumentDto> {
@@ -55,7 +70,9 @@ export class DocumentService {
     if (data.source) {
       formData.append('source', data.source);
     }
-    return this.http.post<DocumentDto>(this.baseUrl, formData);
+    return this.http
+      .post<DocumentDto | ApiResponse<DocumentDto>>(this.baseUrl, formData)
+      .pipe(map((response) => this.unwrapApiResponse<DocumentDto>(response)));
   }
 
   downloadDocument(id: string, filename: string): Observable<Blob> {
@@ -81,7 +98,7 @@ export class DocumentService {
     return this.http.patch<DocumentDto>(`${this.baseUrl}/${documentId}/archive`, {});
   }
 
-  signDocument(id: string, signatureData?: unknown): Observable<DocumentDto> {
-    return this.http.post<DocumentDto>(`${this.baseUrl}/${id}/sign`, signatureData || {});
+  signDocument(signatureData: unknown): Observable<unknown> {
+    return this.http.post<unknown>(`${environment.apiUrl}/signers/sign`, signatureData || {});
   }
 }

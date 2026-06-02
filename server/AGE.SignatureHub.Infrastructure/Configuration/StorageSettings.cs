@@ -7,17 +7,9 @@ namespace AGE.SignatureHub.Infrastructure.Configuration
 {
     public class StorageSettings
     {
-        public string Provider { get; set; }
-        public string ConnectionString { get; set; }
-        public string ContainerName { get; set; }
-        public string LocalPath { get; set; }
-
-        public StorageSettings(string provider, string connectionString, string containerName, string localPath)
-        {
-            Provider = provider;
-            ConnectionString = connectionString;
-            ContainerName = containerName;
-            LocalPath = localPath;
-        }
+        public string Provider { get; set; } = string.Empty;
+        public string ConnectionString { get; set; } = string.Empty;
+        public string ContainerName { get; set; } = string.Empty;
+        public string LocalPath { get; set; } = string.Empty;
     }
 }

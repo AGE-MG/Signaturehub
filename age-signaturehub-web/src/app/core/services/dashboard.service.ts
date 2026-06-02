@@ -17,8 +17,8 @@ export class DashboardService {
   ) {}
 
   getStats(): Observable<DashboardStats> {
-    return this.http.get<DashboardStats>(`${this.API_URL}/stats`)
-    .pipe(map(response => response as DashboardStats));
+    return this.http.get<ApiResponse<DashboardStats>>(`${this.API_URL}/stats`)
+    .pipe(map(response => response.data as DashboardStats));
   }
 
   getRecentDocuments(count: number = 5): Observable<RecentDocument[]> {
