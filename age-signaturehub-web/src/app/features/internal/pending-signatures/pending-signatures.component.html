@@ -1,1 +1,88 @@
-<p>pending-signatures works!</p>
+<div
+  class="pending-page"
+>
+  <!-- Header -->
+  <div
+    class="page-header"
+  >
+    <div
+      class="header-left"
+    >
+      <h1
+        class="page-title"
+      >
+        Assinaturas Pendentes
+      </h1>
+      @if (!loading && pendingCount > 0) {
+        <span
+          class="pending-badge"
+        >
+          {{ pendingCount }} pendente {{ pendingCount !== 1 ? 's' : '' }}
+        </span>
+      }
+    </div>
+    <button
+      mat-icon-button
+      matTooltip="Atualizar"
+      (click)="load()"
+    >
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+
+  <!-- Loading -->
+  @if (loading) {
+    <div class="loading">
+      <mat-progress-spinner mode="indeterminate" diameter="48"></mat-progress-spinner>
+      <span>Carregando pendências...</span>
+    </div>
+  }
+
+  <!-- Empty -->
+  @if (!loading && signers.length === 0) {
+    <div class="empty-state">
+      <mat-icon class="empty-icon">task_alt</mat-icon>
+      <h3>Tudo em dia!</h3>
+      <p>Não há assinaturas pendentes no momento.</p>
+    </div>
+  }
+
+  <!-- List -->
+  @if (!loading && signers.length > 0) {
+    <div
+      class="signers-list"
+    >
+      @for (signer of signers; track signer.id) {
+        <mat-card
+          class="signer-card"
+          [class.is-pending]="isPending(signer)"
+        >
+          <div
+            class="avatar"
+          >
+            {{ getInitials(signer.name) }}
+          </div>
+
+          <div
+            class="signer-info"
+          >
+            <div
+              class="signer-top"
+            >
+              <span
+                class="doc-name"
+              >
+                {{ signer.document ?? 'Documento #' + signer.id.slice(0, 8) }}
+              </span>
+              <span
+                class="status-chip"
+              >
+
+              </span>
+            </div>
+          </div>
+        </mat-card>
+      }
+    </div>
+  }
+</div>
