@@ -58,29 +58,203 @@
           [class.is-pending]="isPending(signer)"
         >
           <div
-            class="avatar"
-          >
-            {{ getInitials(signer.name) }}
-          </div>
-
-          <div
-            class="signer-info"
+            class="card-main"
           >
             <div
-              class="signer-top"
+              class="avatar"
             >
-              <span
-                class="doc-name"
-              >
-                {{ signer.document ?? 'Documento #' + signer.id.slice(0, 8) }}
-              </span>
-              <span
-                class="status-chip"
-              >
+              {{ getInitials(signer.name) }}
+            </div>
 
-              </span>
+            <div
+              class="signer-info"
+            >
+              <div
+                class="signer-top"
+              >
+                <span
+                  class="doc-name"
+                >
+                  {{ signer.document ?? 'Documento #' + signer.id.slice(0, 8) }}
+                </span>
+                <span
+                  class="status-chip"
+                  [style.background]="SignatureStatusColor[signer.status] + '18'"
+                  [style.color]="SignatureStatusColor[signer.status]"
+                  [style.borderColor]="SignatureStatusColor[signer.status] + '40'"
+                >
+                  {{ SignatureStatusLabel[signer.status] }}
+                </span>
+              </div>
+
+              <div
+                class="signer-meta"
+              >
+                <span
+                  class="meta-item"
+                >
+                  <mat-icon>person</mat-icon>
+                  {{ signer.name ?? 'Sem nome' }}
+                </span>
+                <span
+                  class="meta-item"
+                >
+                  <mat-icon>
+                    {{ SignatureTypeIcon[signer.signatureType]}}
+                  </mat-icon>
+                  {{ SignatureTypeLabel[signer.signatureType] }}
+                </span>
+                <span
+                  class="meta-item"
+                >
+                  <mat-icon>sort</mat-icon>
+                  Ordem {{ signer.signOrder + 1 }}
+                </span>
+                <span
+                  class="meta-item"
+                >
+                  <mat-icon>badge</mat-icon>
+                  {{ SignerRoleLabel[signer.role] }}
+                </span>
+              </div>
+
+              @if (signer.rejectionReason) {
+                <div
+                  class="rejection-reason"
+                >
+                  <mat-icon>info</mat-icon>
+                  <span>Motivo: {{ signer.rejectionReason }}</span>
+                </div>
+              }
+
+              @if (signer.signedAt) {
+                <div
+                  class="signed-at"
+                >
+                  <mat-icon>check_circle</mat-icon>
+                  <span>Assinado em {{ signer.signedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+              }
+            </div>
+
+            <!-- Actions -->
+            <div
+              class="card-actions"
+            >
+              <button
+                mat-icon-button
+                matTooltip="Ver documento"
+                (click)="viewDocument(signer)"
+              >
+                <mat-icon>
+                  open_in_new
+                </mat-icon>
+              </button>
+
+              @if (isPending(signer)) {
+                <button
+                  mat-raised-button
+                  color="primary"
+                  matTooltip="Assinar documento"
+                  (click)="openSignDialog(signer)"
+                >
+                  <mat-icon>
+                    draw
+                  </mat-icon>
+                </button>
+                <button
+                  mat-raised-button
+                  color="primary"
+                  matTooltip="Rejeitar documento"
+                  (click)="openRejectDialog(signer)"
+                >
+                  <mat-icon>
+                    block
+                  </mat-icon>
+                </button>
+              }
             </div>
           </div>
+
+          <!-- Certificate  info(Collapse)-->
+          @if (signer.certificateInfo && signer.status !== SignatureStatus.Pending) {
+            <mat-expansion-panel
+              class="cert-panel"
+            >
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>verified_user</mat-icon>
+                  Informações do Certificado
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+              <div
+                class="cert-grid"
+              >
+                <div
+                  class="cert-row"
+                >
+                  <span>
+                    Emissor
+                  </span>
+                  <strong>
+                    {{ signer.certificateInfo.issuerName }}
+                  </strong>
+                </div>
+                <div
+                  class="cert-row"
+                >
+                  <span>
+                    Titular
+                  </span>
+                  <strong>
+                    {{ signer.certificateInfo.subjectName }}
+                  </strong>
+                </div>
+                <div
+                  class="cert-row"
+                >
+                  <span>
+                    Válido de
+                  </span>
+                  <strong>
+                    {{ signer.certificateInfo.validFrom | date:'dd/MM/yyyy' }}
+                  </strong>
+                </div>
+                <div
+                  class="cert-row"
+                >
+                  <span>
+                    Válido até
+                  </span>
+                  <strong>
+                    {{ signer.certificateInfo.validTo | date:'dd/MM/yyyy' }}
+                  </strong>
+                </div>
+                <div
+                  class="cert-row"
+                >
+                  <span>
+                    Serial
+                  </span>
+                  <strong>
+                    {{ signer.certificateInfo.serialNumber }}
+                  </strong>
+                </div>
+                <div
+                  class="cert-row"
+                >
+                  <span>
+                    Status
+                  </span>
+                  <strong
+                    [class.valid]="signer.certificateInfo.isValid"
+                  >
+                    {{ signer.certificateInfo.isValid ? 'Valido' : 'Invalido' }}
+                  </strong>
+                </div>
+              </div>
+            </mat-expansion-panel>
+          }
         </mat-card>
       }
     </div>

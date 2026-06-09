@@ -14,6 +14,10 @@ import { RejectDialogComponent } from '../../../shared/components/reject-dialog.
 import { MatTooltip } from "@angular/material/tooltip";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatCard } from "@angular/material/card";
+import { DatePipe } from '@angular/common';
+import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from '@angular/material/expansion';
+import { A11yModule } from "@angular/cdk/a11y";
 
 @Component({
   selector: 'app-pending-signatures',
@@ -24,7 +28,13 @@ import { MatCard } from "@angular/material/card";
     MatFormFieldModule,
     MatTooltip,
     MatProgressSpinner,
-    MatCard
+    MatCard,
+    DatePipe,
+    MatButtonModule,
+    MatExpansionPanel,
+    MatExpansionPanelHeader,
+    MatExpansionPanelTitle,
+    A11yModule
 ],
   templateUrl: './pending-signatures.component.html',
   styleUrl: './pending-signatures.component.scss',
