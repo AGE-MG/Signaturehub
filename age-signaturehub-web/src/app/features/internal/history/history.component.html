@@ -1,1 +1,40 @@
-<p>history works!</p>
+<div
+  class="history-page"
+>
+  <!-- Header -->
+  <div
+    class="page-header"
+  >
+    <div>
+      <h1
+        class="page-title"
+      >
+        Histórico de Atividades
+      </h1>
+      <p
+        class="page-subtitle"
+      >
+        Registro auditável de todas as ações realizadas nos documentos.
+      </p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <mat-card
+    class="filters-card"
+  >
+    <form
+      [formGroup]="filterForm"
+      class="filters-row"
+    >
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+      >
+        <mat-label>Data Inicial</mat-label>
+        <mat-icon matPrefix>calendar_today</mat-icon>
+      </mat-form-field>
+    </form>
+  </mat-card>
+</div>
+
