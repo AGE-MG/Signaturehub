@@ -10,6 +10,8 @@ import { Router } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { MatCard } from "@angular/material/card";
 import { MatFormField, MatLabel, MatPrefix } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { MatDatepickerInput } from "@angular/material/datepicker";
 
 
 
@@ -34,7 +36,7 @@ const ACTION_META: Record<string, ActionMeta> = {
 
 @Component({
   selector: 'app-history',
-  imports: [MatCard, MatFormField, MatLabel, MatPrefix],
+  imports: [MatCard, MatFormField, MatLabel, MatPrefix, MatInput, MatDatepickerInput],
   templateUrl: './history.component.html',
   styleUrl: './history.component.scss',
 })

@@ -33,6 +33,7 @@
       >
         <mat-label>Data Inicial</mat-label>
         <mat-icon matPrefix>calendar_today</mat-icon>
+        <input matInput [matDatepicker]="startPicker" formControlName="startDate" [max]="maxDate" />
       </mat-form-field>
     </form>
   </mat-card>
