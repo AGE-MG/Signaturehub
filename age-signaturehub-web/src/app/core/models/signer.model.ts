@@ -1,11 +1,10 @@
 // Enums
 
 export enum SignerRole {
-  Approver = 1,
-  Signer = 2,
+  Signer = 1,
+  Approver = 2,
   Witness = 3,
-  Notary = 4,
-  Observer = 5,
+  Observer = 4,
 }
 
 export enum SignatureStatus {
@@ -144,7 +143,6 @@ export const SignerRoleLabel: Record<SignerRole, string> = {
   [SignerRole.Approver]: 'Aprovador',
   [SignerRole.Signer]: 'Assinante',
   [SignerRole.Witness]: 'Testemunha',
-  [SignerRole.Notary]: 'Tabelião',
   [SignerRole.Observer]: 'Observador',
 }
 

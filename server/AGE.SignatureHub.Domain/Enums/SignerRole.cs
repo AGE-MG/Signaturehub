@@ -6,6 +6,5 @@ namespace AGE.SignatureHub.Domain.Enums
         Approver = 2,
         Witness = 3,
         Observer = 4,
-        CarbonCopy = 5
     }
 }

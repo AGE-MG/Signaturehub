@@ -1,0 +1,6 @@
+.dialog-wrap { padding:24px; min-width:380px; }
+.dialog-title { display:flex; align-items:center; gap:10px; font-size:1.125rem; font-weight:700; color:#0f172a; margin:0 0 4px; mat-icon{color:#1d4ed8} }
+.dialog-subtitle { font-size:.875rem; color:#64748b; margin:0 0 16px; }
+.dialog-body { padding:16px 0; }
+.full-w { width:100%; }
+.dialog-actions { display:flex; justify-content:flex-end; gap:10px; }

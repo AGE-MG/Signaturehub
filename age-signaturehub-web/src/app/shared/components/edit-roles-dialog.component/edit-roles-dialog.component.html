@@ -1,0 +1,36 @@
+<div
+  class="dialog-wrap"
+>
+  <h2
+  class="dialog-title"
+  >
+    <mat-icon>
+      manage_accounts
+    </mat-icon>
+    Gerenciar Funções
+  </h2>
+  <P
+    class="dialog-subtitle"
+  >
+    {{ data.user.fullName }} - {{ data.user.email }}
+  </P>
+
+  <mat-divider></mat-divider>
+  <div
+  class="dialog-body"
+  >
+    <mat-form-field
+      appearance="outline"
+      class="full-w"
+    >
+      <mat-label>
+        Funções atribuídas
+      </mat-label>
+      <mat-select
+        ngModel="selectedRoles"
+      >
+
+      </mat-select>
+    </mat-form-field>
+  </div>
+</div>

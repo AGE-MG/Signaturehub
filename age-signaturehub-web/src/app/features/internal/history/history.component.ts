@@ -1,17 +1,19 @@
 import { Component, OnInit } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { AuditLogDto } from '../../../core/models/signer.model';
 import { FormBuilder, FormsModule, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuditLogService } from '../../../core/services/signer.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { start } from 'repl';
-import { PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Router } from '@angular/router';
-import { DatePipe } from '@angular/common';
-import { MatCard } from "@angular/material/card";
+import { DatePipe, SlicePipe } from '@angular/common';
+import { MatCard, MatCardModule } from "@angular/material/card";
 import { MatFormField, MatLabel, MatPrefix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatDatepickerInput } from "@angular/material/datepicker";
+import { MatDatepicker, MatDatepickerInput, MatDatepickerModule } from "@angular/material/datepicker";
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 
 
@@ -36,9 +38,25 @@ const ACTION_META: Record<string, ActionMeta> = {
 
 @Component({
   selector: 'app-history',
-  imports: [MatCard, MatFormField, MatLabel, MatPrefix, MatInput, MatDatepickerInput],
+  imports: [
+    MatCard,
+    MatFormField,
+    MatLabel,
+    MatPrefix,
+    MatInput, MatDatepickerInput,
+    MatCardModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatDatepickerModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatTableModule,
+    DatePipe,
+    SlicePipe,
+    MatPaginatorModule
+  ],
   templateUrl: './history.component.html',
-  styleUrl: './history.component.scss',
+  styleUrls: ['./history.component.scss'],
 })
 export class HistoryComponent implements OnInit {
   dataSource = new MatTableDataSource<AuditLogDto>([]);
@@ -111,7 +129,7 @@ export class HistoryComponent implements OnInit {
     }
   }
 
-  navigateDocument(log: AuditLogDto): void {
+  navigateToDocument(log: AuditLogDto): void {
     if (log.documentId) this.router.navigate(['/documents', log.documentId]);
   }
 
