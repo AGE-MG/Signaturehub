@@ -7,7 +7,9 @@ import { CommonModule } from '@angular/common';
 import { MatIcon } from "@angular/material/icon";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatSelect } from "@angular/material/select";
+import { MatSelect, MatOption } from "@angular/material/select";
+import { MatAnchor } from "@angular/material/button";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
 
 @Component({
   selector: 'app-edit-roles-dialog',
@@ -17,7 +19,10 @@ import { MatSelect } from "@angular/material/select";
     MatDivider,
     MatFormField,
     MatLabel,
-    MatSelect
+    MatSelect,
+    MatOption,
+    MatAnchor,
+    MatProgressSpinner
 ],
   templateUrl: './edit-roles-dialog.component.html',
   styleUrl: './edit-roles-dialog.component.scss',
