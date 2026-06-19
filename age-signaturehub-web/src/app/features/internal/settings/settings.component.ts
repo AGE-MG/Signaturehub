@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { UserManagementService } from '../../../core/services/signer.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
+import { EditRolesDialogComponent } from '../../../shared/components/edit-roles-dialog.component/edit-roles-dialog.component';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const newPass = control.get('newPassword')?.value;
@@ -115,5 +116,91 @@ export class SettingsComponent implements OnInit {
       }
     })
   }
-  
+
+  savePassword(): void {
+    if (this.passwordForm.invalid) {
+      return;
+    }
+
+    this.savingPassword = true;
+    const { currentPassword, newPassword, confirmPassword }: { currentPassword: string; newPassword: string; confirmPassword: string } = this.passwordForm.value;
+    this.authService.changePassword({ currentPassword: currentPassword, newPassword: newPassword, confirmPassword: confirmPassword }).subscribe({
+      next: (res) => {
+        this.savingPassword = false;
+        this.passwordForm.reset();
+        this.snackBar.open('Senha atualizada com sucesso!', 'fechar', {
+          duration: 3000
+        })
+      },
+      error: (err) => {
+        this.savingPassword = false;
+        this.snackBar.open(err?.error?.message ?? 'Erro ao atualizar senha!', 'fechar', {
+          duration: 3000
+        })
+      }
+    })
+  }
+
+  loadUsers(): void {
+    this.loadingUsers = true;
+    this.userService.listAll().subscribe({
+      next: (users) => {
+        this.usersDataSource.data = users;
+        this.loadingUsers = false;
+      },
+      error: () => {
+        this.loadingUsers = false;
+        this.snackBar.open('Erro ao carregar usuários!', 'fechar', {
+          duration: 3000
+        })
+      }
+    })
+  }
+
+  onAdminTabSelect(): void {
+    if (this.usersDataSource.data.length === 0) {
+      this.loadUsers();
+    }
+  }
+
+  editRoles(user: UserDto): void {
+    this.dialog.open(EditRolesDialogComponent, {
+      data: { user },
+      width: '400px'
+    })
+    .afterClosed().subscribe((result) => {
+      if (result) {
+        const idx = this.usersDataSource.data.findIndex(u => u.id === result.id);
+        if (idx >= 0) {
+          const copy = [...this.usersDataSource.data];
+          copy[idx] = result;
+          this.usersDataSource.data = copy;
+        }
+      }
+    })
+  }
+
+  removeUser(user: UserDto): void {
+    if (!confirm(`Tem certeza que deseja remover o usuário ${user.fullName}?`)) {
+      return;
+    }
+
+    this.userService.remove(user.id).subscribe({
+      next: () => {
+        this.usersDataSource.data = this.usersDataSource.data.filter(u => u.id !== user.id);
+        this.snackBar.open('Usuário removido com sucesso!', 'fechar', {
+          duration: 3000
+        })
+      },
+      error: (err) => {
+        this.snackBar.open(err?.error?.message ?? 'Erro ao remover usuário!', 'fechar', {
+          duration: 3000
+        })
+      }
+    })
+  }
+
+  getInitials(fullName: string): string {
+    return fullName.split(' ').slice(0, 2).map(n => n[0].toUpperCase()).join('');
+  }
 }
