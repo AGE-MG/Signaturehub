@@ -8,6 +8,12 @@ import { UserManagementService } from '../../../core/services/signer.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { EditRolesDialogComponent } from '../../../shared/components/edit-roles-dialog.component/edit-roles-dialog.component';
+import { MatTabGroup, MatTab } from "@angular/material/tabs";
+import { CdkNoDataRow } from "@angular/cdk/table";
+import { MatIconModule } from "@angular/material/icon";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { MatCard } from "@angular/material/card";
+import { MatDivider } from "@angular/material/divider";
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const newPass = control.get('newPassword')?.value;
@@ -17,7 +23,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 
 @Component({
   selector: 'app-settings.component',
-  imports: [],
+  imports: [MatTabGroup, MatTab, CdkNoDataRow, MatIconModule, MatProgressSpinner, MatCard, MatDivider],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
