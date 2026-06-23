@@ -1,19 +1,20 @@
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { UpdateProfileDto, UserDto } from '../../../core/models/signer.model';
 import { MatTableDataSource } from '@angular/material/table';
-import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { Router } from '@angular/router';
 import { UserManagementService } from '../../../core/services/signer.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { EditRolesDialogComponent } from '../../../shared/components/edit-roles-dialog.component/edit-roles-dialog.component';
-import { MatTabGroup, MatTab } from "@angular/material/tabs";
+import { MatTabGroup, MatTab, MatTabChangeEvent } from "@angular/material/tabs";
 import { CdkNoDataRow } from "@angular/cdk/table";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatCard } from "@angular/material/card";
 import { MatDivider } from "@angular/material/divider";
+import { MatFormField, MatLabel, MatFormFieldModule } from "@angular/material/form-field";
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const newPass = control.get('newPassword')?.value;
@@ -23,7 +24,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 
 @Component({
   selector: 'app-settings.component',
-  imports: [MatTabGroup, MatTab, CdkNoDataRow, MatIconModule, MatProgressSpinner, MatCard, MatDivider],
+  imports: [MatTabGroup, MatTab, CdkNoDataRow, MatIconModule, MatProgressSpinner, MatCard, MatDivider, MatFormField, MatLabel, MatFormFieldModule, ReactiveFormsModule],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,9 +42,9 @@ export class SettingsComponent implements OnInit {
   profileForm!: FormGroup
   passwordForm!: FormGroup
 
-  hideCurrentPassword = true;
-  hideNewPassword = true;
-  hideConfirmPassword = true;
+  hideCurrentPwd = true;
+  hideNewPwd = true;
+  hideConfirmPwd = true;
 
   constructor(
     private fb: FormBuilder,
@@ -166,6 +167,14 @@ export class SettingsComponent implements OnInit {
   onAdminTabSelect(): void {
     if (this.usersDataSource.data.length === 0) {
       this.loadUsers();
+    }
+  }
+
+  onTabChange(event: MatTabChangeEvent): void {
+    const selectedTabIndex = event.index;
+    const adminTabIndex = 1; // Índice da aba "Admin" (começando do 0)
+    if (selectedTabIndex === adminTabIndex && this.isAdmin) {
+      this.onAdminTabSelect();
     }
   }
 
