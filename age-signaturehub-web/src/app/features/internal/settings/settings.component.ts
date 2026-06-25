@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { UpdateProfileDto, UserDto } from '../../../core/models/signer.model';
-import { MatTableDataSource } from '@angular/material/table';
+import { MatTableDataSource, MatColumnDef, MatTableModule } from '@angular/material/table';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { Router } from '@angular/router';
@@ -24,7 +24,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 
 @Component({
   selector: 'app-settings.component',
-  imports: [MatTabGroup, MatTab, CdkNoDataRow, MatIconModule, MatProgressSpinner, MatCard, MatDivider, MatFormField, MatLabel, MatFormFieldModule, ReactiveFormsModule],
+  imports: [MatTabGroup, MatTab, CdkNoDataRow, MatIconModule, MatProgressSpinner, MatCard, MatDivider, MatFormField, MatLabel, MatFormFieldModule, ReactiveFormsModule, MatColumnDef, MatTableModule],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
