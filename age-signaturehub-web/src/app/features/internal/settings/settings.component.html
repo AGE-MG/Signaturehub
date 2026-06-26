@@ -375,8 +375,84 @@
                     </div>
                   </td>
                 </ng-container>
+
+                <ng-container
+                  matColumnDef="email"
+                >
+                  <th mat-header-cell *matHeaderCellDef>Email</th>
+                  <td mat-cell *matCellDef="let u">{{ u.email }}</td>
+                </ng-container>
+
+                <ng-container
+                  matColumnDef="roles"
+                >
+                  <th mat-header-cell *matHeaderCellDef>Roles</th>
+                  <td mat-cell *matCellDef="let u">
+                    <div
+                      class="user-roles"
+                    >
+                      @for (role of u.roles; track role) {
+                        <span
+                          class="role-chip"
+                        >
+                          {{ role }}
+                        </span>
+                      }
+                    </div>
+                  </td>
+                </ng-container>
+
+                <ng-container
+                  matColumnDef="actions"
+                  >
+                  <th mat-header-cell *matHeaderCellDef></th>
+                  <td mat-cell *matCellDef="let u">
+                    <button
+                      mat-icon-button
+                      color="primary"
+                      matTooltip="Editar roles"
+                      (click)="editRoles(u)"
+                    >
+                      <mat-icon>manage_accounts</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      matTooltip="Excluir Usuário"
+                      (click)="removeUser(u)"
+                    >
+                      <mat-icon>person_remove</mat-icon>
+                    </button>
+                </ng-container>
+
+                <tr
+                  mat-header-row
+                  *matHeaderRowDef="usersDisplayedColumns"
+                ></tr>
+
+                <tr
+                  mat-row
+                  *matRowDef="let row; columns: usersDisplayedColumns"
+                ></tr>
               </table>
             </mat-card>
+          } @else {
+            <div
+              class="empty-state"
+            >
+              <mat-icon>group_off</mat-icon>
+              <p>
+                clique em atualizar para carregar a lista de usuários. Se não houver usuários cadastrados, a lista estará vazia.
+              </p>
+              <button
+                mat-raised-button
+                color="primary"
+                (click)="loadUsers()"
+              >
+                <mat-icon>refresh</mat-icon>
+                Atualizar Lista
+              </button>
+            </div>
           }
         </div>
       </mat-tab>

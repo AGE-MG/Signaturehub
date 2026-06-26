@@ -8,11 +8,13 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatIconModule } from "@angular/material/icon";
 import { MatCardModule } from "@angular/material/card";
-import {MatTabsModule} from "@angular/material/tabs"
+import {MatTabChangeEvent, MatTabsModule} from "@angular/material/tabs"
 import { CdkNoDataRow } from "@angular/cdk/table";
 import { MatDivider } from "@angular/material/divider";
 import { DatePipe } from '@angular/common';
 import { MatProgressBar } from "@angular/material/progress-bar";
+import { AuditLogDto } from '../../../../core/models/signer.model';
+import { AuditLogService } from '../../../../core/services/signer.service';
 
 @Component({
   selector: 'app-document-details',
@@ -22,9 +24,24 @@ import { MatProgressBar } from "@angular/material/progress-bar";
 })
 export class DocumentDetailsComponent implements OnInit {
   document: DocumentDto | null = null;
+  auditLogs: AuditLogDto[] = [];
+  loadingLogs = false;
   loading = true;
   actionLoading = false;
   documentId = '';
+
+  private readonly ACTION_META: Record<string, { label: string; icon: string; color: string }> = {
+    'document_created':    { label: 'Documento criado',    icon: 'add_circle',   color: '#10b981' },
+    'document_uploaded':   { label: 'Upload realizado',    icon: 'upload_file',  color: '#3b82f6' },
+    'document_signed':     { label: 'Assinado',            icon: 'draw',         color: '#10b981' },
+    'document_rejected':   { label: 'Rejeitado',           icon: 'cancel',       color: '#ef4444' },
+    'document_expired':    { label: 'Expirado',            icon: 'timer_off',    color: '#8b5cf6' },
+    'document_cancelled':  { label: 'Cancelado',           icon: 'block',        color: '#6b7280' },
+    'document_downloaded': { label: 'Download',            icon: 'download',     color: '#f59e0b' },
+    'document_viewed':     { label: 'Visualizado',         icon: 'visibility',   color: '#64748b' },
+    'flow_created':        { label: 'Fluxo criado',        icon: 'account_tree', color: '#3b82f6' },
+    'flow_completed':      { label: 'Fluxo concluído',     icon: 'check_circle', color: '#10b981' },
+  };
 
   readonly DocumentStatus = DocumentStatus
   readonly DocumentStatusLabel = DocumentStatusLabel
@@ -35,6 +52,7 @@ export class DocumentDetailsComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private documentService: DocumentService,
+    private auditLogService: AuditLogService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
     private ngZone: NgZone
@@ -50,6 +68,26 @@ export class DocumentDetailsComponent implements OnInit {
         setTimeout(() => this.confirmSign(), 0);
       }
     });
+  }
+
+  loadAuditLogs(): void {
+    if (!this.documentId || this.auditLogs.length > 0) return;
+    this.loadingLogs = true;
+    this.auditLogService.GetByDocument(this.documentId).subscribe({
+      next: (logs) => {
+        this.auditLogs = logs;
+        this.loadingLogs = false;
+      },
+      error: () => {
+        this.loadingLogs = false;
+        this.snackBar.open('Falha ao carregar o histórico de auditoria', 'Fechar', { duration: 3000 });
+      },
+    });
+  }
+
+  getLogMeta(action: string): { label: string; icon: string; color: string } {
+    if (!action) return { label: action ?? 'Ação', icon: 'history', color: '#94a3b8' };
+    return this.ACTION_META[action.toLowerCase().replace(/ /g, '_')] ?? { label: action, icon: 'history', color: '#94a3b8' };
   }
 
   loadDocument(callback?: () => void): void {
@@ -75,6 +113,14 @@ export class DocumentDetailsComponent implements OnInit {
         });
       },
     });
+  }
+
+  onTabChange(event: MatTabChangeEvent): void {
+    const historyTabIndex = 2;
+    const selectedTabIndex = event.index;
+    if (selectedTabIndex === historyTabIndex) {
+      this.loadAuditLogs();
+    }
   }
 
   get canSign(): boolean {
