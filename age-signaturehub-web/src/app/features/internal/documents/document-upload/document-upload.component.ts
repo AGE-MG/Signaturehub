@@ -8,7 +8,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -16,11 +15,10 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { MatChipsModule } from '@angular/material/chips';
-import { DocumentSource, formatFileSize } from '../../../../core/models/document.model';
+import { formatFileSize } from '../../../../core/models/document.model';
 import { Router } from '@angular/router';
 import { DocumentService } from '../../../../core/services/document.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { MatAccordion } from "@angular/material/expansion";
 
 interface FileValidation {
   valid: boolean;
@@ -38,7 +36,6 @@ interface FileValidation {
     MatIconModule,
     MatInputModule,
     MatFormFieldModule,
-    MatSelectModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatProgressBarModule,
@@ -47,7 +44,6 @@ interface FileValidation {
     MatTooltipModule,
     MatChipsModule,
     MatDividerModule,
-    MatAccordion
 ],
   templateUrl: './document-upload.component.html',
   styleUrls: ['./document-upload.component.scss'],
@@ -67,7 +63,6 @@ export class DocumentUploadComponent implements OnInit {
   uploading = false;
   uploadProgress = 0;
 
-  readonly sourceOptions = Object.values(DocumentSource).map((v) => ({ value: v, label: v }));
   readonly formatFileSize = formatFileSize;
   readonly minDate = new Date()
 
@@ -85,7 +80,6 @@ export class DocumentUploadComponent implements OnInit {
     this.metadataForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(255)]],
       description: ['', Validators.maxLength(1000)],
-      source: [DocumentSource.internal, Validators.required],
       expiresAt: [null]
     })
   }
@@ -193,7 +187,6 @@ export class DocumentUploadComponent implements OnInit {
     this.documentService.createDocument(this.selectedFile, {
       title: formValue.title,
       description: formValue.description || undefined,
-      source: formValue.source,
       expiresAt: formValue.expiresAt ? (formValue.expiresAt as Date).toISOString() : undefined,
       createdByUserId: user?.id || ''
     }).subscribe({

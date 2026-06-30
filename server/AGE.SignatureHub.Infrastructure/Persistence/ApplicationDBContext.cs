@@ -96,7 +96,10 @@ namespace AGE.SignatureHub.Infrastructure.Persistence
         {
             try
             {
-                await _currentTransaction?.RollbackAsync(cancellationToken);
+                if (_currentTransaction != null)
+                {
+                    await _currentTransaction.RollbackAsync(cancellationToken);
+                }
             }
             finally
             {

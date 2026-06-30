@@ -38,7 +38,7 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Configurations
                 .HasDefaultValue(false);
 
             builder.Property(sf => sf.CompletedAt)
-                .IsRequired();
+                .IsRequired(false);
 
             builder.Property(sf => sf.CreatedAt)
                 .IsRequired();

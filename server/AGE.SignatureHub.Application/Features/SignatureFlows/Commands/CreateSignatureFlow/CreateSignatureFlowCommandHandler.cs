@@ -100,14 +100,21 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSi
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
-                await SendSignatureRequestNotification(signatureFlow, document, cancellationToken);
-
-                await _webhookService.SendWebhookAsync("signature.requested", JsonSerializer.Serialize(new      
+                try
                 {
-                    DocumentId = document.Id,
-                    FlowId = signatureFlow.Id,
-                    DocumentTitle = document.Title
-                }), cancellationToken);
+                    await SendSignatureRequestNotification(signatureFlow, document, cancellationToken);
+
+                    await _webhookService.SendWebhookAsync("signature.requested", JsonSerializer.Serialize(new
+                    {
+                        DocumentId = document.Id,
+                        FlowId = signatureFlow.Id,
+                        DocumentTitle = document.Title
+                    }), cancellationToken);
+                }
+                catch
+                {
+                    // O fluxo já foi persistido; falha de integração externa não deve reverter a operação principal.
+                }
 
                 response.Success = true;
                 response.Message = "Signature flow created successfully.";

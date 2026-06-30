@@ -1,5 +1,5 @@
-import { Component, NgZone, OnInit } from '@angular/core';
-import { DocumentDto, DocumentSource, DocumentStatusColor, DocumentStatusLabel, formatFileSize } from '../../../../core/models/document.model';
+import { AfterContentChecked, ChangeDetectorRef, Component, NgZone, OnInit } from '@angular/core';
+import { DocumentDto, DocumentStatusColor, DocumentStatusLabel, formatFileSize } from '../../../../core/models/document.model';
 import { DocumentStatus } from '../../../../core/models/dasboard.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DocumentService } from '../../../../core/services/document.service';
@@ -9,26 +9,34 @@ import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatIconModule } from "@angular/material/icon";
 import { MatCardModule } from "@angular/material/card";
 import {MatTabChangeEvent, MatTabsModule} from "@angular/material/tabs"
-import { CdkNoDataRow } from "@angular/cdk/table";
 import { MatDivider } from "@angular/material/divider";
 import { DatePipe } from '@angular/common';
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { AuditLogDto } from '../../../../core/models/signer.model';
 import { AuditLogService } from '../../../../core/services/signer.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { asyncScheduler, observeOn } from 'rxjs';
 
 @Component({
   selector: 'app-document-details',
-  imports: [MatProgressSpinner, MatIconModule, MatCardModule, MatTabsModule, CdkNoDataRow, MatDivider, DatePipe, MatProgressBar],
+  imports: [MatProgressSpinner, MatIconModule, MatCardModule, MatTabsModule, MatDivider, DatePipe, MatProgressBar],
   templateUrl: './document-details.component.html',
   styleUrls: ['./document-details.component.scss'],
 })
-export class DocumentDetailsComponent implements OnInit {
-  document: DocumentDto | null = null;
+export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
+  document: DocumentDto = this.createEmptyDocument();
   auditLogs: AuditLogDto[] = [];
   loadingLogs = false;
   loading = true;
   actionLoading = false;
   documentId = '';
+  currentUserEmail: string | null = null;
+  totalSignatories = 0;
+  signedCount = 0;
+  signatureProcess = 0;
+
+  private readonly FLOW_TYPE_SEQUENTIAL = 1;
+  private readonly FLOW_TYPE_PARALLEL = 2;
 
   private readonly ACTION_META: Record<string, { label: string; icon: string; color: string }> = {
     'document_created':    { label: 'Documento criado',    icon: 'add_circle',   color: '#10b981' },
@@ -53,34 +61,45 @@ export class DocumentDetailsComponent implements OnInit {
     private route: ActivatedRoute,
     private documentService: DocumentService,
     private auditLogService: AuditLogService,
+    private authService: AuthService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.documentId = this.route.snapshot.paramMap.get('id') || '';
+    this.currentUserEmail = this.normalizeEmail(this.authService.getUserValue()?.email);
 
     const action = this.route.snapshot.queryParamMap.get('action');
 
-    this.loadDocument(() => {
-      if (action === 'sign' && this.canSign) {
-        setTimeout(() => this.confirmSign(), 0);
-      }
-    });
+    setTimeout(() => {
+      this.loadDocument(() => {
+        if (action === 'sign' && this.canCurrentUserSign) {
+          setTimeout(() => this.confirmSign(), 0);
+        }
+      });
+    }, 0);
   }
 
   loadAuditLogs(): void {
     if (!this.documentId || this.auditLogs.length > 0) return;
     this.loadingLogs = true;
-    this.auditLogService.GetByDocument(this.documentId).subscribe({
+    this.auditLogService.GetByDocument(this.documentId).pipe(
+      observeOn(asyncScheduler)
+    ).subscribe({
       next: (logs) => {
-        this.auditLogs = logs;
-        this.loadingLogs = false;
+        this.ngZone.run(() => {
+          this.auditLogs = Array.isArray(logs) ? logs : [];
+          this.loadingLogs = false;
+        });
       },
       error: () => {
-        this.loadingLogs = false;
-        this.snackBar.open('Falha ao carregar o histórico de auditoria', 'Fechar', { duration: 3000 });
+        this.ngZone.run(() => {
+          this.loadingLogs = false;
+          this.snackBar.open('Falha ao carregar o histórico de auditoria', 'Fechar', { duration: 3000 });
+        });
       },
     });
   }
@@ -97,22 +116,40 @@ export class DocumentDetailsComponent implements OnInit {
       return;
     }
     this.loading = true;
-    this.documentService.getDocumentById(this.documentId).subscribe({
+    this.documentService.getDocumentById(this.documentId).pipe(
+      observeOn(asyncScheduler)
+    ).subscribe({
       next: (doc) => {
         this.ngZone.run(() => {
-          this.document = doc;
-          this.loading = false;
-          callback?.();
+          this.document = {
+            ...doc,
+            signatureFlows: (doc.signatureFlows ?? []).map(flow => ({
+              ...flow,
+              signers: [...(flow.signers ?? [])]
+            }))
+          };
+          this.updateSignatureStats();
+          // Defer final state flip to avoid dev-mode NG0100 on first render/hydration.
+          setTimeout(() => {
+            this.loading = false;
+            callback?.();
+          }, 0);
         });
       },
       error: () => {
         this.ngZone.run(() => {
-          this.loading = false;
-          this.snackBar.open('Falha ao carregar os detalhes do documento', 'Fechar', { duration: 3000 });
-          this.router.navigate(['/documents']);
+          setTimeout(() => {
+            this.loading = false;
+            this.snackBar.open('Falha ao carregar os detalhes do documento', 'Fechar', { duration: 3000 });
+            this.router.navigate(['/documents']);
+          }, 0);
         });
       },
     });
+  }
+
+  ngAfterContentChecked(): void {
+    this.cdr.detectChanges();
   }
 
   onTabChange(event: MatTabChangeEvent): void {
@@ -125,54 +162,65 @@ export class DocumentDetailsComponent implements OnInit {
 
   get canSign(): boolean {
     return (
-      !!this.document &&
-      (
-        this.document.status === DocumentStatus.PendingSignatures ||
-        this.document.status === DocumentStatus.PartiallyCompleted
-      )
+      this.document.status === DocumentStatus.PendingSignatures ||
+      this.document.status === DocumentStatus.PartiallyCompleted
     )
   }
 
   get canDelete(): boolean {
     return (
-      !!this.document &&
-      (
-        this.document.status === DocumentStatus.Draft ||
-        this.document.status === DocumentStatus.Cancelled
-      )
+      this.document.status === DocumentStatus.Draft ||
+      this.document.status === DocumentStatus.Cancelled
     )
   }
 
-  get totalSignatories(): number {
-    return (
-      this.document?.signatureFlows.reduce(
-        (acc, flow) => acc + (flow.signatories.length ?? 0),
-        0
-      ) ?? 0
-    )
+  get canCurrentUserSign(): boolean {
+    return !!this.getCurrentUserPendingSigner();
   }
 
-  get signedCount(): number {
-    return (
-      this.document?.signatureFlows.reduce(
-        (acc, flow) => acc + (flow.signatories?.filter(s => !!s.signedAt).length ?? 0),
-        0
-      ) ?? 0
-    )
+  get signBlockReason(): string | null {
+    if (!this.canSign) {
+      return null;
+    }
+
+    if (!this.currentUserEmail) {
+      return 'Não foi possível identificar o usuário logado para assinatura.';
+    }
+
+    if (this.canCurrentUserSign) {
+      return null;
+    }
+
+    return 'Este documento está aguardando assinatura de outro signatário nesta etapa.';
   }
 
-  get signatureProcess(): number {
-    if (!this.totalSignatories) return 0;
-    return Math.round((this.signedCount / this.totalSignatories) * 100);
+  private updateSignatureStats(): void {
+    const flows = this.document?.signatureFlows ?? [];
+
+    const total = flows.reduce((acc, flow) => {
+      const signers = Array.isArray(flow.signers) ? flow.signers : [];
+      return acc + signers.length;
+    }, 0);
+
+    const signed = flows.reduce((acc, flow) => {
+      const signers = Array.isArray(flow.signers) ? flow.signers : [];
+      return acc + signers.filter(s => !!s.signedAt).length;
+    }, 0);
+
+    this.totalSignatories = Math.max(total, signed);
+    this.signedCount = signed;
+    this.signatureProcess = this.totalSignatories
+      ? Math.min(100, Math.round((this.signedCount / this.totalSignatories) * 100))
+      : 0;
   }
 
   download(): void {
-    if (!this.document) return;
+    if (!this.document.id) return;
     this.documentService
-      .downloadDocument(this.document.id, this.document.originalFilename)
+      .downloadDocument(this.document.id, this.document.originalFileName)
       .subscribe({
         next: (blob) => {
-          this.documentService.triggerDownload(blob, this.document?.originalFilename ?? 'documento');
+          this.documentService.triggerDownload(blob, this.document?.originalFileName ?? 'documento');
         },
         error: () => {
           this.snackBar.open('Falha ao baixar o documento', 'Fechar', { duration: 3000 });
@@ -181,17 +229,15 @@ export class DocumentDetailsComponent implements OnInit {
   }
 
   confirmSign(): void {
-    if (!this.document || !this.canSign) return;
-    if (!confirm('Tem certeza que deseja assinar este documento?')) return;
-
-    const pendingSigner = this.document.signatureFlows
-      .flatMap(flow => flow.signatories ?? [])
-      .find(s => !s.signedAt);
+    if (!this.document.id || !this.canSign) return;
+    const pendingSigner = this.getCurrentUserPendingSigner();
 
     if (!pendingSigner) {
-      this.snackBar.open('Nenhum signatário pendente encontrado para assinatura.', 'Fechar', { duration: 3000 });
+      this.snackBar.open(this.signBlockReason ?? 'Você não possui pendência de assinatura neste documento.', 'Fechar', { duration: 4000 });
       return;
     }
+
+    if (!confirm('Tem certeza que deseja assinar este documento?')) return;
 
     this.actionLoading = true;
 
@@ -217,8 +263,53 @@ export class DocumentDetailsComponent implements OnInit {
     })
   }
 
+  private getCurrentUserPendingSigner(): { id: string } | null {
+    if (!this.currentUserEmail) {
+      return null;
+    }
+
+    for (const flow of this.document.signatureFlows ?? []) {
+      const currentStep = Number(flow.currentStep ?? 0);
+      const signers = Array.isArray(flow.signers) ? flow.signers : [];
+
+      const candidates = signers.filter((signer) => {
+        const signerEmail = this.normalizeEmail(signer.email);
+        const signerStatus = Number(signer.status ?? 0);
+        const signerOrder = Number(signer.signOrder ?? 0);
+        const isPending = signerStatus === 1 && !signer.signedAt;
+
+        if (!isPending || signerEmail !== this.currentUserEmail) {
+          return false;
+        }
+
+        if (flow.flowType === this.FLOW_TYPE_PARALLEL) {
+          return true;
+        }
+
+        if (flow.flowType === this.FLOW_TYPE_SEQUENTIAL) {
+          return signerOrder === currentStep;
+        }
+
+        return signerOrder <= currentStep;
+      });
+
+      if (candidates.length > 0) {
+        return { id: candidates[0].id };
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeEmail(email?: string | null): string | null {
+    if (!email) {
+      return null;
+    }
+    return email.trim().toLowerCase();
+  }
+
   confirmDelete(): void {
-    if (!this.document || !this.canDelete) return;
+    if (!this.document.id || !this.canDelete) return;
     if (!confirm('Tem certeza que deseja excluir este documento? Esta ação não pode ser desfeita.')) return;
 
     this.actionLoading = true;
@@ -256,17 +347,11 @@ export class DocumentDetailsComponent implements OnInit {
     return map[ext ?? ''] ?? '#94a3b8';
   }
 
-  getSourceClass(source?: DocumentSource): string {
-    const map: Record<string, string> = {
-      [DocumentSource.internal]: 'source-interno',
-      [DocumentSource.Tribunus]: 'source-tribunus',
-      [DocumentSource.TJMG]: 'source-tjmg',
-      [DocumentSource.external]: 'source-externo',
-    };
-    return map[source ?? ''] ?? 'source-externo';
-  }
+  getSignatoryInitials(name?: string): string {
+    if (!name) {
+      return '??';
+    }
 
-  getSignatoryInitials(name: string): string {
     return name
       .split(' ')
       .slice(0, 2)
@@ -276,5 +361,23 @@ export class DocumentDetailsComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/documents']);
+  }
+
+  private createEmptyDocument(): DocumentDto {
+    return {
+      id: '',
+      fileName: '',
+      originalFileName: '',
+      fileExtension: '',
+      fileSizeInBytes: 0,
+      mimeType: '',
+      status: DocumentStatus.Draft,
+      title: '',
+      description: '',
+      createdByUserId: '',
+      createdAt: '',
+      updatedAt: '',
+      signatureFlows: []
+    };
   }
 }

@@ -3,7 +3,7 @@ import { BrowserModule, provideClientHydration, withEventReplay } from '@angular
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
-import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 
@@ -14,13 +14,11 @@ import { errorInterceptor } from './core/interceptors/error.interceptor';
   imports: [
     BrowserModule,
     AppRoutingModule,
-    AppRoutingModule,
   ],
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideClientHydration(withEventReplay()),
     provideHttpClient(
-      withFetch(),
       withInterceptors([
         authInterceptor, errorInterceptor
       ])

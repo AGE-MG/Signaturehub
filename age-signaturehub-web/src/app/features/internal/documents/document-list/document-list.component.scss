@@ -172,6 +172,42 @@
   white-space: nowrap;
 }
 
+.status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.turn-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+
+  mat-icon {
+    width: 14px !important;
+    height: 14px !important;
+    font-size: 14px !important;
+  }
+}
+
+.turn-mine {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #6ee7b7;
+}
+
+.turn-waiting {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
 // ─── Meta Cell ────────────────────────────────────────────────────────────────
 .meta-cell {
   color: #64748b !important;

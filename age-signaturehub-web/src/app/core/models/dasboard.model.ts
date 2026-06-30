@@ -19,13 +19,13 @@ export interface RecentDocument {
 }
 
 export enum DocumentStatus {
-  Draft = 0,
-  PendingSignatures = 1,
-  PartiallyCompleted = 2,
-  Completed = 3,
-  Rejected = 4,
-  Expired = 5,
-  Cancelled = 6
+  Draft = 1,
+  PendingSignatures = 2,
+  PartiallyCompleted = 3,
+  Completed = 4,
+  Rejected = 5,
+  Expired = 6,
+  Cancelled = 7
 }
 
 export interface NotificationDto {

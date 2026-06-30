@@ -25,19 +25,6 @@ export class DocumentService {
       params = params.set('status', filters.status.toString());
     }
 
-    if (filters?.source) {
-      params = params.set('source', filters.source);
-    }
-    if (filters?.search) {
-      params = params.set('search', filters.search);
-    }
-    if (filters?.pageNumber !== undefined) {
-      params = params.set('pageNumber', filters.pageNumber.toString());
-    }
-
-    if (filters?.pageSize !== undefined) {
-      params = params.set('pageSize', filters.pageSize.toString());
-    }
     return this.http.get<DocumentPagedResult | DocumentDto[] | ApiResponse<DocumentPagedResult | DocumentDto[]>>(this.baseUrl, { params })
       .pipe(
         map((response) => this.unwrapApiResponse<DocumentPagedResult | DocumentDto[]>(response))
@@ -67,9 +54,7 @@ export class DocumentService {
       formData.append('expiresAt', data.expiresAt);
     }
     formData.append('createdByUserId', data.createdByUserId);
-    if (data.source) {
-      formData.append('source', data.source);
-    }
+
     return this.http
       .post<DocumentDto | ApiResponse<DocumentDto>>(this.baseUrl, formData)
       .pipe(map((response) => this.unwrapApiResponse<DocumentDto>(response)));

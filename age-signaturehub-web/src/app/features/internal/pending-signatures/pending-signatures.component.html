@@ -13,13 +13,12 @@
       >
         Assinaturas Pendentes
       </h1>
-      @if (!loading && pendingCount > 0) {
-        <span
-          class="pending-badge"
-        >
-          {{ pendingCount }} pendente {{ pendingCount !== 1 ? 's' : '' }}
-        </span>
-      }
+      <span
+        class="pending-badge"
+        [style.display]="pendingCount > 0 ? 'inline-flex' : 'none'"
+      >
+        {{ pendingCount }} pendente {{ pendingCount !== 1 ? 's' : '' }}
+      </span>
     </div>
     <button
       mat-icon-button
@@ -31,28 +30,19 @@
   </div>
 
   <!-- Loading -->
-  @if (loading) {
-    <div class="loading">
-      <mat-progress-spinner mode="indeterminate" diameter="48"></mat-progress-spinner>
-      <span>Carregando pendências...</span>
-    </div>
-  }
-
   <!-- Empty -->
-  @if (!loading && signers.length === 0) {
-    <div class="empty-state">
-      <mat-icon class="empty-icon">task_alt</mat-icon>
-      <h3>Tudo em dia!</h3>
-      <p>Não há assinaturas pendentes no momento.</p>
-    </div>
-  }
+  <div class="empty-state" [style.display]="signers.length === 0 ? 'flex' : 'none'">
+    <mat-icon class="empty-icon">task_alt</mat-icon>
+    <h3>Tudo em dia!</h3>
+    <p>Não há assinaturas pendentes no momento.</p>
+  </div>
 
   <!-- List -->
-  @if (!loading && signers.length > 0) {
-    <div
-      class="signers-list"
-    >
-      @for (signer of signers; track signer.id) {
+  <div
+    class="signers-list"
+    [style.display]="signers.length > 0 ? 'grid' : 'none'"
+  >
+    @for (signer of signers; track signer.id) {
         <mat-card
           class="signer-card"
           [class.is-pending]="isPending(signer)"
@@ -100,9 +90,9 @@
                   class="meta-item"
                 >
                   <mat-icon>
-                    {{ SignatureTypeIcon[signer.signatureType]}}
+                    {{ getSignatureTypeIcon(signer) }}
                   </mat-icon>
-                  {{ SignatureTypeLabel[signer.signatureType] }}
+                  {{ getSignatureTypeLabel(signer) }}
                 </span>
                 <span
                   class="meta-item"
@@ -256,7 +246,6 @@
             </mat-expansion-panel>
           }
         </mat-card>
-      }
-    </div>
-  }
+    }
+  </div>
 </div>

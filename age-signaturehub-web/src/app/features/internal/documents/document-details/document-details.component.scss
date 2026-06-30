@@ -66,6 +66,25 @@
   flex-wrap: wrap;
 }
 
+.sign-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  font-size: 0.875rem;
+
+  mat-icon {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
 // ─── Title Card ───────────────────────────────────────────────────────────────
 .title-card {
   margin-bottom: 20px;

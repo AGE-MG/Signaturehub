@@ -43,6 +43,21 @@ namespace AGE.SignatureHub.Domain.Entities
             Role = role;
             SignOrder = signOrder > 0 ? signOrder : throw new ArgumentOutOfRangeException(nameof(signOrder), "Sign order must be greater than zero.");
             Status = SignatureStatus.Pending;
+            CertificateInfo = new CertificateInfo(
+                serialNumber: "PENDING",
+                subjectName: "PENDING",
+                issuerName: "PENDING",
+                validFrom: DateTime.UtcNow,
+                validTo: DateTime.UtcNow.AddYears(10),
+                thumbprint: "PENDING"
+            );
+            SignatureMetadata = new SignatureMetadata(
+                ipAddress: "0.0.0.0",
+                userAgent: "PENDING",
+                deviceInfo: "PENDING",
+                location: "PENDING",
+                documentHash: "PENDING"
+            );
         }
 
         public void Sign(

@@ -7,7 +7,7 @@ import { MatBadgeModule } from "@angular/material/badge";
 import { MatMenuTrigger, MatMenuModule } from "@angular/material/menu";
 import { MatDividerModule } from "@angular/material/divider";
 import { NotificationDto, NotificationType } from '../../core/models/dasboard.model';
-import { interval, startWith, Subject, switchMap, takeUntil } from 'rxjs';
+import { asyncScheduler, interval, observeOn, startWith, Subject, switchMap, takeUntil } from 'rxjs';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -45,8 +45,8 @@ export class TopbarComponent implements OnInit, OnDestroy {
     if (!this.isBrowser) {
       return;
     }
-    this.loadNotifications();
-    this.startNotificationsPolling();
+    // Defer first subscription tick to avoid ExpressionChanged in hydration/dev mode.
+    setTimeout(() => this.startNotificationsPolling(), 0);
   }
 
   ngOnDestroy(): void {
@@ -63,8 +63,6 @@ export class TopbarComponent implements OnInit, OnDestroy {
   }
 
   private loadNotifications(): void {
-    this.loadingNotifications = true;
-
     this.dashboardService.getNotifications(false).pipe(
       takeUntil(this.destroy$)
     ).subscribe({
@@ -72,13 +70,11 @@ export class TopbarComponent implements OnInit, OnDestroy {
         this.ngZone.run(() => {
           this.notifications = notifications;
           this.unreadCount = notifications.filter(n => !n.isRead).length;
-          this.loadingNotifications = false;
         });
       },
       error: () => {
         this.ngZone.run(() => {
           console.error('Failed to load notifications');
-          this.loadingNotifications = false;
         });
       }}
     )
@@ -88,27 +84,30 @@ export class TopbarComponent implements OnInit, OnDestroy {
     interval(30000).pipe(
       startWith(0),
       switchMap(() => this.dashboardService.getNotifications(false)),
+      observeOn(asyncScheduler),
       takeUntil(this.destroy$)
     ).subscribe({
       next: (notifications) => {
-        this.ngZone.run(() => {
-          const previousUnreadCount = this.unreadCount;
-          this.notifications = notifications;
-          this.unreadCount = notifications.filter(n => !n.isRead).length;
+        setTimeout(() => {
+          this.ngZone.run(() => {
+            const previousUnreadCount = this.unreadCount;
+            this.notifications = [...notifications];
+            this.unreadCount = notifications.filter(n => !n.isRead).length;
 
-          if (this.unreadCount > previousUnreadCount) {
-            this.snackBar.open(
-              `Você tem ${this.unreadCount - previousUnreadCount} nova(s) notificação(ões)`,
-              'Fechar',
-              {
-                duration: 5000,
-                horizontalPosition: 'end',
-                verticalPosition: 'top',
-                panelClass: ['info-snackbar']
-              }
-            )
-          }
-        });
+            if (this.unreadCount > previousUnreadCount) {
+              this.snackBar.open(
+                `Você tem ${this.unreadCount - previousUnreadCount} nova(s) notificação(ões)`,
+                'Fechar',
+                {
+                  duration: 5000,
+                  horizontalPosition: 'end',
+                  verticalPosition: 'top',
+                  panelClass: ['info-snackbar']
+                }
+              )
+            }
+          });
+        }, 0);
       },
       error: (err) => {
         console.error('Error polling notifications', err);

@@ -11,6 +11,9 @@ import { DashboardComponent } from './features/internal/dashboard/dashboard.comp
 import { DocumentListComponent } from './features/internal/documents/document-list/document-list.component';
 import { DocumentUploadComponent } from './features/internal/documents/document-upload/document-upload.component';
 import { DocumentDetailsComponent } from './features/internal/documents/document-details/document-details.component';
+import { PendingSignaturesComponent } from './features/internal/pending-signatures/pending-signatures.component';
+import { HistoryComponent } from './features/internal/history/history.component';
+import { SettingsComponent } from './features/internal/settings/settings.component';
 
 const routes: Routes = [
   {
@@ -63,15 +66,15 @@ const routes: Routes = [
       },
       {
         path: 'pending-signatures',
-        component: DashboardComponent
+        component: PendingSignaturesComponent
       },
       {
         path: 'history',
-        component: DashboardComponent
+        component: HistoryComponent
       },
       {
         path: 'settings',
-        component: DashboardComponent
+        component: SettingsComponent
       },
       {
         path: '',

@@ -9,12 +9,14 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { EditRolesDialogComponent } from '../../../shared/components/edit-roles-dialog.component/edit-roles-dialog.component';
 import { MatTabGroup, MatTab, MatTabChangeEvent } from "@angular/material/tabs";
-import { CdkNoDataRow } from "@angular/cdk/table";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatCard } from "@angular/material/card";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField, MatLabel, MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const newPass = control.get('newPassword')?.value;
@@ -24,7 +26,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 
 @Component({
   selector: 'app-settings.component',
-  imports: [MatTabGroup, MatTab, CdkNoDataRow, MatIconModule, MatProgressSpinner, MatCard, MatDivider, MatFormField, MatLabel, MatFormFieldModule, ReactiveFormsModule, MatColumnDef, MatTableModule],
+  imports: [MatTabGroup, MatTab, MatIconModule, MatProgressSpinner, MatCard, MatDivider, MatFormField, MatLabel, MatFormFieldModule, MatInputModule, MatButtonModule, MatTooltipModule, ReactiveFormsModule, MatColumnDef, MatTableModule],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,7 +38,7 @@ export class SettingsComponent implements OnInit {
   savingPassword = false;
 
   usersDataSource = new MatTableDataSource<UserDto>();
-  usersDisplayedColumns = ['avatar', 'nome', 'email', 'função', 'ações'];
+  usersDisplayedColumns = ['avatar', 'name', 'email', 'roles', 'actions'];
   loadingUsers = false;
 
   profileForm!: FormGroup

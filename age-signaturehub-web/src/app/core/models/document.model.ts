@@ -1,27 +1,21 @@
 export enum DocumentStatus {
-  Draft = 0,
-  PendingSignatures = 1,
-  PartiallyCompleted = 2,
-  Completed = 3,
-  Rejected = 4,
-  Expired = 5,
-  Cancelled = 6
-}
-
-export enum DocumentSource {
-  internal = 'internal',
-  TJMG = 'TJMG',
-  Tribunus = 'Tribunus',
-  external = 'external'
+  Draft = 1,
+  PendingSignatures = 2,
+  PartiallyCompleted = 3,
+  Completed = 4,
+  Rejected = 5,
+  Expired = 6,
+  Cancelled = 7
 }
 
 // DTOs
 
 export interface SignatoryDto {
   id: string;
-  userId: string;
-  userName: string;
+  name?: string;
   email: string;
+  signOrder?: number;
+  status?: number;
   signedAt?: string;
   completedAt?: string;
 }
@@ -29,17 +23,19 @@ export interface SignatoryDto {
 export interface SignatureFlowDto {
   id: string;
   documentId: string;
-  order: number;
-  status: string;
-  signatories: SignatoryDto[];
-  createdAt: string;
+  flowName: string;
+  flowType: number;
+  currentStep: number;
+  totalSteps: number;
+  isCompleted: boolean;
+  signers: SignatoryDto[];
   completedAt?: string;
 }
 
 export interface DocumentDto {
   id: string;
-  filename: string;
-  originalFilename: string;
+  fileName: string;
+  originalFileName: string;
   fileExtension: string;
   fileSizeInBytes: number;
   mimeType: string;
@@ -49,8 +45,7 @@ export interface DocumentDto {
   expiresAt?: string;
   createdByUserId: string;
   createdAt: string;
-  updatedAt: string;
-  source?: DocumentSource;
+  updatedAt?: string;
   signatureFlows: SignatureFlowDto[];
 }
 
@@ -59,7 +54,6 @@ export interface CreateDocumentDto {
   description?: string;
   expiresAt?: string;
   createdByUserId: string;
-  source?: DocumentSource;
 }
 
 export interface DocumentPagedResult {
@@ -72,10 +66,6 @@ export interface DocumentPagedResult {
 
 export interface DocumentFilterParams {
   status?: DocumentStatus;
-  source?: DocumentSource;
-  search?: string;
-  pageNumber?: number;
-  pageSize?: number;
 }
 
 // Helpers

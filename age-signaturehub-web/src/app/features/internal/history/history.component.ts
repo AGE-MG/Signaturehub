@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ApplicationRef, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { AuditLogDto } from '../../../core/models/signer.model';
 import { FormBuilder, FormsModule, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -12,6 +12,7 @@ import { MatCard, MatCardModule } from "@angular/material/card";
 import { MatFormField, MatLabel, MatPrefix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatDatepicker, MatDatepickerInput, MatDatepickerModule } from "@angular/material/datepicker";
+import { MatNativeDateModule } from '@angular/material/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
@@ -48,6 +49,7 @@ const ACTION_META: Record<string, ActionMeta> = {
     FormsModule,
     ReactiveFormsModule,
     MatDatepickerModule,
+    MatNativeDateModule,
     MatIconModule,
     MatProgressSpinnerModule,
     MatTableModule,
@@ -74,6 +76,8 @@ export class HistoryComponent implements OnInit {
     private auditLogService: AuditLogService,
     private snackbar: MatSnackBar,
     private router: Router,
+    private cdr: ChangeDetectorRef,
+    private appRef: ApplicationRef,
   ) {
     this.filterForm = this.fb.group({
       startDate: [this.defaultStart()],
@@ -98,10 +102,14 @@ export class HistoryComponent implements OnInit {
         this.dataSource.data = logs;
         this.totalCount = logs.length;
         this.loading = false;
+        this.cdr.detectChanges();
+        this.appRef.tick();
       },
       error: (error) => {
         this.snackbar.open('Erro ao carregar histórico', 'Fechar', { duration: 3000 });
         this.loading = false;
+        this.cdr.detectChanges();
+        this.appRef.tick();
       }
     });
   }

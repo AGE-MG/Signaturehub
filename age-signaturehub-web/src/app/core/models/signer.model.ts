@@ -44,7 +44,7 @@ export interface SignerDto {
   role: SignerRole;
   signOrder: number;
   status: SignatureStatus;
-  signatureType: SignatureType;
+  signatureType?: SignatureType;
   signedAt?: string;
   rejectionReason?: string;
   certificateInfo?: CertificateInfo;
@@ -53,7 +53,7 @@ export interface SignerDto {
 export interface SignRequest {
   signerId: string;
   signatureType: SignatureType;
-  certificateData?: string;
+  certificateData?: number[];
   pin?: string;
   ipAddress?: string;
   userAgent?: string;
@@ -70,24 +70,28 @@ export interface RejectRequest {
 
 export interface CreateSignatureFlowDto {
   documentId: string;
+  flowName: string;
+  flowType: number;
   signers: CreateSignerDto[];
 }
 
 export interface CreateSignerDto {
   name: string;
   email: string;
+  document: string;
   role: SignerRole;
   signOrder: number;
-  signatureType: SignatureType;
 }
 
 export interface SignatureFlowDetailDto {
   id: string;
   documentId: string;
-  status: string;
-  order: number;
-  signatories: SignerDto[];
-  createdAt: string;
+  flowName: string;
+  flowType: number;
+  currentStep: number;
+  totalSteps: number;
+  isCompleted: boolean;
+  signers: SignerDto[];
   completedAt?: string;
 }
 

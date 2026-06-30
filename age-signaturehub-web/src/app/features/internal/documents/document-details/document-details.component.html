@@ -1,14 +1,17 @@
 <div
 class="details-page">
-  @if (loading) {
-    <div>
+  <div
+    class="loading-container"
+    [style.display]="loading ? 'flex' : 'none'"
+  >
       <mat-spinner
         mode="indeterminate"
         diameter="48"
       ></mat-spinner>
       <p>Carregando documento...</p>
-    </div>
-  } @else if (document) {
+  </div>
+
+  <div [style.display]="!loading ? 'block' : 'none'">
     <div
       class="page-header"
     >
@@ -55,7 +58,7 @@ class="details-page">
             mat-raised-button
             color="primary"
             (click)="confirmSign()"
-            [disabled]="actionLoading"
+            [disabled]="actionLoading || !canCurrentUserSign"
           >
             @if (actionLoading) {
               <mat-spinner
@@ -89,6 +92,13 @@ class="details-page">
       </div>
     </div>
 
+    @if (signBlockReason) {
+      <div class="sign-warning">
+        <mat-icon>info</mat-icon>
+        <span>{{ signBlockReason }}</span>
+      </div>
+    }
+
     <!-- Title card -->
     <mat-card
       class="title-card"
@@ -113,7 +123,7 @@ class="details-page">
           <p
             class="doc-filename"
           >
-            {{ document.originalFilename }}
+            {{ document.originalFileName }}
           </p>
           @if (document.description) {
             <p
@@ -126,11 +136,6 @@ class="details-page">
         <div
           class="title-badges"
         >
-          <span
-            class="source-chip {{getSourceClass(document.source)}}"
-          >
-            {{  document.source ?? 'interno'}}
-          </span>
           <span
             class="status-chip"
             [style.background]="DocumentStatusColor[document.status] + '18'"
@@ -181,7 +186,7 @@ class="details-page">
                 <span
                   class="detail-value"
                 >
-                  {{document.originalFilename}}
+                  {{document.originalFileName}}
                 </span>
               </div>
               <div
@@ -241,20 +246,6 @@ class="details-page">
             <div
               class="detail-list"
             >
-              <div
-                class="detail-row"
-              >
-                <span
-                  class="detail-label"
-                >
-                  Origem
-                </span>
-                <span
-                  class="source-chip {{getSourceClass(document.source)}}"
-                >
-                  {{document.source ?? 'interno'}}
-                </span>
-              </div>
               <div
                 class="detail-row"
               >
@@ -384,13 +375,13 @@ class="details-page">
                       account_tree
                     </mat-icon>
                     <span>
-                      Fluxo {{flow.order + 1}}
+                      {{ flow.flowName || 'Fluxo de Assinatura' }}
                     </span>
                   </div>
                   <span
                     class="flow-status-badge"
                   >
-                    {{ flow.status}}
+                    {{ flow.isCompleted ? 'Concluído' : 'Em andamento' }}
                   </span>
                 </div>
 
@@ -399,7 +390,7 @@ class="details-page">
                 <div
                   class="signatories-list"
                 >
-                  @for (sig of flow.signatories; track sig.id) {
+                  @for (sig of flow.signers; track sig.id) {
                     <div
                       class="signatory-row"
                       [class.signed]="!!sig.signedAt"
@@ -407,7 +398,7 @@ class="details-page">
                       <div
                         class="signatory-avatar"
                       >
-                        {{getSignatoryInitials(sig.userName)}}
+                        {{getSignatoryInitials(sig.name)}}
                       </div>
                       <div
                         class="signatory-info"
@@ -415,7 +406,7 @@ class="details-page">
                         <span
                           class="signatory-name"
                         >
-                          {{sig.userName}}
+                          {{sig.name || 'Sem nome'}}
                         </span>
                         <span
                           class="signatory-email"
@@ -522,5 +513,5 @@ class="details-page">
       </mat-tab>
 
     </mat-tab-group>
-  }
+  </div>
 </div>

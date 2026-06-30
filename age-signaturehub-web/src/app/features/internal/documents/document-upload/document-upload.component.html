@@ -241,34 +241,10 @@
           <div
             class="form-row"
           >
-            <!-- Origem -->
-            <mat-form-field
-              appearance="outline"
-              class="half-width"
-            >
-              <mat-label>
-                Origem *
-              </mat-label>
-              <mat-icon
-                matPrefix
-              >
-                source
-              </mat-icon>
-              <mat-select
-                formControlName="source"
-              >
-                @for (opt of sourceOptions; track opt.value) {
-                  <mat-option [value]="opt.value">
-                    {{ opt.label }}
-                  </mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-
             <!-- Data de expiração -->
             <mat-form-field
               appearance="outline"
-              class="half-width"
+              class="full-width"
             >
               <mat-label>
                 Expira em (opcional)

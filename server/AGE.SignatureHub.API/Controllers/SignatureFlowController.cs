@@ -44,7 +44,7 @@ namespace AGE.SignatureHub.API.Controllers
                 return BadRequest(result.Errors);
             }
             
-            return CreatedAtAction(nameof(CreateSignatureFlowCommand), new { id = result.Data.Id }, result);
+            return CreatedAtAction(nameof(GetSignatureFlowById), new { id = result.Data.Id }, result);
         }
 
         /// <summary>

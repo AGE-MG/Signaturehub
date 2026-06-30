@@ -1,9 +1,9 @@
-import { Component, Inject, NgZone, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
+import { ApplicationRef, ChangeDetectorRef, Component, Inject, NgZone, OnInit, PLATFORM_ID, ViewChild } from '@angular/core';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortModule,  } from '@angular/material/sort';
 import { MatTableDataSource, MatHeaderCell, MatColumnDef, MatTableModule } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
-import { DocumentDto, DocumentSource, DocumentStatus, DocumentStatusColor, DocumentStatusLabel, DocumentStatusMatColor, formatFileSize } from '../../../../core/models/document.model';
+import { DocumentDto, DocumentStatus, DocumentStatusColor, DocumentStatusLabel, DocumentStatusMatColor, formatFileSize } from '../../../../core/models/document.model';
 import { Router } from '@angular/router';
 import { DocumentService } from '../../../../core/services/document.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -17,10 +17,12 @@ import { MatCard } from "@angular/material/card";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatInput } from '@angular/material/input';
 import { A11yModule } from "@angular/cdk/a11y";
-import { DatePipe, LowerCasePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { isPlatformBrowser } from '@angular/common';
 import { MatMenuModule } from "@angular/material/menu";
 import { MatDividerModule } from '@angular/material/divider';
+import { asyncScheduler, observeOn } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-document-list',
@@ -42,7 +44,6 @@ import { MatDividerModule } from '@angular/material/divider';
     MatTableModule,
     MatSort,
     A11yModule,
-    LowerCasePipe,
     DatePipe,
     MatIconButton,
     MatMenuModule,
@@ -56,33 +57,39 @@ export class DocumentListComponent implements OnInit {
   @ViewChild(MatSort) sort!: MatSort;
 
   dataSource = new MatTableDataSource<DocumentDto>([]);
-  displayedColumns = ['icon', 'title', 'source', 'status', 'size', 'updatedAt', 'actions'];
+  displayedColumns = ['icon', 'title', 'status', 'size', 'updatedAt', 'actions'];
+  private allDocuments: DocumentDto[] = [];
 
   loading = true;
   totalCount = 0;
+  visibleDocumentsCount = 0;
   pageSize = 10;
   pageIndex = 0;
 
   searchQuery = '';
   selectedStatus: DocumentStatus | null = null;
-  selectedSource: DocumentSource | null = null;
 
   readonly DocumentStatus = DocumentStatus;
-  readonly DocumentSource = DocumentSource;
   readonly DocumentStatusLabel = DocumentStatusLabel;
   readonly DocumentStatusMatColor = DocumentStatusMatColor;
   readonly DocumentStatusColor = DocumentStatusColor;
   readonly formatFileSize = formatFileSize;
 
   readonly statusOptions = Object.entries(DocumentStatusLabel).map(([value, label]) => ({ value: Number(value) as DocumentStatus, label }));
-  readonly sourceOptions = Object.values(DocumentSource).map((v) => ({ value: v, label: v }));
   private isBrowser = false;
+  private currentUserEmail: string | null = null;
+
+  private readonly FLOW_TYPE_SEQUENTIAL = 1;
+  private readonly FLOW_TYPE_PARALLEL = 2;
 
   constructor(
     private router: Router,
     private documentService: DocumentService,
+    private authService: AuthService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
+    private cdr: ChangeDetectorRef,
+    private appRef: ApplicationRef,
     private ngZone: NgZone,
     @Inject(PLATFORM_ID) private platformId: object
   ) {
@@ -93,28 +100,28 @@ export class DocumentListComponent implements OnInit {
     if (!this.isBrowser) {
       return;
     }
-    this.loadDocuments();
+    this.currentUserEmail = this.normalizeEmail(this.authService.getUserValue()?.email);
+    setTimeout(() => this.loadDocuments(), 0);
   }
 
   loadDocuments(): void {
     this.loading = true;
     this.documentService.getDocuments({
       status: this.selectedStatus ?? undefined,
-      source: this.selectedSource ?? undefined,
-      search: this.searchQuery || undefined,
-      pageNumber: this.pageIndex + 1,
-      pageSize: this.pageSize,
-    }).subscribe({
+    }).pipe(
+      observeOn(asyncScheduler)
+    ).subscribe({
       next: (result) => {
         this.ngZone.run(() => {
           if (Array.isArray(result)) {
-            this.dataSource.data = result;
-            this.totalCount = result.length;
+            this.allDocuments = result;
           } else {
-            this.dataSource.data = result.items ?? [];
-            this.totalCount = result.totalCount ?? 0;
+            this.allDocuments = result.items ?? [];
           }
+          this.applyClientFiltersAndPaging();
           this.loading = false;
+          this.cdr.detectChanges();
+          this.appRef.tick();
         });
       },
       error: (error) => {
@@ -122,6 +129,8 @@ export class DocumentListComponent implements OnInit {
           console.error('Error loading documents', error);
           this.snackBar.open('Erro ao carregar documentos', 'Fechar', { duration: 3000 });
           this.loading = false;
+          this.cdr.detectChanges();
+          this.appRef.tick();
         });
       }
     })
@@ -130,12 +139,12 @@ export class DocumentListComponent implements OnInit {
   onPageChange(event: PageEvent): void {
     this.pageIndex = event.pageIndex;
     this.pageSize = event.pageSize;
-    this.loadDocuments();
+    this.applyClientFiltersAndPaging();
   }
 
   onSearch(): void {
     this.pageIndex = 0;
-    this.loadDocuments();
+    this.applyClientFiltersAndPaging();
   }
 
   onStatusFilter(status: DocumentStatus | null): void {
@@ -144,21 +153,34 @@ export class DocumentListComponent implements OnInit {
     this.loadDocuments();
   }
 
-  onSourceFilter(): void {
-    this.pageIndex = 0;
-    this.loadDocuments();
-  }
-
   clearFilters(): void {
     this.searchQuery = '';
     this.selectedStatus = null;
-    this.selectedSource = null;
     this.pageIndex = 0;
     this.loadDocuments();
   }
 
   get hasActiveFilters(): boolean {
-    return !!(this.searchQuery || this.selectedStatus !== null || this.selectedSource !== null);
+    return !!(this.searchQuery || this.selectedStatus !== null);
+  }
+
+  private applyClientFiltersAndPaging(): void {
+    const query = this.searchQuery.trim().toLowerCase();
+
+    let filtered = this.allDocuments;
+    if (query) {
+      filtered = filtered.filter(doc =>
+        (doc.title ?? '').toLowerCase().includes(query) ||
+        (doc.originalFileName ?? '').toLowerCase().includes(query)
+      );
+    }
+
+    this.totalCount = filtered.length;
+
+    const start = this.pageIndex * this.pageSize;
+    const end = start + this.pageSize;
+    this.dataSource.data = filtered.slice(start, end);
+    this.visibleDocumentsCount = this.dataSource.data.length;
   }
 
   // Navigation
@@ -175,9 +197,9 @@ export class DocumentListComponent implements OnInit {
 
   downloadDocument(doc: DocumentDto, event: MouseEvent): void {
     event.stopPropagation();
-    this.documentService.downloadDocument(doc.id, doc.originalFilename).subscribe({
+    this.documentService.downloadDocument(doc.id, doc.originalFileName).subscribe({
       next: (blob) => {
-        this.documentService.triggerDownload(blob, doc.originalFilename);
+        this.documentService.triggerDownload(blob, doc.originalFileName);
         this.snackBar.open('Download iniciado', 'Fechar', { duration: 3000 });
       },
       error: (error) => {
@@ -202,11 +224,6 @@ export class DocumentListComponent implements OnInit {
         this.snackBar.open('Erro ao excluir documento', 'Fechar', { duration: 3000 });
       }
     });
-  }
-
-  signDocument(doc: DocumentDto, event: MouseEvent): void {
-    event.stopPropagation();
-    this.router.navigate(['/documents', doc.id], { queryParams: { action: 'sign' } });
   }
 
   // Helpers
@@ -240,9 +257,87 @@ export class DocumentListComponent implements OnInit {
   }
 
   canSign(doc: DocumentDto): boolean {
+    return !!this.getCurrentUserPendingSignerId(doc);
+  }
+
+  shouldShowTurnIndicator(doc: DocumentDto): boolean {
+    return this.isPendingDocument(doc) && !!this.currentUserEmail;
+  }
+
+  isMyTurnToSign(doc: DocumentDto): boolean {
+    return !!this.getCurrentUserPendingSignerId(doc);
+  }
+
+  isAwaitingOtherSigner(doc: DocumentDto): boolean {
+    return this.isPendingDocument(doc) && !this.isMyTurnToSign(doc);
+  }
+
+  getTurnIndicatorLabel(doc: DocumentDto): string {
+    return this.isMyTurnToSign(doc) ? 'Minha vez de assinar' : 'Aguardando outro signatário';
+  }
+
+  getTurnIndicatorIcon(doc: DocumentDto): string {
+    return this.isMyTurnToSign(doc) ? 'how_to_reg' : 'schedule';
+  }
+
+  signDocument(doc: DocumentDto, event: MouseEvent): void {
+    event.stopPropagation();
+    if (!this.canSign(doc)) {
+      this.snackBar.open('Este documento está aguardando assinatura de outro signatário.', 'Fechar', { duration: 3500 });
+      return;
+    }
+    this.router.navigate(['/documents', doc.id], { queryParams: { action: 'sign' } });
+  }
+
+  private isPendingDocument(doc: DocumentDto): boolean {
     return (
       doc.status === DocumentStatus.PendingSignatures || doc.status === DocumentStatus.PartiallyCompleted
     )
+  }
+
+  private getCurrentUserPendingSignerId(doc: DocumentDto): string | null {
+    if (!this.currentUserEmail || !this.isPendingDocument(doc)) {
+      return null;
+    }
+
+    for (const flow of doc.signatureFlows ?? []) {
+      const currentStep = Number(flow.currentStep ?? 0);
+      const signers = Array.isArray(flow.signers) ? flow.signers : [];
+
+      const candidate = signers.find((signer) => {
+        const signerEmail = this.normalizeEmail(signer.email);
+        const signerStatus = Number(signer.status ?? 0);
+        const signerOrder = Number(signer.signOrder ?? 0);
+        const isPending = signerStatus === 1 && !signer.signedAt;
+
+        if (!isPending || signerEmail !== this.currentUserEmail) {
+          return false;
+        }
+
+        if (flow.flowType === this.FLOW_TYPE_PARALLEL) {
+          return true;
+        }
+
+        if (flow.flowType === this.FLOW_TYPE_SEQUENTIAL) {
+          return signerOrder === currentStep;
+        }
+
+        return signerOrder <= currentStep;
+      });
+
+      if (candidate) {
+        return candidate.id;
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeEmail(email?: string | null): string | null {
+    if (!email) {
+      return null;
+    }
+    return email.trim().toLowerCase();
   }
 
   canDelete(doc: DocumentDto): boolean {

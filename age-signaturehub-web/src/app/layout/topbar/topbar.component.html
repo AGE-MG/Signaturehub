@@ -20,17 +20,14 @@
       [matMenuTriggerFor]="notificationMenu"
       class="notification-btn"
     >
-      @if (
-        unreadCount > 0
-      ) {
-        <mat-icon
-          matBadge="{{ unreadCount }}"
-          matBadgeColor="warn"
-          >notifications</mat-icon
-        >
-      } @else {
-        <mat-icon>notifications_none</mat-icon>
-      }
+      <mat-icon
+        [matBadge]="unreadCount"
+        [matBadgeHidden]="unreadCount === 0"
+        matBadgeColor="warn"
+        aria-hidden="false"
+      >
+        {{ unreadCount > 0 ? 'notifications' : 'notifications_none' }}
+      </mat-icon>
     </button>
 
     <!-- User Menu -->
@@ -61,33 +58,35 @@
     <h3>
       Notificações
     </h3>
-    @if (unreadCount > 0) {
-      <button
-        mat-button
-        color="primary"
-        (click)="markAllAsRead()"
-      >
-        Marcar todas como lidas
-      </button>
-    }
+    <button
+      mat-button
+      color="primary"
+      [disabled]="unreadCount === 0"
+      [style.visibility]="unreadCount > 0 ? 'visible' : 'hidden'"
+      (click)="markAllAsRead()"
+    >
+      Marcar todas como lidas
+    </button>
   </div>
   <mat-divider></mat-divider>
 
-  @if (loadingNotifications) {
-    <div
-      class="loading-notifications"
-      (click)="$event.stopPropagation()"
-    >
-      <mat-spinner diameter="30"></mat-spinner>
-    </div>
-  } @else if (notifications.length === 0) {
-    <div
-      class="empty-notifications"
-      (click)="$event.stopPropagation()"
-    >
-      <p>Nenhuma notificação</p>
-    </div>
-  } @else {
+  <div
+    class="loading-notifications"
+    (click)="$event.stopPropagation()"
+    [style.display]="loadingNotifications ? 'flex' : 'none'"
+  >
+    <mat-spinner diameter="30"></mat-spinner>
+  </div>
+
+  <div
+    class="empty-notifications"
+    (click)="$event.stopPropagation()"
+    [style.display]="!loadingNotifications && notifications.length === 0 ? 'block' : 'none'"
+  >
+    <p>Nenhuma notificação</p>
+  </div>
+
+  <div [style.display]="!loadingNotifications && notifications.length > 0 ? 'block' : 'none'">
     @for (notification of notifications.slice(0, 5); track notification.id) {
       <button
         mat-menu-item
@@ -107,30 +106,29 @@
           <p class="notification-message">{{ notification.message }}</p>
           <span class="notification-time">{{ getRelativeTime(notification.createdAt) }}</span>
         </div>
-        @if (!notification.isRead) {
-          <button
-            mat-icon-button
-            class="mark-read-btn"
-            (click)="markAsRead(notification, $event)"
-            matTooltip="Marcar como lida"
-          >
-            <mat-icon>check</mat-icon>
-          </button>
-        }
+        <button
+          mat-icon-button
+          class="mark-read-btn"
+          [disabled]="notification.isRead"
+          [style.visibility]="notification.isRead ? 'hidden' : 'visible'"
+          (click)="markAsRead(notification, $event)"
+          matTooltip="Marcar como lida"
+        >
+          <mat-icon>check</mat-icon>
+        </button>
       </button>
     }
 
-    @if (notifications.length > 5) {
-      <mat-divider></mat-divider>
-      <button
-        mat-menu-item
-        class="view-all"
-        (click)="viewAllNotifications()"
-      >
-        Ver todas as notificações ({{ notifications.length }})
-      </button>
-    }
-  }
+    <mat-divider [style.display]="notifications.length > 5 ? 'block' : 'none'"></mat-divider>
+    <button
+      mat-menu-item
+      class="view-all"
+      [style.display]="notifications.length > 5 ? 'block' : 'none'"
+      (click)="viewAllNotifications()"
+    >
+      Ver todas as notificações ({{ notifications.length }})
+    </button>
+  </div>
 </mat-menu>
 
 <!-- User Menu -->
