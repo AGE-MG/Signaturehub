@@ -34,8 +34,8 @@
     @for (item of menuItems; track item.route) {
       <a
         [routerLink]="item.route"
-        routerLinkActive="active"
         class="nav-item"
+        [class.active]="isActiveRoute(item.route)"
         [matTooltip]="collapsed ? item.label : ''"
         matTooltipPosition="right"
       >
@@ -43,10 +43,6 @@
 
         @if (!collapsed) {
           <span class="nav-label">{{ item.label }}</span>
-        }
-
-        @if (item.badge && !collapsed) {
-          <span class="badge">{{ item.badge }}</span>
         }
       </a>
     }

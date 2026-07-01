@@ -38,6 +38,7 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Repositories
             return await _dbSet
             .Include(s => s.SignatureFlow)
             .ThenInclude(sf => sf.Document)
+            .ThenInclude(d => d.Versions)
             .Include(s => s.SignatureFlow)
             .ThenInclude(sf => sf.Signers)
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);

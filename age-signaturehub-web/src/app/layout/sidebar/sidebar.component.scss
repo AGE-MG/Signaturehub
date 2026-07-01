@@ -110,6 +110,12 @@
       text-align: center;
     }
 
+    .badge-hidden {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
     &:hover {
       background: rgba(21, 101, 192, 0.05);
       color: var(--primary-color);

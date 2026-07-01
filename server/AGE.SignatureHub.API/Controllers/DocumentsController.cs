@@ -145,5 +145,56 @@ namespace AGE.SignatureHub.API.Controllers
 
             return File(result.FileStream, result.ContentType, result.FileName);
         }
+
+        /// <summary>
+        /// Deletes a draft document created by the authenticated user.
+        /// </summary>
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteDocument(Guid id, CancellationToken cancellationToken)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            var document = await _unitOfWork.Documents.GetByIdWithAllRelationsAsync(id, cancellationToken);
+            if (document is null)
+            {
+                return NotFound(new[] { "Documento não encontrado." });
+            }
+
+            if (document.CreatedByUserId != parsedUserId)
+            {
+                return Forbid();
+            }
+
+            if (document.Status != DocumentStatus.Draft)
+            {
+                return BadRequest(new[] { "Apenas documentos em rascunho podem ser excluídos." });
+            }
+
+            document.MarkAsDeleted();
+
+            foreach (var flow in document.SignatureFlows)
+            {
+                flow.MarkAsDeleted();
+
+                foreach (var signer in flow.Signers)
+                {
+                    signer.MarkAsDeleted();
+                }
+            }
+
+            await _unitOfWork.Documents.UpdateAsync(document, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
     }
 }

@@ -1,29 +1,42 @@
-import { AfterContentChecked, ChangeDetectorRef, Component, NgZone, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { DocumentDto, DocumentStatusColor, DocumentStatusLabel, formatFileSize } from '../../../../core/models/document.model';
 import { DocumentStatus } from '../../../../core/models/dasboard.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DocumentService } from '../../../../core/services/document.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialog } from '@angular/material/dialog';
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatIconModule } from "@angular/material/icon";
-import { MatCardModule } from "@angular/material/card";
 import {MatTabChangeEvent, MatTabsModule} from "@angular/material/tabs"
-import { MatDivider } from "@angular/material/divider";
-import { DatePipe } from '@angular/common';
-import { MatProgressBar } from "@angular/material/progress-bar";
 import { AuditLogDto } from '../../../../core/models/signer.model';
-import { AuditLogService } from '../../../../core/services/signer.service';
+import { AuditLogService, SignatureFlowService } from '../../../../core/services/signer.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { asyncScheduler, observeOn } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CreateSignatureFlowDto, SignerRole } from '../../../../core/models/signer.model';
+import { DocumentDetailsHeaderComponent } from './components/document-details-header/document-details-header.component';
+import { DocumentDetailsTitleCardComponent } from './components/document-details-title-card/document-details-title-card.component';
+import { DocumentDetailsInfoTabComponent } from './components/document-details-info-tab/document-details-info-tab.component';
+import { DocumentDetailsSignaturesTabComponent } from './components/document-details-signatures-tab/document-details-signatures-tab.component';
+import { DocumentDetailsHistoryTabComponent } from './components/document-details-history-tab/document-details-history-tab.component';
 
 @Component({
   selector: 'app-document-details',
-  imports: [MatProgressSpinner, MatIconModule, MatCardModule, MatTabsModule, MatDivider, DatePipe, MatProgressBar],
+  imports: [
+    MatProgressSpinner,
+    MatIconModule,
+    MatTabsModule,
+    FormsModule,
+    DocumentDetailsHeaderComponent,
+    DocumentDetailsTitleCardComponent,
+    DocumentDetailsInfoTabComponent,
+    DocumentDetailsSignaturesTabComponent,
+    DocumentDetailsHistoryTabComponent,
+  ],
   templateUrl: './document-details.component.html',
   styleUrls: ['./document-details.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
+export class DocumentDetailsComponent implements OnInit {
   document: DocumentDto = this.createEmptyDocument();
   auditLogs: AuditLogDto[] = [];
   loadingLogs = false;
@@ -31,14 +44,22 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
   actionLoading = false;
   documentId = '';
   currentUserEmail: string | null = null;
+  currentUserPendingSignerId: string | null = null;
+  canCurrentUserSign = false;
+  signBlockReason: string | null = null;
   totalSignatories = 0;
   signedCount = 0;
   signatureProcess = 0;
+  flowFormOpen = false;
+  flowFormMode: 'start' | 'transfer' = 'start';
+  flowFormName = '';
+  flowFormEmail = '';
+  flowFormDocument = '';
 
   private readonly FLOW_TYPE_SEQUENTIAL = 1;
   private readonly FLOW_TYPE_PARALLEL = 2;
 
-  private readonly ACTION_META: Record<string, { label: string; icon: string; color: string }> = {
+  readonly actionMeta: Record<string, { label: string; icon: string; color: string }> = {
     'document_created':    { label: 'Documento criado',    icon: 'add_circle',   color: '#10b981' },
     'document_uploaded':   { label: 'Upload realizado',    icon: 'upload_file',  color: '#3b82f6' },
     'document_signed':     { label: 'Assinado',            icon: 'draw',         color: '#10b981' },
@@ -55,101 +76,98 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
   readonly DocumentStatusLabel = DocumentStatusLabel
   readonly DocumentStatusColor = DocumentStatusColor
   readonly formatFileSize = formatFileSize
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor(
+    private cdr: ChangeDetectorRef,
     private router: Router,
     private route: ActivatedRoute,
     private documentService: DocumentService,
     private auditLogService: AuditLogService,
+    private signatureFlowService: SignatureFlowService,
     private authService: AuthService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog,
-    private ngZone: NgZone,
-    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.documentId = this.route.snapshot.paramMap.get('id') || '';
-    this.currentUserEmail = this.normalizeEmail(this.authService.getUserValue()?.email);
+    this.currentUserEmail = this.resolveCurrentUserEmail();
 
     const action = this.route.snapshot.queryParamMap.get('action');
 
-    setTimeout(() => {
-      this.loadDocument(() => {
-        if (action === 'sign' && this.canCurrentUserSign) {
-          setTimeout(() => this.confirmSign(), 0);
-        }
-      });
-    }, 0);
+    this.loadDocument(() => {
+      if (action === 'sign' && this.canCurrentUserSign) {
+        setTimeout(() => this.confirmSign(), 0);
+      }
+    });
   }
 
   loadAuditLogs(): void {
     if (!this.documentId || this.auditLogs.length > 0) return;
     this.loadingLogs = true;
     this.auditLogService.GetByDocument(this.documentId).pipe(
-      observeOn(asyncScheduler)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (logs) => {
-        this.ngZone.run(() => {
-          this.auditLogs = Array.isArray(logs) ? logs : [];
-          this.loadingLogs = false;
-        });
+        this.auditLogs = Array.isArray(logs) ? logs : [];
+        this.loadingLogs = false;
       },
       error: () => {
-        this.ngZone.run(() => {
-          this.loadingLogs = false;
-          this.snackBar.open('Falha ao carregar o histórico de auditoria', 'Fechar', { duration: 3000 });
-        });
+        this.loadingLogs = false;
+        this.snackBar.open('Falha ao carregar o histórico de auditoria', 'Fechar', { duration: 3000 });
       },
     });
-  }
-
-  getLogMeta(action: string): { label: string; icon: string; color: string } {
-    if (!action) return { label: action ?? 'Ação', icon: 'history', color: '#94a3b8' };
-    return this.ACTION_META[action.toLowerCase().replace(/ /g, '_')] ?? { label: action, icon: 'history', color: '#94a3b8' };
   }
 
   loadDocument(callback?: () => void): void {
     if (!this.documentId) {
       this.snackBar.open('ID de documento inválido', 'Fechar', { duration: 3000 });
-      this.router.navigate(['/documents']);
+      this.loading = false;
+      this.cdr.markForCheck();
       return;
     }
     this.loading = true;
     this.documentService.getDocumentById(this.documentId).pipe(
-      observeOn(asyncScheduler)
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (doc) => {
-        this.ngZone.run(() => {
+        try {
+          const signatureFlows = Array.isArray(doc?.signatureFlows)
+            ? doc.signatureFlows
+            : [];
+
           this.document = {
             ...doc,
-            signatureFlows: (doc.signatureFlows ?? []).map(flow => ({
+            signatureFlows: signatureFlows.map((flow) => ({
               ...flow,
-              signers: [...(flow.signers ?? [])]
+              signers: Array.isArray(flow?.signers)
+                ? flow.signers.filter((signer): signer is NonNullable<typeof signer> => !!signer)
+                : []
             }))
           };
+
+          this.refreshSignState();
           this.updateSignatureStats();
-          // Defer final state flip to avoid dev-mode NG0100 on first render/hydration.
-          setTimeout(() => {
-            this.loading = false;
-            callback?.();
-          }, 0);
-        });
+          this.loading = false;
+          this.cdr.markForCheck();
+
+          if (callback) {
+            setTimeout(() => callback(), 0);
+          }
+        } catch (error) {
+          console.error('Erro ao processar detalhes do documento:', error);
+          this.snackBar.open('Falha ao processar os detalhes do documento', 'Fechar', { duration: 3000 });
+          this.loading = false;
+          this.cdr.markForCheck();
+        }
       },
-      error: () => {
-        this.ngZone.run(() => {
-          setTimeout(() => {
-            this.loading = false;
-            this.snackBar.open('Falha ao carregar os detalhes do documento', 'Fechar', { duration: 3000 });
-            this.router.navigate(['/documents']);
-          }, 0);
-        });
+      error: (err) => {
+        console.error('Falha ao carregar documento:', err);
+        this.loading = false;
+        this.cdr.markForCheck();
+        this.snackBar.open('Falha ao carregar os detalhes do documento', 'Fechar', { duration: 3000 });
       },
     });
-  }
-
-  ngAfterContentChecked(): void {
-    this.cdr.detectChanges();
   }
 
   onTabChange(event: MatTabChangeEvent): void {
@@ -163,7 +181,8 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
   get canSign(): boolean {
     return (
       this.document.status === DocumentStatus.PendingSignatures ||
-      this.document.status === DocumentStatus.PartiallyCompleted
+      this.document.status === DocumentStatus.PartiallyCompleted ||
+      !!this.currentUserPendingSignerId
     )
   }
 
@@ -174,11 +193,23 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
     )
   }
 
-  get canCurrentUserSign(): boolean {
-    return !!this.getCurrentUserPendingSigner();
+  get canStartFlow(): boolean {
+    return !!this.document.id && this.document.status === DocumentStatus.Draft;
   }
 
-  get signBlockReason(): string | null {
+  get canTransferResponsibility(): boolean {
+    if (!this.document.id || !this.currentUserEmail) {
+      return false;
+    }
+
+    return (this.document.signatureFlows ?? []).some((flow) =>
+      (flow.signers ?? []).some((signer) =>
+        this.normalizeEmail(signer.email) === this.currentUserEmail && !!signer.signedAt
+      )
+    );
+  }
+
+  private computeSignBlockReason(): string | null {
     if (!this.canSign) {
       return null;
     }
@@ -194,16 +225,22 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
     return 'Este documento está aguardando assinatura de outro signatário nesta etapa.';
   }
 
+  private refreshSignState(): void {
+    this.currentUserPendingSignerId = this.computeCurrentUserPendingSignerId();
+    this.canCurrentUserSign = !!this.currentUserPendingSignerId;
+    this.signBlockReason = this.computeSignBlockReason();
+  }
+
   private updateSignatureStats(): void {
     const flows = this.document?.signatureFlows ?? [];
 
     const total = flows.reduce((acc, flow) => {
-      const signers = Array.isArray(flow.signers) ? flow.signers : [];
+      const signers = Array.isArray(flow.signers) ? flow.signers.filter((s): s is NonNullable<typeof s> => !!s) : [];
       return acc + signers.length;
     }, 0);
 
     const signed = flows.reduce((acc, flow) => {
-      const signers = Array.isArray(flow.signers) ? flow.signers : [];
+      const signers = Array.isArray(flow.signers) ? flow.signers.filter((s): s is NonNullable<typeof s> => !!s) : [];
       return acc + signers.filter(s => !!s.signedAt).length;
     }, 0);
 
@@ -230,9 +267,9 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
 
   confirmSign(): void {
     if (!this.document.id || !this.canSign) return;
-    const pendingSigner = this.getCurrentUserPendingSigner();
+    this.refreshSignState();
 
-    if (!pendingSigner) {
+    if (!this.currentUserPendingSignerId) {
       this.snackBar.open(this.signBlockReason ?? 'Você não possui pendência de assinatura neste documento.', 'Fechar', { duration: 4000 });
       return;
     }
@@ -242,35 +279,41 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
     this.actionLoading = true;
 
     const signPayload = {
-      signerId: pendingSigner.id,
+      signerId: this.currentUserPendingSignerId,
       signatureType: 1,
-      certificateData: [],
       pin: '',
-      deviceInfo: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown',
+      ipAddress: this.getSafeIpAddress(),
+      userAgent: this.getSafeUserAgent(),
+      deviceInfo: this.getSafeDeviceInfo(),
       location: 'WebApp'
     };
 
     this.documentService.signDocument(signPayload).subscribe({
       next: () => {
         this.actionLoading = false;
+        this.cdr.markForCheck();
         this.snackBar.open('Documento assinado com sucesso', 'Fechar', { duration: 3000 });
         this.loadDocument();
       },
-      error: () => {
+      error: (err) => {
         this.actionLoading = false;
-        this.snackBar.open('Falha ao assinar o documento', 'Fechar', { duration: 3000 });
+        this.cdr.markForCheck();
+        const apiMessage = Array.isArray(err?.error)
+          ? err.error.join(' | ')
+          : err?.error?.message || err?.error?.title || null;
+        this.snackBar.open(apiMessage ?? 'Falha ao assinar o documento', 'Fechar', { duration: 4000 });
       }
     })
   }
 
-  private getCurrentUserPendingSigner(): { id: string } | null {
+  private computeCurrentUserPendingSignerId(): string | null {
     if (!this.currentUserEmail) {
       return null;
     }
 
     for (const flow of this.document.signatureFlows ?? []) {
       const currentStep = Number(flow.currentStep ?? 0);
-      const signers = Array.isArray(flow.signers) ? flow.signers : [];
+      const signers = Array.isArray(flow.signers) ? flow.signers.filter((s): s is NonNullable<typeof s> => !!s) : [];
 
       const candidates = signers.filter((signer) => {
         const signerEmail = this.normalizeEmail(signer.email);
@@ -294,7 +337,7 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
       });
 
       if (candidates.length > 0) {
-        return { id: candidates[0].id };
+        return candidates[0].id;
       }
     }
 
@@ -306,6 +349,52 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
       return null;
     }
     return email.trim().toLowerCase();
+  }
+
+  private resolveCurrentUserEmail(): string | null {
+    const serviceUser = (this.authService as { getUserValue?: () => { email?: string | null } | null })
+      .getUserValue?.();
+
+    const serviceEmail = this.normalizeEmail(serviceUser?.email);
+    if (serviceEmail) {
+      return serviceEmail;
+    }
+
+    try {
+      const raw = localStorage.getItem('currentUser');
+      if (!raw) {
+        return null;
+      }
+
+      const parsed = JSON.parse(raw) as { email?: string | null };
+      return this.normalizeEmail(parsed?.email);
+    } catch {
+      return null;
+    }
+  }
+
+  private getSafeDeviceInfo(): string {
+    if (typeof navigator === 'undefined') {
+      return 'WebApp';
+    }
+
+    const platform = navigator.platform || 'UnknownPlatform';
+    const ua = navigator.userAgent || 'UnknownBrowser';
+    const safe = `${platform} | ${ua}`;
+    return safe.length <= 100 ? safe : safe.slice(0, 100);
+  }
+
+  private getSafeUserAgent(): string {
+    if (typeof navigator === 'undefined') {
+      return 'WebApp';
+    }
+
+    const ua = navigator.userAgent || 'WebApp';
+    return ua.length <= 500 ? ua : ua.slice(0, 500);
+  }
+
+  private getSafeIpAddress(): string {
+    return '0.0.0.0';
   }
 
   confirmDelete(): void {
@@ -323,6 +412,106 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
         this.snackBar.open('Falha ao excluir o documento', 'Fechar', { duration: 3000 });
       }
     })
+  }
+
+  startSignatureFlow(): void {
+    if (!this.document.id || !this.canStartFlow) {
+      return;
+    }
+
+    this.openFlowForm('start');
+  }
+
+  transferResponsibility(): void {
+    if (!this.document.id || !this.canTransferResponsibility) {
+      return;
+    }
+
+    this.openFlowForm('transfer');
+  }
+
+  get flowFormTitle(): string {
+    return this.flowFormMode === 'start'
+      ? 'Iniciar Fluxo de Assinatura'
+      : 'Transferir Responsabilidade';
+  }
+
+  get flowFormDescription(): string {
+    return this.flowFormMode === 'start'
+      ? 'Informe os dados do primeiro assinante do fluxo.'
+      : 'Informe os dados do novo responsável pela assinatura.';
+  }
+
+  closeFlowForm(): void {
+    this.flowFormOpen = false;
+    this.flowFormName = '';
+    this.flowFormEmail = '';
+    this.flowFormDocument = '';
+    this.cdr.markForCheck();
+  }
+
+  submitFlowForm(): void {
+    const signerName = this.flowFormName.trim();
+    const signerEmail = this.flowFormEmail.trim();
+    const signerDocument = this.flowFormDocument.trim();
+
+    if (!this.document.id || !signerName || !signerEmail || !signerDocument) {
+      this.snackBar.open('Nome, e-mail e CPF/CNPJ são obrigatórios.', 'Fechar', { duration: 4000 });
+      return;
+    }
+
+    const flowName = this.flowFormMode === 'start'
+      ? `Fluxo ${this.document.title}`
+      : `Transferência de responsabilidade - ${this.document.title}`;
+
+    const payload: CreateSignatureFlowDto = {
+      documentId: this.document.id,
+      flowName,
+      flowType: 1,
+      signers: [
+        {
+          name: signerName,
+          email: signerEmail,
+          document: signerDocument,
+          role: SignerRole.Signer,
+          signOrder: 1,
+        },
+      ],
+    };
+
+    this.actionLoading = true;
+    this.signatureFlowService.create(payload).subscribe({
+      next: () => {
+        this.actionLoading = false;
+        this.closeFlowForm();
+        this.cdr.markForCheck();
+        this.snackBar.open(
+          this.flowFormMode === 'start'
+            ? 'Fluxo de assinatura iniciado com sucesso.'
+            : 'Responsabilidade transferida com sucesso para novo fluxo.',
+          'Fechar',
+          { duration: 3500 }
+        );
+        this.loadDocument();
+      },
+      error: (err) => {
+        this.actionLoading = false;
+        this.cdr.markForCheck();
+        const apiMessage = Array.isArray(err?.error)
+          ? err.error.join(' | ')
+          : err?.error?.message || err?.error?.title || 'Falha ao salvar fluxo.';
+        this.snackBar.open(apiMessage, 'Fechar', { duration: 5000 });
+      }
+    });
+  }
+
+  private openFlowForm(mode: 'start' | 'transfer'): void {
+    this.flowFormMode = mode;
+    this.flowFormName = '';
+    this.flowFormEmail = '';
+    this.flowFormDocument = '';
+    this.flowFormOpen = true;
+    this.cdr.markForCheck();
   }
 
   getFileIcon(): string {
@@ -345,18 +534,6 @@ export class DocumentDetailsComponent implements OnInit, AfterContentChecked {
       '.txt': '#757575',
     };
     return map[ext ?? ''] ?? '#94a3b8';
-  }
-
-  getSignatoryInitials(name?: string): string {
-    if (!name) {
-      return '??';
-    }
-
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n.charAt(0).toUpperCase())
-      .join('');
   }
 
   goBack(): void {

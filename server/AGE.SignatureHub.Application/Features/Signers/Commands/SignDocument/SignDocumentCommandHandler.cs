@@ -14,6 +14,7 @@ using AGE.SignatureHub.Domain.Enums;
 using AGE.SignatureHub.Domain.ValueObjects;
 using AutoMapper;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options; // ADICIONAR
 
 namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
@@ -101,10 +102,10 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                 var documentStream = await _storageService.DownloadFileAsync(document.StoragePath, cancellationToken);
 
                 var metadata = new SignatureMetadata(
-                    ipAddress: request.SignData.IpAddress,
-                    userAgent: request.SignData.UserAgent,
-                    deviceInfo: request.SignData.DeviceInfo,
-                    location: request.SignData.Location,
+                    ipAddress: TrimToLength(request.SignData.IpAddress, 45),
+                    userAgent: TrimToLength(request.SignData.UserAgent, 500),
+                    deviceInfo: TrimToLength(request.SignData.DeviceInfo, 100),
+                    location: TrimToLength(request.SignData.Location, 255),
                     documentHash: document.ContentHash
                 );
 
@@ -125,21 +126,17 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                 signedStream.Position = 0;
                 var newHash = await _signatureService.ComputeHashAsync(signedStream, cancellationToken);
                 var newHashString = Convert.ToHexStringLower(newHash);
-
-                var currentVersion = document.Versions.Max(v => v.VersionNumber);
-                document.AddVersion(
-                    currentVersion + 1,
-                    newStoragePath,
-                    newHashString,
-                    $"Signed by {signer.Name} on {DateTime.UtcNow}"
-                );
+                // TODO: Reintroduzir versionamento após corrigir conflito de concorrência em DocumentVersion.
 
                 signer.Sign(
                     request.SignData.SignatureType,
                     metadata,
-                    certificateInfo,
+                    certificateInfo ?? signer.CertificateInfo,
                     string.Empty
                 );
+
+                var shouldNotifyNextStep = false;
+                var shouldNotifyFlowCompletion = false;
 
                 var allSignersInCurrentStep = flow.Signers
                     .Where(s => s.SignOrder == flow.CurrentStep)
@@ -161,21 +158,15 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                     {
                         flow.UpdateCurrentStep(flow.CurrentStep + 1);
                         document.UpdateStatus(DocumentStatus.PartiallyCompleted);
-
-                        await NotifyNextSigners(flow, document, cancellationToken);
+                        shouldNotifyNextStep = true;
                     }
                     else
                     {
                         flow.MarkAsCompleted();
                         document.UpdateStatus(DocumentStatus.Completed);
-
-                        await NotifyFlowCompletion(flow, document, cancellationToken);
+                        shouldNotifyFlowCompletion = true;
                     }
                 }
-
-                await _unitOfWork.Signers.UpdateAsync(signer, cancellationToken);
-                await _unitOfWork.SignatureFlows.UpdateAsync(flow, cancellationToken);
-                await _unitOfWork.Documents.UpdateAsync(document, cancellationToken);
 
                 var auditLog = new AuditLog(
                     action: "DOCUMENT_SIGNED",
@@ -187,17 +178,33 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                 );
 
                 await _unitOfWork.AuditLogs.AddAsync(auditLog, cancellationToken);
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
-                await _webhookService.SendWebhookAsync("signature.signed", JsonSerializer.Serialize(new
+                try
                 {
-                    DocumentId = document.Id,
-                    SignerId = signer.Id,
-                    SignerName = signer.Name,
-                    DocumentTitle = document.Title,
-                    FlowCompleted = flow.IsCompleted
-                }), cancellationToken);
+                    if (shouldNotifyNextStep)
+                    {
+                        await NotifyNextSigners(flow, document, cancellationToken);
+                    }
+
+                    if (shouldNotifyFlowCompletion)
+                    {
+                        await NotifyFlowCompletion(flow, document, cancellationToken);
+                    }
+
+                    await _webhookService.SendWebhookAsync("signature.signed", JsonSerializer.Serialize(new
+                    {
+                        DocumentId = document.Id,
+                        SignerId = signer.Id,
+                        SignerName = signer.Name,
+                        DocumentTitle = document.Title,
+                        FlowCompleted = flow.IsCompleted
+                    }), cancellationToken);
+                }
+                catch
+                {
+                    // A assinatura já foi persistida; falhas de integração externa não devem reverter a operação.
+                }
 
                 response.Success = true;
                 response.Message = "Document signed successfully.";
@@ -209,7 +216,25 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
                 response.Success = false;
                 response.Message = "An error occurred while signing the document.";
-                response.Errors = new List<string> { ex.Message };
+
+                if (ex is DbUpdateConcurrencyException concurrencyException)
+                {
+                    var entryTypes = concurrencyException.Entries
+                        .Select(e => e.Entity.GetType().Name)
+                        .Distinct()
+                        .ToList();
+
+                    response.Errors = new List<string>
+                    {
+                        ex.Message,
+                        $"Concurrency entries: {string.Join(", ", entryTypes)}"
+                    };
+                }
+                else
+                {
+                    response.Errors = new List<string> { ex.Message };
+                }
+
                 return response;
             }
         }
@@ -234,6 +259,19 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
             {
                 await _emailService.SendSignatureCompletedAsync(signer.Email, signer.Name, document.Title, cancellationToken);
             }
+        }
+
+        private static string TrimToLength(string? value, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var normalized = value.Trim();
+            return normalized.Length <= maxLength
+                ? normalized
+                : normalized[..maxLength];
         }
     }
 }

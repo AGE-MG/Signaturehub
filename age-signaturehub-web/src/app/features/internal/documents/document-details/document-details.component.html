@@ -1,152 +1,39 @@
 <div
-class="details-page">
-  <div
-    class="loading-container"
-    [style.display]="loading ? 'flex' : 'none'"
-  >
+class="details-page"
+>
+  @if (loading) {
+    <div class="loading-container">
       <mat-spinner
         mode="indeterminate"
         diameter="48"
       ></mat-spinner>
       <p>Carregando documento...</p>
-  </div>
-
-  <div [style.display]="!loading ? 'block' : 'none'">
-    <div
-      class="page-header"
-    >
-      <div
-        class="header-nav"
-      >
-        <button
-          mat-icon-button
-          (click)="goBack()"
-          matTooltip="Voltar para documentos"
-        >
-          <mat-icon>arrow_back</mat-icon>
-        </button>
-        <div
-          class="breadcrumbs"
-        >
-          <span
-            class="breadcrumb-link"
-            (click)="goBack()"
-          >
-            Documentos
-          </span>
-          <span class="breadcrumb-sep">chevron_right</span>
-          <span
-            class="breadcrumb-current"
-          >
-            {{ document.title }}
-          </span>
-        </div>
-      </div>
-
-      <div
-        class="header-actions"
-      >
-        <button
-          mat-stroked-button
-          (click)="download()"
-        >
-          <mat-icon>download</mat-icon>
-          Baixar
-        </button>
-        @if (canSign) {
-          <button
-            mat-raised-button
-            color="primary"
-            (click)="confirmSign()"
-            [disabled]="actionLoading || !canCurrentUserSign"
-          >
-            @if (actionLoading) {
-              <mat-spinner
-                mode="indeterminate"
-                diameter="18"
-              ></mat-spinner>
-            } @else {
-              <mat-icon>draw</mat-icon>
-              Assinar Documento
-            }
-          </button>
-        }
-        @if (canDelete) {
-          <button
-            mat-stroked-button
-            color="warn"
-            (click)="confirmDelete()"
-            [disabled]="actionLoading"
-          >
-            @if (actionLoading) {
-              <mat-spinner
-                mode="indeterminate"
-                diameter="18"
-              ></mat-spinner>
-            } @else {
-              <mat-icon>delete</mat-icon>
-              Excluir Documento
-            }
-          </button>
-        }
-      </div>
     </div>
+  } @else {
+    <app-document-details-header
+      [title]="document.title"
+      [canSign]="canSign"
+      [canDelete]="canDelete"
+      [canStartFlow]="canStartFlow"
+      [canTransferResponsibility]="canTransferResponsibility"
+      [actionLoading]="actionLoading"
+      [canCurrentUserSign]="canCurrentUserSign"
+      [signBlockReason]="signBlockReason"
+      (backClicked)="goBack()"
+      (downloadClicked)="download()"
+      (startFlowClicked)="startSignatureFlow()"
+      (transferResponsibilityClicked)="transferResponsibility()"
+      (signClicked)="confirmSign()"
+      (deleteClicked)="confirmDelete()"
+    ></app-document-details-header>
 
-    @if (signBlockReason) {
-      <div class="sign-warning">
-        <mat-icon>info</mat-icon>
-        <span>{{ signBlockReason }}</span>
-      </div>
-    }
-
-    <!-- Title card -->
-    <mat-card
-      class="title-card"
-    >
-      <div
-        class="title-card-content"
-      >
-        <mat-icon
-          [style.color]="getFileIconColor()"
-          class="doc-main-icon"
-        >
-          {{getFileIcon()}}
-        </mat-icon>
-        <div
-          class="title-info"
-        >
-          <h2
-            class="doc-title"
-          >
-            {{ document.title }}
-          </h2>
-          <p
-            class="doc-filename"
-          >
-            {{ document.originalFileName }}
-          </p>
-          @if (document.description) {
-            <p
-              class="doc-description"
-            >
-              {{ document.description }}
-            </p>
-          }
-        </div>
-        <div
-          class="title-badges"
-        >
-          <span
-            class="status-chip"
-            [style.background]="DocumentStatusColor[document.status] + '18'"
-            [style.color]="DocumentStatusColor[document.status]"
-            [style.border-color]="DocumentStatusColor[document.status] + '50'"
-          >
-            {{DocumentStatusLabel[document.status]}}
-          </span>
-        </div>
-      </div>
-    </mat-card>
+    <app-document-details-title-card
+      [document]="document"
+      [fileIcon]="getFileIcon()"
+      [fileIconColor]="getFileIconColor()"
+      [statusLabel]="DocumentStatusLabel"
+      [statusColor]="DocumentStatusColor"
+    ></app-document-details-title-card>
 
     <!-- tabs -->
     <mat-tab-group
@@ -160,157 +47,12 @@ class="details-page">
           detalhes
         </ng-template>
 
-        <div
-          class="tab-content"
-        >
-          <div
-            class="details-grid"
-          >
-
-          <div
-            class="detail-group"
-          >
-            <h3
-              class="group-title"
-            >
-              Informações do Arquivo
-            </h3>
-            <mat-divider></mat-divider>
-            <div
-              class="detail-list"
-            >
-              <div
-                class="detail-row"
-              >
-                <span class="detail-label">Nome do Arquivo</span>
-                <span
-                  class="detail-value"
-                >
-                  {{document.originalFileName}}
-                </span>
-              </div>
-              <div
-                class="detail-row"
-              >
-                <span
-                  class="detail-label"
-                >
-                  Extensão
-                </span>
-                <span
-                  class="detail-value"
-                >
-                  {{document.fileExtension.toUpperCase()}}
-                </span>
-              </div>
-              <div
-                class="detail-row"
-              >
-                <span
-                  class="detail-label"
-                >
-                  Tamanho
-                </span>
-                <span
-                  class="detail-value"
-                >
-                  {{formatFileSize(document.fileSizeInBytes)}}
-                </span>
-              </div>
-              <div
-                class="detail-row"
-              >
-                <span
-                  class="detail-label"
-                >
-                  Tipo MIME
-                </span>
-                <span
-                  class="detail-value"
-                >
-                  {{document.mimeType}}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="detail-group"
-          >
-            <h3
-              class="group-title"
-            >
-              Metadados
-            </h3>
-            <mat-divider></mat-divider>
-            <div
-              class="detail-list"
-            >
-              <div
-                class="detail-row"
-              >
-                <span
-                  class="detail-label"
-                >
-                  Status
-                </span>
-                <span
-                  class="status-chip"
-                  [style.background]="DocumentStatusColor[document.status] + '18'"
-                  [style.color]="DocumentStatusColor[document.status]"
-                  [style.border-color]="DocumentStatusColor[document.status] + '50'"
-                >
-                  {{DocumentStatusLabel[document.status]}}
-                </span>
-              </div>
-              <div
-                class="detail-row"
-              >
-                <span
-                  class="detail-label"
-                >
-                  Criado em
-                </span>
-                <span
-                  class="detail-value"
-                >
-                  {{document.createdAt | date:'dd/MM/yyyy HH:mm'}}
-                </span>
-              </div>
-              <div
-                class="detail-row"
-              >
-                <span
-                  class="detail-label"
-                >
-                  Última Modificação
-                </span>
-                <span
-                  class="detail-value"
-                >
-                  {{document.updatedAt | date:'dd/MM/yyyy HH:mm'}}
-                </span>
-              </div>
-              @if (document.expiresAt) {
-                <div
-                  class="detail-row"
-                >
-                  <span
-                    class="detail-label"
-                  >
-                    Expira em
-                  </span>
-                  <span
-                    class="detail-value warn-text"
-                  >
-                    {{document.expiresAt | date:'dd/MM/yyyy HH:mm'}}
-                  </span>
-                </div>
-              }
-            </div>
-          </div>
-          </div>
-        </div>
+        <app-document-details-info-tab
+          [document]="document"
+          [statusLabel]="DocumentStatusLabel"
+          [statusColor]="DocumentStatusColor"
+          [formatFileSize]="formatFileSize"
+        ></app-document-details-info-tab>
       </mat-tab>
 
       <!-- Tab 2: Assinaturas -->
@@ -328,148 +70,12 @@ class="details-page">
           }
         </ng-template>
 
-        <div
-          class="tab-content"
-        >
-          @if(!document.signatureFlows.length) {
-            <div
-              class="empty-tab-state"
-            >
-              <mat-icon>draw</mat-icon>
-              <p>Este documento não possui assinaturas.</p>
-            </div>
-          } @else {
-
-            <!-- Progress Bar -->
-            <div
-              class="signature-progress-card"
-            >
-              <div
-                class="progress-header"
-              >
-                <span>
-                  Progresso das Assinaturas
-                </span>
-                <strong>{{signedCount}} de {{totalSignatories}} assinado{{ totalSignatories !== 1 ? 's' : '' }}</strong>
-              </div>
-
-              <mat-progress-bar
-                mode="determinate"
-                [value]="signatureProcess"
-                [color]="signatureProcess === 100 ? 'primary' : 'accent'"
-              ></mat-progress-bar>
-            </div>
-
-            <!-- Flows -->
-            @for (flow of document.signatureFlows; track flow.id) {
-              <div
-                class="flow-card"
-              >
-                <div
-                  class="flow-header"
-                >
-                  <div
-                    class="flow-title"
-                  >
-                    <mat-icon>
-                      account_tree
-                    </mat-icon>
-                    <span>
-                      {{ flow.flowName || 'Fluxo de Assinatura' }}
-                    </span>
-                  </div>
-                  <span
-                    class="flow-status-badge"
-                  >
-                    {{ flow.isCompleted ? 'Concluído' : 'Em andamento' }}
-                  </span>
-                </div>
-
-                <mat-divider></mat-divider>
-
-                <div
-                  class="signatories-list"
-                >
-                  @for (sig of flow.signers; track sig.id) {
-                    <div
-                      class="signatory-row"
-                      [class.signed]="!!sig.signedAt"
-                    >
-                      <div
-                        class="signatory-avatar"
-                      >
-                        {{getSignatoryInitials(sig.name)}}
-                      </div>
-                      <div
-                        class="signatory-info"
-                        >
-                        <span
-                          class="signatory-name"
-                        >
-                          {{sig.name || 'Sem nome'}}
-                        </span>
-                        <span
-                          class="signatory-email"
-                        >
-                          {{sig.email}}
-                        </span>
-                      </div>
-                      <div
-                        class="signatory-status"
-                      >
-                        @if (sig.signedAt) {
-                          <mat-icon
-                            class="signed-icon"
-                          >
-                            check-circle
-                          </mat-icon>
-                          <div
-                            class="signed-details"
-                          >
-                            <span
-                              class="signed-label"
-                            >
-                              Assinado
-                            </span>
-                            <span
-                              class="signed-date"
-                            >
-                              {{sig.signedAt | date:'dd/MM/yyyy HH:mm'}}
-                            </span>
-                          </div>
-                        } @else {
-                          <mat-icon
-                            class="pending-icon"
-                          >
-                            schedule
-                          </mat-icon>
-                          <span
-                            class="pending-label"
-                          >
-                            Pendente
-                          </span>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-
-                @if (flow.completedAt) {
-                  <div
-                    class="flow-footer"
-                  >
-                    <mat-icon>
-                      check
-                    </mat-icon>
-                    <span>
-                      Fluxo concluído em {{flow.completedAt | date:'dd/MM/yyyy HH:mm'}}
-                    </span>
-                  </div>
-                }
-              </div>
-            }
-          }
-        </div>
+        <app-document-details-signatures-tab
+          [signatureFlows]="document.signatureFlows"
+          [totalSignatories]="totalSignatories"
+          [signedCount]="signedCount"
+          [signatureProcess]="signatureProcess"
+        ></app-document-details-signatures-tab>
       </mat-tab>
 
       <mat-tab>
@@ -478,40 +84,42 @@ class="details-page">
           Histórico
         </ng-template>
 
-        <div class="tab-content">
-          @if (loadingLogs) {
-            <div class="empty-tab-state">
-              <mat-progress-spinner mode="indeterminate" diameter="36"></mat-progress-spinner>
-            </div>
-          } @else if (auditLogs.length === 0) {
-            <div class="empty-tab-state">
-              <mat-icon>manage_search</mat-icon>
-              <p>Nenhum registro de auditoria encontrado.</p>
-            </div>
-          } @else {
-            <div class="timeline">
-              @for (log of auditLogs; track log.id) {
-                <div class="timeline-item">
-                  <div class="tl-icon"
-                    [style.background]="getLogMeta(log.action ?? '').color + '18'"
-                    [style.color]="getLogMeta(log.action ?? '').color">
-                    <mat-icon>{{ getLogMeta(log.action ?? '').icon }}</mat-icon>
-                  </div>
-                  <div class="tl-content">
-                    <span class="tl-action">{{ getLogMeta(log.action ?? '').label }}</span>
-                    @if (log.details) { <span class="tl-details">{{ log.details }}</span> }
-                    <div class="tl-meta">
-                      <span>{{ log.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
-                      @if (log.ipAddress) { <span>IP: {{ log.ipAddress }}</span> }
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        </div>
+        <app-document-details-history-tab
+          [loadingLogs]="loadingLogs"
+          [auditLogs]="auditLogs"
+          [actionMeta]="actionMeta"
+        ></app-document-details-history-tab>
       </mat-tab>
 
     </mat-tab-group>
-  </div>
+  }
+
+  @if (flowFormOpen) {
+    <div class="flow-form-overlay" (click)="closeFlowForm()">
+      <div class="flow-form-modal" (click)="$event.stopPropagation()">
+        <h3>{{ flowFormTitle }}</h3>
+        <p>{{ flowFormDescription }}</p>
+
+        <label>
+          <span>Nome</span>
+          <input type="text" [(ngModel)]="flowFormName" placeholder="Nome completo" />
+        </label>
+
+        <label>
+          <span>E-mail</span>
+          <input type="email" [(ngModel)]="flowFormEmail" placeholder="usuario@dominio.com" />
+        </label>
+
+        <label>
+          <span>CPF/CNPJ</span>
+          <input type="text" [(ngModel)]="flowFormDocument" placeholder="Somente números" />
+        </label>
+
+        <div class="flow-form-actions">
+          <button mat-stroked-button (click)="closeFlowForm()" [disabled]="actionLoading">Cancelar</button>
+          <button mat-raised-button color="primary" (click)="submitFlowForm()" [disabled]="actionLoading">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

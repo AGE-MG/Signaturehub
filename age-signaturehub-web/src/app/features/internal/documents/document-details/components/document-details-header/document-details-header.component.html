@@ -1,0 +1,96 @@
+<div class="page-header">
+  <div class="header-nav">
+    <button
+      mat-icon-button
+      (click)="backClicked.emit()"
+      matTooltip="Voltar para documentos"
+    >
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="breadcrumbs">
+      <span class="breadcrumb-link" (click)="backClicked.emit()">
+        Documentos
+      </span>
+      <span class="breadcrumb-sep">chevron_right</span>
+      <span class="breadcrumb-current">{{ title }}</span>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <button mat-stroked-button (click)="downloadClicked.emit()">
+      <mat-icon>download</mat-icon>
+      Baixar
+    </button>
+
+    @if (canStartFlow) {
+      <button
+        mat-raised-button
+        color="accent"
+        (click)="startFlowClicked.emit()"
+        [disabled]="actionLoading"
+      >
+        <span class="button-content">
+          <mat-icon>account_tree</mat-icon>
+          Iniciar Fluxo
+        </span>
+      </button>
+    }
+
+    @if (canTransferResponsibility) {
+      <button
+        mat-stroked-button
+        color="primary"
+        (click)="transferResponsibilityClicked.emit()"
+        [disabled]="actionLoading"
+      >
+        <span class="button-content">
+          <mat-icon>swap_horiz</mat-icon>
+          Transferir Responsabilidade
+        </span>
+      </button>
+    }
+
+    @if (canSign) {
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="signClicked.emit()"
+        [disabled]="actionLoading || !canCurrentUserSign"
+      >
+        @if (actionLoading) {
+          <mat-spinner mode="indeterminate" diameter="18"></mat-spinner>
+        } @else {
+          <span class="button-content">
+            <mat-icon>draw</mat-icon>
+            Assinar Documento
+          </span>
+        }
+      </button>
+    }
+
+    @if (canDelete) {
+      <button
+        mat-stroked-button
+        color="warn"
+        (click)="deleteClicked.emit()"
+        [disabled]="actionLoading"
+      >
+        @if (actionLoading) {
+          <mat-spinner mode="indeterminate" diameter="18"></mat-spinner>
+        } @else {
+          <span class="button-content">
+            <mat-icon>delete</mat-icon>
+            Excluir Documento
+          </span>
+        }
+      </button>
+    }
+  </div>
+</div>
+
+@if (signBlockReason) {
+  <div class="sign-warning">
+    <mat-icon>info</mat-icon>
+    <span>{{ signBlockReason }}</span>
+  </div>
+}

@@ -5,14 +5,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatIcon } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { SignerService } from '../../core/services/signer.service';
 import { filter, Subject, takeUntil } from 'rxjs';
 
 interface menuItem {
   icon: string;
   label: string;
   route: string;
-  badge?: string;
 }
 
 @Component({
@@ -42,7 +40,6 @@ export class SidebarComponent implements OnInit, OnDestroy {
       icon: 'pending_actions',
       label: 'Pendentes',
       route: '/pending-signatures',
-      badge: undefined,
     },
     {
       icon: 'history',
@@ -57,52 +54,27 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ]
 
   private readonly destroy$ = new Subject<void>();
+  private destroyed = false;
 
   constructor(
     private router: Router,
     private authService: AuthService,
-    private snackBar: MatSnackBar,
-    private signerService: SignerService
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
-    this.refreshPendingBadge();
-
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
         takeUntil(this.destroy$)
       )
-      .subscribe(() => this.refreshPendingBadge());
+      .subscribe();
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private refreshPendingBadge(): void {
-    const email = this.authService.getUserValue()?.email;
-    if (!email) {
-      this.setPendingBadge(0);
-      return;
-    }
-
-    this.signerService.getPendingByEmail(email)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (pending) => this.setPendingBadge(Array.isArray(pending) ? pending.length : 0),
-        error: () => this.setPendingBadge(0),
-      });
-  }
-
-  private setPendingBadge(count: number): void {
-    const pendingItem = this.menuItems.find(item => item.route === '/pending-signatures');
-    if (!pendingItem) {
-      return;
-    }
-
-    pendingItem.badge = count > 0 ? String(count) : undefined;
   }
 
   toggleCollapse(): void {

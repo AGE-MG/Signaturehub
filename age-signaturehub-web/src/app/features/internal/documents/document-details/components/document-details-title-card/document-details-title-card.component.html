@@ -1,0 +1,26 @@
+<mat-card class="title-card">
+  <div class="title-card-content">
+    <mat-icon [style.color]="fileIconColor" class="doc-main-icon">
+      {{ fileIcon }}
+    </mat-icon>
+
+    <div class="title-info">
+      <h2 class="doc-title">{{ document.title }}</h2>
+      <p class="doc-filename">{{ document.originalFileName }}</p>
+      @if (document.description) {
+        <p class="doc-description">{{ document.description }}</p>
+      }
+    </div>
+
+    <div class="title-badges">
+      <span
+        class="status-chip"
+        [style.background]="statusColor[document.status] + '18'"
+        [style.color]="statusColor[document.status]"
+        [style.border-color]="statusColor[document.status] + '50'"
+      >
+        {{ statusLabel[document.status] }}
+      </span>
+    </div>
+  </div>
+</mat-card>

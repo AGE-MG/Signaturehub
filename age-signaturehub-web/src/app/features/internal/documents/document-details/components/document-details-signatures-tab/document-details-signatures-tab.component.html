@@ -1,0 +1,70 @@
+<div class="tab-content">
+  @if (!signatureFlows.length) {
+    <div class="empty-tab-state">
+      <mat-icon>draw</mat-icon>
+      <p>Este documento não possui assinaturas.</p>
+    </div>
+  } @else {
+    <div class="signature-progress-card">
+      <div class="progress-header">
+        <span>Progresso das Assinaturas</span>
+        <strong>{{ signedCount }} de {{ totalSignatories }} assinado{{ totalSignatories !== 1 ? 's' : '' }}</strong>
+      </div>
+
+      <mat-progress-bar
+        mode="determinate"
+        [value]="signatureProcess"
+        [color]="signatureProcess === 100 ? 'primary' : 'accent'"
+      ></mat-progress-bar>
+    </div>
+
+    @for (flow of signatureFlows; track flow.id) {
+      <div class="flow-card">
+        <div class="flow-header">
+          <div class="flow-title">
+            <mat-icon>account_tree</mat-icon>
+            <span>{{ flow.flowName || 'Fluxo de Assinatura' }}</span>
+          </div>
+          <span class="flow-status-badge">
+            {{ flow.isCompleted ? 'Concluído' : 'Em andamento' }}
+          </span>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="signatories-list">
+          @for (sig of flow.signers; track sig.id) {
+            <div class="signatory-row" [class.signed]="!!sig.signedAt">
+              <div class="signatory-avatar">
+                {{ getSignatoryInitials(sig.name) }}
+              </div>
+              <div class="signatory-info">
+                <span class="signatory-name">{{ sig.name || 'Sem nome' }}</span>
+                <span class="signatory-email">{{ sig.email }}</span>
+              </div>
+              <div class="signatory-status">
+                @if (sig.signedAt) {
+                  <mat-icon class="signed-icon">check-circle</mat-icon>
+                  <div class="signed-details">
+                    <span class="signed-label">Assinado</span>
+                    <span class="signed-date">{{ sig.signedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                } @else {
+                  <mat-icon class="pending-icon">schedule</mat-icon>
+                  <span class="pending-label">Pendente</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (flow.completedAt) {
+          <div class="flow-footer">
+            <mat-icon>check</mat-icon>
+            <span>Fluxo concluído em {{ flow.completedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

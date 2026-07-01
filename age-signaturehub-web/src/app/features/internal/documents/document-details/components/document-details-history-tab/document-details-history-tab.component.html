@@ -1,0 +1,38 @@
+<div class="tab-content">
+  @if (loadingLogs) {
+    <div class="empty-tab-state">
+      <mat-progress-spinner mode="indeterminate" diameter="36"></mat-progress-spinner>
+    </div>
+  } @else if (auditLogs.length === 0) {
+    <div class="empty-tab-state">
+      <mat-icon>manage_search</mat-icon>
+      <p>Nenhum registro de auditoria encontrado.</p>
+    </div>
+  } @else {
+    <div class="timeline">
+      @for (log of auditLogs; track log.id) {
+        <div class="timeline-item">
+          <div
+            class="tl-icon"
+            [style.background]="getLogMeta(log.action ?? '').color + '18'"
+            [style.color]="getLogMeta(log.action ?? '').color"
+          >
+            <mat-icon>{{ getLogMeta(log.action ?? '').icon }}</mat-icon>
+          </div>
+          <div class="tl-content">
+            <span class="tl-action">{{ getLogMeta(log.action ?? '').label }}</span>
+            @if (log.details) {
+              <span class="tl-details">{{ log.details }}</span>
+            }
+            <div class="tl-meta">
+              <span>{{ log.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+              @if (log.ipAddress) {
+                <span>IP: {{ log.ipAddress }}</span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
