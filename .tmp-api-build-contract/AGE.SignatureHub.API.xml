@@ -1,0 +1,143 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AGE.SignatureHub.API</name>
+    </assembly>
+    <members>
+        <member name="M:AGE.SignatureHub.API.Controllers.AuditLogsController.GetAuditLogsByDocument(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Get audit logs for a specific document.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.AuditLogsController.GetAuditLogsByDateRange(System.DateTime,System.DateTime,System.Threading.CancellationToken)">
+            <summary>
+            Get audit logs by period of time.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.AuthController.Login(AGE.SignatureHub.Application.DTOs.Auth.LoginRequest)">
+            <summary>
+            Executes the user login process
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.AuthController.RefreshToken(AGE.SignatureHub.Application.DTOs.Auth.RefreshTokenRequest)">
+            <summary>
+            Renew the access token using a refresh token
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.AuthController.Logout">
+            <summary>
+            execute the user logout process
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.AuthController.Register(AGE.SignatureHub.Application.DTOs.Auth.RegisterRequest)">
+            <summary>
+            Register a new user account
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.AuthController.GetCurrentUser">
+            <summary>
+            Get the current authenticated user's information
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.AuthController.ChangePassword(AGE.SignatureHub.Application.DTOs.Auth.ChangePasswordRequest)">
+            <summary>
+            Change the current authenticated user's password
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DashboardController.GetStats(System.Threading.CancellationToken)">
+            <summary>
+            Get dashboard data.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DashboardController.GetRecentDocuments(System.Threading.CancellationToken,System.Int32)">
+            <summary>
+            Get recent documents.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DashboardController.GetNotifications(System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Get user notifications.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DashboardController.MarkNotificationAsRead(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Mark a notification as read.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DashboardController.MarkAllNotificationsAsRead(System.Threading.CancellationToken)">
+            <summary>
+            mark all notifications as read.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DocumentsController.CreateDocument(Microsoft.AspNetCore.Http.IFormFile,AGE.SignatureHub.Application.DTOs.Document.CreateDocumentDto,System.Threading.CancellationToken)">
+            <summary>
+            Creates a new document for signing.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DocumentsController.GetDocuments(System.Nullable{AGE.SignatureHub.Domain.Enums.DocumentStatus},System.Threading.CancellationToken)">
+            <summary>
+            Gets documents for the authenticated user, with optional status filter.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DocumentsController.GetDocumentById(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves a document by its ID.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DocumentsController.GetDocumentsByStatus(AGE.SignatureHub.Domain.Enums.DocumentStatus,System.Threading.CancellationToken)">
+            <summary>
+            Gets documents by status.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DocumentsController.DownloadDocument(System.Guid,System.Nullable{System.Int32},System.Threading.CancellationToken)">
+            <summary>
+            Downloads the original document or the signed document.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.DocumentsController.DeleteDocument(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Deletes a draft document created by the authenticated user.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.HealthController.Get">
+            <summary>
+            Health check endpoint
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.SignatureFlowController.StartSignatureFlow(AGE.SignatureHub.Application.DTOs.SignatureFlow.CreateSignatureFlowDto,System.Threading.CancellationToken)">
+            <summary>
+            Starts a new signature flow for a document.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.SignatureFlowController.GetSignatureFlowById(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Gets a signature flow by ID.
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.SignatureFlowController.GetSignatureFlowsByDocumentId(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Gets all signature flows for a specific document.
+            </summary> 
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.SignersController.GetPendingSignaturesByEmail(System.String,System.Threading.CancellationToken)">
+            <summary>
+            get pending signaturees by email
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.SignersController.SignDocument(AGE.SignatureHub.Application.DTOs.Signer.SignDocumentDto,System.Threading.CancellationToken)">
+            <summary>
+            sign a document        
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.SignersController.RejectDocumentSignature(AGE.SignatureHub.Application.DTOs.Signer.RejectDocumentDto,System.Threading.CancellationToken)">
+            <summary>
+            Reject a document signature
+            </summary>
+        </member>
+        <member name="M:AGE.SignatureHub.API.Controllers.SignersController.GetSignerById(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Gets a signer by ID.
+            </summary>
+        </member>
+    </members>
+</doc>

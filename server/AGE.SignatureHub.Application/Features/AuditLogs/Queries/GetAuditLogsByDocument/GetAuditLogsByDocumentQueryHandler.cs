@@ -24,23 +24,12 @@ namespace AGE.SignatureHub.Application.Features.AuditLogs.Queries.GetAuditLogsBy
 
         public async Task<BaseResponse<List<AuditLogDto>>> Handle(GetAuditLogsByDocumentQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<List<AuditLogDto>>();
-
-            try
+            var auditLogs = await _unitOfWork.AuditLogs.GetByDocumentIdAsync(request.DocumentId);
+            return new BaseResponse<List<AuditLogDto>>
             {
-                var auditLogs = await _unitOfWork.AuditLogs.GetByDocumentIdAsync(request.DocumentId);
-                response.Success = true;
-                response.Data = _mapper.Map<List<AuditLogDto>>(auditLogs);
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = "Error retrieving audit logs for the document.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                Success = true,
+                Data = _mapper.Map<List<AuditLogDto>>(auditLogs)
+            };
         }
     }
 }

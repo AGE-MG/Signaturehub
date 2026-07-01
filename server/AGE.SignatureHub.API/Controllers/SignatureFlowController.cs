@@ -13,7 +13,7 @@ namespace AGE.SignatureHub.API.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class SignatureFlowController : ControllerBase
+    public class SignatureFlowController : ApiControllerBase
     {
         private readonly ILogger<SignatureFlowController> _logger;
         private readonly IMediator _mediator;
@@ -38,13 +38,7 @@ namespace AGE.SignatureHub.API.Controllers
             };
 
             var result = await _mediator.Send(command, cancellationToken);
-
-            if (!result.Success)
-            {
-                return BadRequest(result.Errors);
-            }
-            
-            return CreatedAtAction(nameof(GetSignatureFlowById), new { id = result.Data.Id }, result);
+            return HandleCreatedResponse(result, nameof(GetSignatureFlowById), new { id = result.Data?.Id });
         }
 
         /// <summary>
@@ -58,12 +52,7 @@ namespace AGE.SignatureHub.API.Controllers
             var query = new GetSignatureFlowByIdQuery { Id = id };
 
             var result = await _mediator.Send(query, cancellationToken);
-
-            if (!result.Success)
-            {
-                return NotFound(result.Errors);
-            }
-            return Ok(result);
+            return HandleResponse(result);
         }
 
         /// <summary>
@@ -77,12 +66,7 @@ namespace AGE.SignatureHub.API.Controllers
             var query = new GetFlowsByDocumentQuery { DocumentId = documentId };
 
             var result = await _mediator.Send(query, cancellationToken);
-
-            if (!result.Success)
-            {
-                return NotFound(result.Errors);
-            }
-            return Ok(result);
+            return HandleResponse(result);
         }
     }
 }

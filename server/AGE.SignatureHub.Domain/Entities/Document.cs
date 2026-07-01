@@ -83,6 +83,28 @@ namespace AGE.SignatureHub.Domain.Entities
             SetUpdatedAt();
         }
 
+        public void RegisterSignedVersion(string storagePath, string contentHash, long fileSizeInBytes, string changeDescription)
+        {
+            if (string.IsNullOrWhiteSpace(storagePath))
+                throw new ArgumentNullException(nameof(storagePath));
+
+            if (string.IsNullOrWhiteSpace(contentHash))
+                throw new ArgumentNullException(nameof(contentHash));
+
+            if (fileSizeInBytes <= 0)
+                throw new ArgumentOutOfRangeException(nameof(fileSizeInBytes), "File size must be greater than zero.");
+
+            StoragePath = storagePath;
+            ContentHash = contentHash;
+            FileSizeInBytes = fileSizeInBytes;
+
+            var nextVersionNumber = _versions.Count == 0
+                ? 1
+                : _versions.Max(v => v.VersionNumber) + 1;
+
+            AddVersion(nextVersionNumber, storagePath, contentHash, changeDescription);
+        }
+
         public bool IsExpired()
         {
             return ExpiresAt.HasValue && DateTime.UtcNow > ExpiresAt.Value;

@@ -92,6 +92,7 @@ namespace AGE.SignatureHub.Infrastructure
             }
 
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IUserManagementService, UserManagementService>();
             services.AddScoped<ITokenService, TokenService>();
 
             services.AddScoped<IEmailService, EmailService>();

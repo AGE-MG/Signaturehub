@@ -6,6 +6,7 @@ using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.DTOs.SignatureFlow;
 using AGE.SignatureHub.Application.Exceptions;
+using AGE.SignatureHub.Domain.Entities;
 using AutoMapper;
 using MediatR;
 
@@ -24,29 +25,18 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.queries.GetSignat
 
         public async Task<BaseResponse<SignatureFlowDto>> Handle(GetSignatureFlowByIdQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<SignatureFlowDto>();
+            var signatureFlow = await _unitOfWork.SignatureFlows.GetByIdWithSignersAsync(request.Id);
 
-            try
+            if (signatureFlow == null)
             {
-                var signatureFlow = await _unitOfWork.SignatureFlows.GetByIdWithSignersAsync(request.Id);
-
-                if (signatureFlow == null)
-                {
-                    throw new NotFoundException(nameof(SignatureFlows), request.Id);
-                }
-
-                response.Data = _mapper.Map<SignatureFlowDto>(signatureFlow);
-                response.Success = true;
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = $"An error occurred while retrieving the signature flow: {ex.Message}";
-                response.Errors = new List<string> { ex.Message };
-                return response;
+                throw new NotFoundException(nameof(SignatureFlow), request.Id);
             }
 
+            return new BaseResponse<SignatureFlowDto>
+            {
+                Success = true,
+                Data = _mapper.Map<SignatureFlowDto>(signatureFlow)
+            };
         }
     }
 }

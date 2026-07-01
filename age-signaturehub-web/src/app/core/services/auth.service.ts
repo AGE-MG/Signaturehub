@@ -73,10 +73,10 @@ export class AuthService {
     return this.http.post<ApiResponse<boolean>>(`${this.API_URL}/logout`, {})
     .pipe(
       tap(() => {
-        this.clearSession();
+        this.handleLogout();
       }),
       catchError(error => {
-        this.clearSession();
+        this.handleLogout();
         return throwError(() => error);
       })
     )
@@ -99,7 +99,7 @@ export class AuthService {
       }),
       catchError(error => {
         console.error('Token refresh error', error);
-        this.clearSession();
+        this.handleLogout();
         return throwError(() => error);
       })
     )
@@ -111,7 +111,9 @@ export class AuthService {
       tap(response => {
         if (response.success && response.data) {
           this.currentUserSubject.next(response.data);
-          localStorage.setItem('currentUser', JSON.stringify(response.data));
+          if (this.isBrowser) {
+            localStorage.setItem('currentUser', JSON.stringify(response.data));
+          }
         }
       }),
       catchError(error => {
@@ -139,10 +141,16 @@ export class AuthService {
     this.currentUserSubject.next(authResult.user);
   }
 
-  private clearSession(): void {
+  handleUnauthorized(): void {
+    this.handleLogout();
+  }
+
+  private handleLogout(): void {
     this.ClearStorage();
     this.currentUserSubject.next(null);
-    this.router.navigate(['/login']);
+    if (this.isBrowser) {
+      this.router.navigate(['/login']);
+    }
   }
 
   private ClearStorage(): void {

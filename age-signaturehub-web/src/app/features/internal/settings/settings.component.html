@@ -150,7 +150,9 @@
                       ></mat-progress-spinner>
                     } @else {
                       <mat-icon>save</mat-icon>
-                      Salvar Perfil
+                    }
+                    @if (!savingProfile) {
+                      <span>Salvar Perfil</span>
                     }
                   </button>
                 </div>
@@ -266,7 +268,9 @@
                     ></mat-progress-spinner>
                   } @else {
                     <mat-icon>key</mat-icon>
-                    Alterar Senha
+                  }
+                  @if (!savingPassword) {
+                    <span>Alterar Senha</span>
                   }
                 </button>
               </div>

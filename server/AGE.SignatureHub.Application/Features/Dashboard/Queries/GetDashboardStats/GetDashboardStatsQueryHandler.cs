@@ -17,14 +17,13 @@ namespace AGE.SignatureHub.Application.Features.Dashboard.Queries.GetDashboardSt
 
         public async Task<BaseResponse<DashboardStatsDto>> Handle(GetDashboardStatsQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<DashboardStatsDto>();
+            var documents = await _unitOfWork.Documents.GetByCreatorAsync(request.UserIdPacket, cancellationToken);
+            var unreadCount = await _unitOfWork.Notifications.CountUnreadByUserIdAsync(request.UserIdPacket, cancellationToken);
 
-            try
+            return new BaseResponse<DashboardStatsDto>
             {
-                var documents = await _unitOfWork.Documents.GetByCreatorAsync(request.UserIdPacket, cancellationToken);
-                var unreadCount = await _unitOfWork.Notifications.CountUnreadByUserIdAsync(request.UserIdPacket, cancellationToken);
-
-                response.Data = new DashboardStatsDto
+                Success = true,
+                Data = new DashboardStatsDto
                 {
                     TotalDocuments = documents.Count,
                     DraftDocuments = documents.Count(d => d.Status == DocumentStatus.Draft),
@@ -33,18 +32,8 @@ namespace AGE.SignatureHub.Application.Features.Dashboard.Queries.GetDashboardSt
                     RejectedDocuments = documents.Count(d => d.Status == DocumentStatus.Rejected),
                     ExpiredDocuments = documents.Count(d => d.Status == DocumentStatus.Expired),
                     UnreadNotifications = unreadCount
-                };
-
-                response.Success = true;
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = "An error occurred while retrieving dashboard stats.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                }
+            };
         }
     }
 }

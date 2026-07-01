@@ -45,15 +45,21 @@ export class SignerService {
   }
 
   getById(id: string): Observable<SignerDto> {
-    return this.http.get<SignerDto>(`${this.base}/${id}`);
+    return this.http
+      .get<SignerDto | ApiResponse<SignerDto>>(`${this.base}/${id}`)
+      .pipe(map((response) => this.unwrapApiResponse<SignerDto>(response)));
   }
 
   sign(payload: SignRequest): Observable<SignerDto> {
-    return this.http.post<SignerDto>(`${this.base}/sign`, payload);
+    return this.http
+      .post<SignerDto | ApiResponse<SignerDto>>(`${this.base}/sign`, payload)
+      .pipe(map((response) => this.unwrapApiResponse<SignerDto>(response)));
   }
 
   reject(payload: RejectRequest): Observable<SignerDto> {
-    return this.http.post<SignerDto>(`${this.base}/reject`, payload);
+    return this.http
+      .post<SignerDto | ApiResponse<SignerDto>>(`${this.base}/reject`, payload)
+      .pipe(map((response) => this.unwrapApiResponse<SignerDto>(response)));
   }
 
   buildDeviceMeta(): Partial<SignRequest> {
@@ -162,27 +168,35 @@ export class UserManagementService {
 
   constructor(private http: HttpClient) {}
 
+  private unwrapApiResponse<T>(response: T | ApiResponse<T>): T {
+    if (response && typeof response === 'object' && 'data' in response) {
+      return (response as ApiResponse<T>).data;
+    }
+    return response as T;
+  }
+
   getMe(): Observable<UserDto> {
-    return this.http.get<UserDto>(`${this.authBase}/me`)
-    .pipe(
-      (source) => new (class  { subscribe = (o: any )=> source.subscribe({
-        next: (r: any) => o.next?.(r?.data || r),
-        error: (e: any) => o.error?.(e?.error || e),
-        complete: () => o.complete?.(),
-      })})() as any
-    );
+    return this.http
+      .get<UserDto | ApiResponse<UserDto>>(`${this.authBase}/me`)
+      .pipe(map((response) => this.unwrapApiResponse<UserDto>(response)));
   }
 
   updateProfile(dto: UpdateProfileDto): Observable<UserDto> {
-    return this.http.put<UserDto>(`${this.base}/me`, dto)
+    return this.http
+      .put<UserDto | ApiResponse<UserDto>>(`${this.base}/me`, dto)
+      .pipe(map((response) => this.unwrapApiResponse<UserDto>(response)));
   }
 
   listAll(): Observable<UserDto[]> {
-    return this.http.get<UserDto[]>(`${this.base}`);
+    return this.http
+      .get<UserDto[] | ApiResponse<UserDto[]>>(`${this.base}`)
+      .pipe(map((response) => this.unwrapApiResponse<UserDto[]>(response)));
   }
 
   updateRoles(userId: string, roles: string[]): Observable<UserDto> {
-    return this.http.put<UserDto>(`${this.base}/${userId}/roles`, { roles });
+    return this.http
+      .put<UserDto | ApiResponse<UserDto>>(`${this.base}/${userId}/roles`, { roles })
+      .pipe(map((response) => this.unwrapApiResponse<UserDto>(response)));
   }
 
   remove(userId: string): Observable<void> {

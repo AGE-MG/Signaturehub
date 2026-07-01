@@ -12,7 +12,7 @@ namespace AGE.SignatureHub.API.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class AuditLogsController : ControllerBase
+    public class AuditLogsController : ApiControllerBase
     {
         private readonly IMediator _mediator;
         private readonly ILogger<AuditLogsController> _logger;
@@ -34,7 +34,7 @@ namespace AGE.SignatureHub.API.Controllers
                 DocumentId = documentId
             };
             var result = await _mediator.Send(query, cancellationToken);
-            return Ok(result);
+            return HandleResponse(result);
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace AGE.SignatureHub.API.Controllers
                 EndDate = endDate
             };
             var result = await _mediator.Send(query, cancellationToken);
-            return Ok(result);
+            return HandleResponse(result);
         }
     }
 }

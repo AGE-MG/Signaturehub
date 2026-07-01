@@ -12,7 +12,7 @@ namespace AGE.SignatureHub.API.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController : ApiControllerBase
     {
         private readonly ILogger<AuthController> _logger;
         private readonly IAuthService _authService;
@@ -33,14 +33,7 @@ namespace AGE.SignatureHub.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var result = await _authService.LoginAsync(request);
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-            else
-            {
-                return Unauthorized(result);
-            }
+            return result.Success ? Ok(result) : Unauthorized(result);
         }
 
         /// <summary>
@@ -52,14 +45,7 @@ namespace AGE.SignatureHub.API.Controllers
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             var result = await _authService.RefreshTokenAsync(request);
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-            else
-            {
-                return Unauthorized(result);
-            }
+            return result.Success ? Ok(result) : Unauthorized(result);
         }
 
         /// <summary>
@@ -72,7 +58,7 @@ namespace AGE.SignatureHub.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await _authService.LogoutAsync(userId);
-            return Ok(result);
+            return HandleResponse(result);
         }
 
         /// <summary>
@@ -84,14 +70,7 @@ namespace AGE.SignatureHub.API.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             var result = await _authService.RegisterAsync(request);
-            if (result.Success)
-            {
-                return CreatedAtAction(nameof(Register), new { id = result.Data.Id }, result);
-            }
-            else
-            {
-                return BadRequest(result);
-            }
+            return HandleCreatedResponse(result, nameof(Register), new { id = result.Data?.Id });
         }
 
         /// <summary>
@@ -105,14 +84,7 @@ namespace AGE.SignatureHub.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await _authService.GetCurrentUserAsync(userId);
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-            else
-            {
-                return NotFound(result);
-            }
+            return result.Success ? Ok(result) : NotFound(result);
         }
 
         /// <summary>
@@ -126,14 +98,7 @@ namespace AGE.SignatureHub.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await _authService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-            else
-            {
-                return BadRequest(result);
-            }
+            return HandleResponse(result);
         }
     }
 }

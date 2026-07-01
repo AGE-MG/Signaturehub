@@ -32,15 +32,11 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.RejectDocument
         }
         public async Task<BaseResponse<SignerDto>> Handle(RejectDocumentCommand request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<SignerDto>();
-
             try
             {
                 if (string.IsNullOrWhiteSpace(request.RejectData.Reason))
                 {
-                    response.Success = false;
-                    response.Message = "Rejection reason is required.";
-                    return response;
+                    throw new BusinessException("Rejection reason is required.");
                 }
 
                 var signer = await _unitOfWork.Signers.GetByIdWithFlowAndDocumentAsync(request.RejectData.SignerId, cancellationToken);
@@ -100,19 +96,17 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.RejectDocument
                     Reason = request.RejectData.Reason
                 }), cancellationToken);
 
-                response.Success = true;
-                response.Message = "Document rejected successfully.";
-                response.Data = _mapper.Map<SignerDto>(signer);
-                return response;
+                return new BaseResponse<SignerDto>
+                {
+                    Success = true,
+                    Message = "Document rejected successfully.",
+                    Data = _mapper.Map<SignerDto>(signer)
+                };
             }
-            catch (System.Exception ex)
+            catch
             {
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-                response.Success = false;
-                response.Message = $"An error occurred while rejecting the document: {ex.Message}";
-                response.Errors = new List<string> { ex.Message };
-                
-                return response;
+                throw;
             }
         }
     }

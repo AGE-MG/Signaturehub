@@ -15,24 +15,14 @@ namespace AGE.SignatureHub.Application.Features.Dashboard.Commands.MarkAllNotifi
 
         public async Task<BaseResponse> Handle(MarkAllNotificationsAsReadCommand request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse();
+            await _unitOfWork.Notifications.MarkAllAsReadAsync(request.UserIdPacket, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            try
+            return new BaseResponse
             {
-                await _unitOfWork.Notifications.MarkAllAsReadAsync(request.UserIdPacket, cancellationToken);
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-                response.Success = true;
-                response.Message = "All notifications marked as read.";
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = "An error occurred while marking all notifications as read.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                Success = true,
+                Message = "All notifications marked as read."
+            };
         }
     }
 }

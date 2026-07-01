@@ -14,7 +14,7 @@ namespace AGE.SignatureHub.API.Controllers
     [ApiController]
     [Route("api/v1/[controller]")]
     [Authorize]
-    public class DashboardController : ControllerBase
+    public class DashboardController : ApiControllerBase
     {
         private readonly IMediator _mediator;
         private readonly ILogger<DashboardController> _logger;
@@ -37,7 +37,7 @@ namespace AGE.SignatureHub.API.Controllers
             var query = new GetDashboardStatsQuery { UserIdPacket = Guid.Parse(userId) };
             var result = await _mediator.Send(query, cancellationToken);
 
-            return Ok(result);
+            return HandleResponse(result);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace AGE.SignatureHub.API.Controllers
             };
             var result = await _mediator.Send(query, cancellationToken);
 
-            return Ok(result);
+            return HandleResponse(result);
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace AGE.SignatureHub.API.Controllers
             };
             var result = await _mediator.Send(query, cancellationToken);
 
-            return Ok(result);
+            return HandleResponse(result);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace AGE.SignatureHub.API.Controllers
             };
             var result = await _mediator.Send(command, cancellationToken);
 
-            return Ok(result);
+            return HandleResponse(result);
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace AGE.SignatureHub.API.Controllers
             };
             var result = await _mediator.Send(command, cancellationToken);
 
-            return Ok(result);
+            return HandleResponse(result);
         }
     }
 }

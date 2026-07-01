@@ -24,27 +24,17 @@ namespace AGE.SignatureHub.Application.Features.Signers.Queries.GetSignerById
 
         public async Task<BaseResponse<SignerDto>> Handle(GetSignerByIdQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<SignerDto>();
+            var signer = await _unitOfWork.Signers.GetByIdAsync(request.SignerId, cancellationToken);
+            if (signer == null)
+            {
+                throw new NotFoundException(nameof(Signer), request.SignerId);
+            }
 
-            try
+            return new BaseResponse<SignerDto>
             {
-                var signer = await _unitOfWork.Signers.GetByIdAsync(request.SignerId, cancellationToken);
-                if (signer == null)
-                {
-                    throw new NotFoundException(nameof(Signer), request.SignerId);
-                }
-                
-                response.Data = _mapper.Map<SignerDto>(signer);
-                response.Success = true;
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = $"An error occurred while retrieving the signer: {ex.Message}";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                Success = true,
+                Data = _mapper.Map<SignerDto>(signer)
+            };
         }
     }
 }

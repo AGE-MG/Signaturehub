@@ -12,7 +12,6 @@ import { Router } from '@angular/router';
 import { SignDialogComponent } from '../../../shared/components/sign-dialog.component/sign-dialog.component';
 import { RejectDialogComponent } from '../../../shared/components/reject-dialog.component/reject-dialog.component';
 import { MatTooltip } from "@angular/material/tooltip";
-import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatCard } from "@angular/material/card";
 import { DatePipe } from '@angular/common';
 import { MatButtonModule } from "@angular/material/button";
@@ -28,7 +27,6 @@ import { asyncScheduler, observeOn } from 'rxjs';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatTooltip,
-    MatProgressSpinner,
     MatCard,
     DatePipe,
     MatButtonModule,

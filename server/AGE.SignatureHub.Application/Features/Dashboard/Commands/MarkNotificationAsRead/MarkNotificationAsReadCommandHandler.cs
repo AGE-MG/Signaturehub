@@ -16,29 +16,21 @@ namespace AGE.SignatureHub.Application.Features.Dashboard.Commands.MarkNotificat
 
         public async Task<BaseResponse> Handle(MarkNotificationAsReadCommand request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse();
-
-            try
+            var notification = await _unitOfWork.Notifications.GetByIdAsync(request.NotificationId, cancellationToken);
+            if (notification == null)
             {
-                var notification = await _unitOfWork.Notifications.GetByIdAsync(request.NotificationId, cancellationToken);
-                if (notification == null)
-                    throw new NotFoundException(nameof(notification), request.NotificationId);
-
-                notification.MarkAsRead();
-                await _unitOfWork.Notifications.UpdateAsync(notification, cancellationToken);
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-                response.Success = true;
-                response.Message = "Notification marked as read.";
-                return response;
+                throw new NotFoundException(nameof(notification), request.NotificationId);
             }
-            catch (Exception ex)
+
+            notification.MarkAsRead();
+            await _unitOfWork.Notifications.UpdateAsync(notification, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new BaseResponse
             {
-                response.Success = false;
-                response.Message = "An error occurred while marking the notification as read.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                Success = true,
+                Message = "Notification marked as read."
+            };
         }
     }
 }

@@ -74,7 +74,7 @@ export class SettingsComponent implements OnInit {
   }
 
   get isAdmin(): boolean {
-    return this.authService.hasRole('Admin');
+    return this.authService.hasAnyRole(['Admin', 'Administrator']);
   }
 
   loadProfile(): void {
@@ -92,10 +92,10 @@ export class SettingsComponent implements OnInit {
       this.loadingProfile = false;
     } else {
       this.authService.getCurrentUser().subscribe({
-        next: (res) => {
-          const u = (res as any)?.data ?? res;
-          this.currentUser = u;
-          this.profileForm.patchValue(u);
+        next: (response) => {
+          const user = response.data;
+          this.currentUser = user;
+          this.profileForm.patchValue(user);
           this.loadingProfile = false;
         },
         error: () => {

@@ -41,21 +41,8 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSi
         
         public async Task<BaseResponse<SignatureFlowDto>> Handle(CreateSignatureFlowCommand request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<SignatureFlowDto>();
-
             try
             {
-                var validator = new CreateSignatureFlowCommandValidator();
-                var validationResult = await validator.ValidateAsync(request, cancellationToken);
-
-                if (!validationResult.IsValid)
-                {
-                    response.Success = false;
-                    response.Message = "Validation errors occurred.";
-                    response.Errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                    return response;
-                }
-
                 var document = await _unitOfWork.Documents.GetByIdAsync(request.FlowData.DocumentId, cancellationToken);
                 if (document == null)
                 {
@@ -116,18 +103,17 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSi
                     // O fluxo já foi persistido; falha de integração externa não deve reverter a operação principal.
                 }
 
-                response.Success = true;
-                response.Message = "Signature flow created successfully.";
-                response.Data = _mapper.Map<SignatureFlowDto>(signatureFlow);
-                return response;
+                return new BaseResponse<SignatureFlowDto>
+                {
+                    Success = true,
+                    Message = "Signature flow created successfully.",
+                    Data = _mapper.Map<SignatureFlowDto>(signatureFlow)
+                };
             }
-            catch (System.Exception ex )
+            catch
             {
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-                response.Success = false;
-                response.Message = "An error occurred while creating the signature flow.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
+                throw;
             }
         }
 

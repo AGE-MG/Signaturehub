@@ -22,31 +22,23 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.GetPendingSign
         }
         public async Task<BaseResponse<List<SignerDto>>> Handle(GetPendingSignaturesByEmailQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<List<SignerDto>>();
+            var signers = await _unitOfWork.Signers.GetPendingSignersByEmailAsync(request.Email);
+            if (signers != null && signers.Any())
+            {
+                return new BaseResponse<List<SignerDto>>
+                {
+                    Success = true,
+                    Message = "Pending signatures retrieved successfully.",
+                    Data = _mapper.Map<List<SignerDto>>(signers)
+                };
+            }
 
-            try
+            return new BaseResponse<List<SignerDto>>
             {
-                var signers = await _unitOfWork.Signers.GetPendingSignersByEmailAsync(request.Email);
-                if (signers != null && signers.Any())
-                {
-                    response.Data = _mapper.Map<List<SignerDto>>(signers);
-                    response.Success = true;
-                    response.Message = "Pending signatures retrieved successfully.";
-                }
-                else
-                {
-                    response.Data = new List<SignerDto>();
-                    response.Success = false;
-                    response.Message = "No pending signatures found for the provided email.";
-                }
-            }
-            catch (System.Exception ex)
-            {
-                response.Errors = new List<string> { ex.Message };
-                response.Success = false;
-                response.Message = $"An error occurred while retrieving pending signatures: {ex.Message}";
-            }
-            return response;
+                Success = false,
+                Message = "No pending signatures found for the provided email.",
+                Data = new List<SignerDto>()
+            };
         }
     }
 }

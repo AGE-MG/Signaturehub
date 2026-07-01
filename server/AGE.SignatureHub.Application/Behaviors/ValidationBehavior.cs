@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AGE.SignatureHub.Application.DTOs.Common;
 using FluentValidation;
 using MediatR;
 
@@ -26,6 +27,18 @@ namespace AGE.SignatureHub.Application.Behaviors
 
                 if (failures.Count != 0)
                 {
+                    if (typeof(BaseResponse).IsAssignableFrom(typeof(TResponse)))
+                    {
+                        var response = Activator.CreateInstance<TResponse>();
+                        if (response is BaseResponse baseResponse)
+                        {
+                            baseResponse.Success = false;
+                            baseResponse.Message = "Validation errors occurred.";
+                            baseResponse.Errors = failures.Select(f => f.ErrorMessage).ToList();
+                            return response;
+                        }
+                    }
+
                     throw new Exceptions.ValidationException(failures);
                 }
             }

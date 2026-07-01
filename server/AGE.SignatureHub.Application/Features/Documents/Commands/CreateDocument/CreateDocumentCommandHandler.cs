@@ -29,70 +29,48 @@ namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocumen
 
         public async Task<BaseResponse<DocumentDto>> Handle(CreateDocumentCommand request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<DocumentDto>();
+            request.FileStream.Position = 0;
+            var contentHash = await _cryptographyService.ComputeHashAsync(request.FileStream, cancellationToken);
 
-            try
+            request.FileStream.Position = 0;
+            var FileExtension = Path.GetExtension(request.FileName);
+            var mimeType = GetMimeType(FileExtension);
+            var storagePath = await _storageService.UploadFileAsync(request.FileStream, request.FileName, mimeType, cancellationToken);
+
+            var document = new Document(
+                fileName: Guid.NewGuid().ToString() + FileExtension,
+                originalFileName: request.FileName,
+                fileExtension: FileExtension,
+                fileSizeInBytes: request.FileStream.Length,
+                storagePath: storagePath,
+                contentHash: contentHash,
+                mimeType: mimeType,
+                title: request.DocumentData.Title,
+                description: request.DocumentData.Description,
+                createdByUserId: request.DocumentData.CreatedByUserId,
+                expiresAt: request.DocumentData.ExpiresAt
+            );
+
+            await _unitOfWork.Documents.AddAsync(document, cancellationToken);
+
+            var auditLog = new AuditLog(
+                action: "DOCUMENT_CREATED",
+                details: $"Document '{document.Title}' created by user '{document.CreatedByUserId}'.",
+                ipAddress: "0.0.0.0",
+                userAgent: "System",
+                documentId: document.Id,
+                userId: request.DocumentData.CreatedByUserId
+            );
+
+            await _unitOfWork.AuditLogs.AddAsync(auditLog, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new BaseResponse<DocumentDto>
             {
-                var validator = new CreateDocumentCommandValidator();
-
-                var validationResult = await validator.ValidateAsync(request, cancellationToken);
-
-                if (!validationResult.IsValid)
-                {
-                    response.Success = false;
-                    response.Message = "Validation errors occurred.";
-                    response.Errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                    return response;
-                }
-
-                request.FileStream.Position = 0;
-                var contentHash = await _cryptographyService.ComputeHashAsync(request.FileStream, cancellationToken);
-
-                request.FileStream.Position = 0;
-                var FileExtension = Path.GetExtension(request.FileName);
-                var mimeType = GetMimeType(FileExtension);
-                var storagePath = await _storageService.UploadFileAsync(request.FileStream, request.FileName, mimeType, cancellationToken);
-
-                var document = new Document(
-                    fileName: Guid.NewGuid().ToString() + FileExtension,
-                    originalFileName: request.FileName,
-                    fileExtension: FileExtension,
-                    fileSizeInBytes: request.FileStream.Length,
-                    storagePath: storagePath,
-                    contentHash: contentHash,
-                    mimeType: mimeType,
-                    title: request.DocumentData.Title,
-                    description: request.DocumentData.Description,
-                    createdByUserId: request.DocumentData.CreatedByUserId,
-                    expiresAt: request.DocumentData.ExpiresAt
-                );
-
-                await _unitOfWork.Documents.AddAsync(document, cancellationToken);
-
-                var auditLog = new AuditLog(
-                    action: "DOCUMENT_CREATED",
-                    details: $"Document '{document.Title}' created by user '{document.CreatedByUserId}'.",
-                    ipAddress: "0.0.0.0",
-                    userAgent: "System",
-                    documentId: document.Id,
-                    userId: request.DocumentData.CreatedByUserId
-                );
-
-                await _unitOfWork.AuditLogs.AddAsync(auditLog, cancellationToken);
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-                response.Success = true;
-                response.Message = "Document created successfully.";
-                response.Data = _mapper.Map<DocumentDto>(document);
-                return response;
-            }
-            catch (System.Exception ex)
-            {
-                response.Success = false;
-                response.Message = "An error occurred while creating the document.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                Success = true,
+                Message = "Document created successfully.",
+                Data = _mapper.Map<DocumentDto>(document)
+            };
         }
 
         private string GetMimeType(string fileExtension)

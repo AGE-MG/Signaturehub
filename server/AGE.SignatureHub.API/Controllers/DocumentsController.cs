@@ -20,7 +20,7 @@ namespace AGE.SignatureHub.API.Controllers
     [ApiController]
     [Route("api/v1/[controller]")]
     [Authorize]
-    public class DocumentsController : ControllerBase
+    public class DocumentsController : ApiControllerBase
     {
         private readonly ILogger<DocumentsController> _logger;
         private readonly IMediator _mediator;
@@ -59,15 +59,7 @@ namespace AGE.SignatureHub.API.Controllers
             };
 
             var result = await _mediator.Send(command, cancellationToken);
-
-            if (result.Success)
-            {
-                return CreatedAtAction(nameof(GetDocumentById), new { id = result.Data.Id }, result);
-            }
-            else
-            {
-                return BadRequest(result.Errors);
-            }
+            return HandleCreatedResponse(result, nameof(GetDocumentById), new { id = result.Data?.Id });
         }
 
         /// <summary>
@@ -101,17 +93,7 @@ namespace AGE.SignatureHub.API.Controllers
         {
             var query = new GetDocumentByIdQuery { DocumentId = id };
             var result = await _mediator.Send(query, cancellationToken);
-
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-            else
-            {
-                return NotFound(result.Errors);
-            }
-
-
+            return HandleResponse(result);
         }
 
         /// <summary>
@@ -123,8 +105,7 @@ namespace AGE.SignatureHub.API.Controllers
         {
             var query = new GetDocumentByStatusQuery { Status = status };
             var result = await _mediator.Send(query, cancellationToken);
-
-            return Ok(result);
+            return HandleResponse(result);
         }
 
         /// <summary>

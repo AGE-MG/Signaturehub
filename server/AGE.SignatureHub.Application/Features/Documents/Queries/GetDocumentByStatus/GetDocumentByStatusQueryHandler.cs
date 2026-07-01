@@ -23,23 +23,12 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentByS
 
         public async Task<BaseResponse<List<DocumentDto>>> Handle(GetDocumentByStatusQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<List<DocumentDto>>();
-
-            try
+            var documents = await _unitOfWork.Documents.GetByStatusAsync(request.Status);
+            return new BaseResponse<List<DocumentDto>>
             {
-                var Documents = await _unitOfWork.Documents.GetByStatusAsync(request.Status);
-                response.Success = true;
-                response.Data = _mapper.Map<List<DocumentDto>>(Documents);
-
-                return response;
-            }
-            catch (System.Exception ex)
-            {
-                response.Success = false;
-                response.Message = "Error retrieving documents by status.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                Success = true,
+                Data = _mapper.Map<List<DocumentDto>>(documents)
+            };
         }
     }
 }

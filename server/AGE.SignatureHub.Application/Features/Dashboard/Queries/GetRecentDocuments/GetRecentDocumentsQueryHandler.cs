@@ -16,13 +16,12 @@ namespace AGE.SignatureHub.Application.Features.Dashboard.Queries.GetRecentDocum
 
         public async Task<BaseResponse<List<RecentDocumentDto>>> Handle(GetRecentDocumentsQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<List<RecentDocumentDto>>();
+            var documents = await _unitOfWork.Documents.GetByCreatorAsync(request.UserIdPacket, cancellationToken);
 
-            try
+            return new BaseResponse<List<RecentDocumentDto>>
             {
-                var documents = await _unitOfWork.Documents.GetByCreatorAsync(request.UserIdPacket, cancellationToken);
-
-                response.Data = documents
+                Success = true,
+                Data = documents
                     .OrderByDescending(d => d.UpdatedAt)
                     .Take(request.Count)
                     .Select(d => new RecentDocumentDto
@@ -35,18 +34,8 @@ namespace AGE.SignatureHub.Application.Features.Dashboard.Queries.GetRecentDocum
                         CreatedAt = d.CreatedAt,
                         UpdatedAt = d.UpdatedAt
                     })
-                    .ToList();
-
-                response.Success = true;
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = "An error occurred while retrieving recent documents.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                    .ToList()
+            };
         }
     }
 }

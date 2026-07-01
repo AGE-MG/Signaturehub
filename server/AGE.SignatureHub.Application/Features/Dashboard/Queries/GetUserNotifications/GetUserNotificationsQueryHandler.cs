@@ -16,13 +16,12 @@ namespace AGE.SignatureHub.Application.Features.Dashboard.Queries.GetUserNotific
 
         public async Task<BaseResponse<List<NotificationDto>>> Handle(GetUserNotificationsQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<List<NotificationDto>>();
+            var notifications = await _unitOfWork.Notifications.GetByUserIdAsync(request.UserIdPacket, request.UnreadOnly, cancellationToken);
 
-            try
+            return new BaseResponse<List<NotificationDto>>
             {
-                var notifications = await _unitOfWork.Notifications.GetByUserIdAsync(request.UserIdPacket, request.UnreadOnly, cancellationToken);
-
-                response.Data = notifications
+                Success = true,
+                Data = notifications
                     .Select(n => new NotificationDto
                     {
                         Id = n.Id,
@@ -33,18 +32,8 @@ namespace AGE.SignatureHub.Application.Features.Dashboard.Queries.GetUserNotific
                         RelatedDocumentId = n.RelatedDocumentId,
                         CreatedAt = n.CreatedAt
                     })
-                    .ToList();
-
-                response.Success = true;
-                return response;
-            }
-            catch (Exception ex)
-            {
-                response.Success = false;
-                response.Message = "An error occurred while retrieving notifications.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                    .ToList()
+            };
         }
     }
 }

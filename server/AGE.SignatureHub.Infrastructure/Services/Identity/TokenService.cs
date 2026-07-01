@@ -16,10 +16,18 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
     public class TokenService : ITokenService
     {
         private readonly IConfiguration _configuration;
+        private readonly string _secretKey;
+        private readonly string _issuer;
+        private readonly string _audience;
+        private readonly int _expirationInMinutes;
 
         public TokenService(IConfiguration configuration)
         {
             _configuration = configuration;
+            _secretKey = GetRequiredSetting("JwtSettings:SecretKey");
+            _issuer = GetRequiredSetting("JwtSettings:Issuer");
+            _audience = GetRequiredSetting("JwtSettings:Audience");
+            _expirationInMinutes = int.Parse(GetRequiredSetting("JwtSettings:ExpirationInMinutes"));
         }
 
         public string GenerateAccessToken(ApplicationUser user, IList<string> roles)
@@ -28,7 +36,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
@@ -47,17 +55,15 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 claims.Add(new Claim("Position", user.Position));
             }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var ExpirationMinutes = int.Parse(_configuration["JwtSettings:ExpirationInMinutes"]);
-
             var token = new JwtSecurityToken(
-                issuer: _configuration["JwtSettings:Issuer"],
-                audience: _configuration["JwtSettings:Audience"],
+                issuer: _issuer,
+                audience: _audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(ExpirationMinutes),
+                expires: DateTime.UtcNow.AddMinutes(_expirationInMinutes),
                 signingCredentials: credentials
             );
 
@@ -78,10 +84,12 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
         {
             var tokenValidationParameters = new TokenValidationParameters
             {
-                ValidateAudience = false,
-                ValidateIssuer = false,
+                ValidateAudience = true,
+                ValidateIssuer = true,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"])),
+                ValidIssuer = _issuer,
+                ValidAudience = _audience,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey)),
                 ValidateLifetime = false
             };
 
@@ -93,6 +101,17 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             }
 
             return principal;
+        }
+
+        private string GetRequiredSetting(string key)
+        {
+            var value = _configuration[key];
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new InvalidOperationException($"Configuration '{key}' must be provided.");
+            }
+
+            return value;
         }
     }
 }

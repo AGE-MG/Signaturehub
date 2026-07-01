@@ -22,22 +22,12 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.queries.GetFlowsB
 
         public async Task<BaseResponse<List<SignatureFlowDto>>> Handle(GetFlowsByDocumentQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<List<SignatureFlowDto>>();
-
-            try
+            var flows = await _unitOfWork.SignatureFlows.GetByDocumentIdAsync(request.DocumentId, cancellationToken);
+            return new BaseResponse<List<SignatureFlowDto>>
             {
-                var flows = await _unitOfWork.SignatureFlows.GetByDocumentIdAsync(request.DocumentId, cancellationToken);
-                response.Data = _mapper.Map<List<SignatureFlowDto>>(flows);
-                response.Success = true;
-                return response;
-            }
-            catch (System.Exception ex)
-            {
-                response.Success = false;
-                response.Message = $"An error occurred while retrieving the signature flows: {ex.Message}";
-                response.Errors = new List<string> { ex.Message };
-                return response;
-            }
+                Success = true,
+                Data = _mapper.Map<List<SignatureFlowDto>>(flows)
+            };
         }
     }    
 }

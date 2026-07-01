@@ -24,28 +24,17 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentByI
 
         public async Task<BaseResponse<DocumentDto>> Handle(GetDocumentByIdQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<DocumentDto>();
-
-            try
+            var document = await _unitOfWork.Documents.GetByIdWithAllRelationsAsync(request.DocumentId, cancellationToken);
+            if (document == null)
             {
-                var document = await _unitOfWork.Documents.GetByIdWithAllRelationsAsync(request.DocumentId, cancellationToken);
-                if (document == null)
-                {
-                    throw new NotFoundException(nameof(document), request.DocumentId);
-                }
-
-                response.Data = _mapper.Map<DocumentDto>(document);
-                response.Success = true;
-                return response;
-            }
-            catch (System.Exception ex)
-            {
-                response.Success = false;
-                response.Message = "An error occurred while retrieving the document.";
-                response.Errors = new List<string> { ex.Message };
-                return response;
+                throw new NotFoundException(nameof(document), request.DocumentId);
             }
 
+            return new BaseResponse<DocumentDto>
+            {
+                Success = true,
+                Data = _mapper.Map<DocumentDto>(document)
+            };
         }
     }
 }

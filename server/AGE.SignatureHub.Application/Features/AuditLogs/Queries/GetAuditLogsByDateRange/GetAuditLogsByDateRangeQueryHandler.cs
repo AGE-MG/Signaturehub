@@ -22,26 +22,17 @@ namespace AGE.SignatureHub.Application.Features.AuditLogs.Queries.GetAuditLogsBy
 
         public async Task<BaseResponse<List<AuditLogDto>>> Handle(GetAuditLogsByDateRangeQuery request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<List<AuditLogDto>>();
+            var auditLogs = await _unitOfWork.AuditLogs.GetByDateRangeAsync(
+                request.StartDate,
+                request.EndDate,
+                cancellationToken
+            );
 
-            try
+            return new BaseResponse<List<AuditLogDto>>
             {
-                var auditLogs = await _unitOfWork.AuditLogs.GetByDateRangeAsync(
-                    request.StartDate,
-                    request.EndDate,
-                    cancellationToken
-                );
-
-                response.Data = _mapper.Map<List<AuditLogDto>>(auditLogs);
-                response.Success = true;
-            }
-            catch (System.Exception ex)
-            {
-                response.Success = false;
-                response.Message = "An error occurred while retrieving audit logs.";
-                response.Errors = new List<string> { ex.Message };
-            }
-            return response;
+                Success = true,
+                Data = _mapper.Map<List<AuditLogDto>>(auditLogs)
+            };
         }
     }
 }

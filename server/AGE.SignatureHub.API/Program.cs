@@ -71,6 +71,23 @@ try
 
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
     var secretKey = jwtSettings["SecretKey"];
+    var issuer = jwtSettings["Issuer"];
+    var audience = jwtSettings["Audience"];
+
+    if (string.IsNullOrWhiteSpace(secretKey))
+    {
+        throw new InvalidOperationException("JwtSettings:SecretKey must be configured.");
+    }
+
+    if (string.IsNullOrWhiteSpace(issuer))
+    {
+        throw new InvalidOperationException("JwtSettings:Issuer must be configured.");
+    }
+
+    if (string.IsNullOrWhiteSpace(audience))
+    {
+        throw new InvalidOperationException("JwtSettings:Audience must be configured.");
+    }
 
     builder.Services.AddAuthentication(options =>
     {
@@ -80,12 +97,12 @@ try
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,
-            ValidateAudience = false,
+            ValidateIssuer = true,
+            ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
+            ValidIssuer = issuer,
+            ValidAudience = audience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
             ClockSkew = TimeSpan.Zero
         };

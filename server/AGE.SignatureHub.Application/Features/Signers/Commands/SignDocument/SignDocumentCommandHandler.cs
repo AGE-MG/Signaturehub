@@ -15,7 +15,7 @@ using AGE.SignatureHub.Domain.ValueObjects;
 using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options; // ADICIONAR
+using Microsoft.Extensions.Options;
 
 namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
 {
@@ -49,21 +49,8 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
         
         public async Task<BaseResponse<SignerDto>> Handle(SignDocumentCommand request, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<SignerDto>();
-
             try
             {
-                var validator = new SignDocumentCommandValidator();
-                var validationResult = await validator.ValidateAsync(request, cancellationToken);
-
-                if (!validationResult.IsValid)
-                {
-                    response.Success = false;
-                    response.Message = "Sign document request validation failed.";
-                    response.Errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                    return response;
-                }
-
                 var signer = await _unitOfWork.Signers.GetByIdWithFlowAndDocumentAsync(request.SignData.SignerId, cancellationToken);
 
                 if (signer == null)
@@ -125,8 +112,14 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
 
                 signedStream.Position = 0;
                 var newHash = await _signatureService.ComputeHashAsync(signedStream, cancellationToken);
-                var newHashString = Convert.ToHexStringLower(newHash);
-                // TODO: Reintroduzir versionamento após corrigir conflito de concorrência em DocumentVersion.
+                var newHashString = Convert.ToBase64String(newHash);
+
+                document.RegisterSignedVersion(
+                    newStoragePath,
+                    newHashString,
+                    signedDocumentBytes.LongLength,
+                    $"Signed by {signer.Name} ({signer.Email}) using {request.SignData.SignatureType}."
+                );
 
                 signer.Sign(
                     request.SignData.SignatureType,
@@ -206,36 +199,17 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                     // A assinatura já foi persistida; falhas de integração externa não devem reverter a operação.
                 }
 
-                response.Success = true;
-                response.Message = "Document signed successfully.";
-                response.Data = _mapper.Map<SignerDto>(signer);
-                return response;
+                return new BaseResponse<SignerDto>
+                {
+                    Success = true,
+                    Message = "Document signed successfully.",
+                    Data = _mapper.Map<SignerDto>(signer)
+                };
             }
-            catch (Exception ex)
+            catch
             {
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-                response.Success = false;
-                response.Message = "An error occurred while signing the document.";
-
-                if (ex is DbUpdateConcurrencyException concurrencyException)
-                {
-                    var entryTypes = concurrencyException.Entries
-                        .Select(e => e.Entity.GetType().Name)
-                        .Distinct()
-                        .ToList();
-
-                    response.Errors = new List<string>
-                    {
-                        ex.Message,
-                        $"Concurrency entries: {string.Join(", ", entryTypes)}"
-                    };
-                }
-                else
-                {
-                    response.Errors = new List<string> { ex.Message };
-                }
-
-                return response;
+                throw;
             }
         }
 
