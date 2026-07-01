@@ -3,20 +3,20 @@
 > ng build
 
 [33m>[39m Building...
-(node:18548) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(node:7808) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
 (Use `node --trace-warnings ...` to show where the warning was created)
 [32m√[39m Building...
 [35mBrowser bundles[39m     
 [1mInitial chunk files[22m [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
-[32mmain-ZX4VWJNE.js[39m    [2m | [22m[2mmain[22m            [2m | [22m  [36m1.33 MB[39m[2m | [22m              [36m255.39 kB[39m
+[32mmain-ONNW76BA.js[39m    [2m | [22m[2mmain[22m            [2m | [22m  [36m1.33 MB[39m[2m | [22m              [36m256.60 kB[39m
 [32mstyles-O6UY2HSY.css[39m [2m | [22m[2mstyles[22m          [2m | [22m [36m97.50 kB[39m[2m | [22m                [36m7.42 kB[39m
 
-[1m [22m                   [2m | [22m[1mInitial total[22m   [2m | [22m  [1m[93m1.42 MB[39m[22m[2m | [22m              [1m262.80 kB[22m
+[1m [22m                   [2m | [22m[1mInitial total[22m   [2m | [22m  [1m[93m1.43 MB[39m[22m[2m | [22m              [1m264.02 kB[22m
 
 
 [35mServer bundles[39m      
 [1mInitial chunk files[22m [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m
-[32mmain.server.mjs[39m     [2m | [22m[2mmain.server[22m     [2m | [22m  [36m1.78 MB[39m[2m | [22m                       
+[32mmain.server.mjs[39m     [2m | [22m[2mmain.server[22m     [2m | [22m  [36m1.79 MB[39m[2m | [22m                       
 [32mserver.mjs[39m          [2m | [22m[2mserver[22m          [2m | [22m[36m810.37 kB[39m[2m | [22m                       
 [32mpolyfills.server.mjs[39m[2m | [22m[2mpolyfills.server[22m[2m | [22m[36m233.25 kB[39m[2m | [22m                       
 [32mchunk-L2MVFUKD.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m  [36m1.32 kB[39m[2m | [22m                       
@@ -27,9 +27,12 @@
 [32mchunk-N3SI5I4Q.mjs[39m  [2m | [22m[2mxhr2[22m            [2m | [22m [36m12.07 kB[39m[2m | [22m                       
 
 [35mPrerendered 3 static routes.[39m
-Application bundle generation complete. [10.950 seconds] - 2026-07-01T16:30:28.242Z
+Application bundle generation complete. [10.824 seconds] - 2026-07-01T17:48:21.171Z
 
-▲ [WARNING] bundle initial exceeded maximum budget. Budget 1.25 MB was not met by 174.84 kB with a total of 1.42 MB.
+▲ [WARNING] bundle initial exceeded maximum budget. Budget 1.25 MB was not met by 182.29 kB with a total of 1.43 MB.
+
+
+▲ [WARNING] src/app/features/internal/documents/document-details/document-details.component.scss exceeded maximum budget. Budget 8.00 kB was not met by 607 bytes with a total of 8.61 kB.
 
 
 ▲ [WARNING] src/app/features/public/home/home.component.scss exceeded maximum budget. Budget 8.00 kB was not met by 6.37 kB with a total of 14.37 kB.

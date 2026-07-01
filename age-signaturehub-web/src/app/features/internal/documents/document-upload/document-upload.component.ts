@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { SecurityContext } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -56,6 +58,10 @@ export class DocumentUploadComponent implements OnInit {
   selectedFile: File | null = null;
   dragOver = false;
   fileError: string | null = null;
+  previewUrl: SafeResourceUrl | null = null;
+  previewText: string | null = null;
+  previewType: 'pdf' | 'text' | 'unsupported' | null = null;
+  previewLoading = false;
 
   // Metadata Step
   metadataForm!: FormGroup;
@@ -65,18 +71,22 @@ export class DocumentUploadComponent implements OnInit {
 
   readonly formatFileSize = formatFileSize;
   readonly minDate = new Date()
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain'];
   private readonly maxFileSize = 50 * 1024 * 1024; // 50 MB
 
   constructor(
     private fb: FormBuilder,
+    private sanitizer: DomSanitizer,
     private router: Router,
     private documentService: DocumentService,
     private authService: AuthService,
     private snackBar: MatSnackBar
   ) {}
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.clearPreview());
+
     this.metadataForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(255)]],
       description: ['', Validators.maxLength(1000)],
@@ -118,6 +128,7 @@ export class DocumentUploadComponent implements OnInit {
     }
     this.fileError = null;
     this.selectedFile = file;
+    this.buildPreview(file);
 
     if (!this.metadataForm.get('title')?.value) {
       const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
@@ -136,6 +147,7 @@ export class DocumentUploadComponent implements OnInit {
   }
 
   removeFile(): void {
+    this.clearPreview();
     this.selectedFile = null;
     this.fileError = null;
   }
@@ -212,6 +224,55 @@ export class DocumentUploadComponent implements OnInit {
 
   cancel(): void {
     this.router.navigate(['/documents']);
+  }
+
+  get canPreview(): boolean {
+    return this.previewType === 'pdf' || this.previewType === 'text';
+  }
+
+  private buildPreview(file: File): void {
+    this.clearPreview();
+    this.previewLoading = true;
+
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      const objectUrl = URL.createObjectURL(file);
+      this.previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl);
+      this.previewType = 'pdf';
+      this.previewLoading = false;
+      return;
+    }
+
+    if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.previewText = typeof reader.result === 'string' ? reader.result : '';
+        this.previewType = 'text';
+        this.previewLoading = false;
+      };
+      reader.onerror = () => {
+        this.previewType = 'unsupported';
+        this.previewLoading = false;
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    this.previewType = 'unsupported';
+    this.previewLoading = false;
+  }
+
+  private clearPreview(): void {
+    if (this.previewUrl) {
+      const unsafeUrl = this.sanitizer.sanitize(SecurityContext.RESOURCE_URL, this.previewUrl);
+      if (unsafeUrl) {
+        URL.revokeObjectURL(unsafeUrl);
+      }
+    }
+
+    this.previewUrl = null;
+    this.previewText = null;
+    this.previewType = null;
+    this.previewLoading = false;
   }
 
 }

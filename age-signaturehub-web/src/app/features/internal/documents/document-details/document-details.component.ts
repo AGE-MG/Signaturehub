@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, SecurityContext } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DocumentDto, DocumentStatusColor, DocumentStatusLabel, formatFileSize } from '../../../../core/models/document.model';
 import { DocumentStatus } from '../../../../core/models/dasboard.model';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -55,6 +56,10 @@ export class DocumentDetailsComponent implements OnInit {
   flowFormName = '';
   flowFormEmail = '';
   flowFormDocument = '';
+  previewUrl: SafeResourceUrl | null = null;
+  previewText: string | null = null;
+  previewType: 'pdf' | 'text' | 'unsupported' | null = null;
+  previewLoading = false;
 
   private readonly FLOW_TYPE_SEQUENTIAL = 1;
   private readonly FLOW_TYPE_PARALLEL = 2;
@@ -80,6 +85,7 @@ export class DocumentDetailsComponent implements OnInit {
 
   constructor(
     private cdr: ChangeDetectorRef,
+    private sanitizer: DomSanitizer,
     private router: Router,
     private route: ActivatedRoute,
     private documentService: DocumentService,
@@ -90,6 +96,7 @@ export class DocumentDetailsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.clearPreview());
     this.documentId = this.route.snapshot.paramMap.get('id') || '';
     this.currentUserEmail = this.resolveCurrentUserEmail();
 
@@ -148,6 +155,7 @@ export class DocumentDetailsComponent implements OnInit {
 
           this.refreshSignState();
           this.updateSignatureStats();
+          this.loadPreview();
           this.loading = false;
           this.cdr.markForCheck();
 
@@ -263,6 +271,10 @@ export class DocumentDetailsComponent implements OnInit {
           this.snackBar.open('Falha ao baixar o documento', 'Fechar', { duration: 3000 });
         }
       })
+  }
+
+  get canPreview(): boolean {
+    return this.previewType === 'pdf' || this.previewType === 'text';
   }
 
   confirmSign(): void {
@@ -538,6 +550,69 @@ export class DocumentDetailsComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/documents']);
+  }
+
+  private loadPreview(): void {
+    this.clearPreview();
+
+    if (!this.document.id) {
+      return;
+    }
+
+    const ext = this.document.fileExtension?.toLowerCase();
+    const isPdf = ext === '.pdf';
+    const isText = ext === '.txt';
+
+    if (!isPdf && !isText) {
+      this.previewType = 'unsupported';
+      return;
+    }
+
+    this.previewLoading = true;
+    this.documentService.downloadDocument(this.document.id, this.document.originalFileName).pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (blob) => {
+        if (isPdf) {
+          const objectUrl = URL.createObjectURL(blob);
+          this.previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl);
+          this.previewType = 'pdf';
+          this.previewLoading = false;
+          this.cdr.markForCheck();
+          return;
+        }
+
+        blob.text().then((text) => {
+          this.previewText = text;
+          this.previewType = 'text';
+          this.previewLoading = false;
+          this.cdr.markForCheck();
+        }).catch(() => {
+          this.previewType = 'unsupported';
+          this.previewLoading = false;
+          this.cdr.markForCheck();
+        });
+      },
+      error: () => {
+        this.previewType = 'unsupported';
+        this.previewLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private clearPreview(): void {
+    if (this.previewUrl) {
+      const unsafeUrl = this.sanitizer.sanitize(SecurityContext.RESOURCE_URL, this.previewUrl);
+      if (unsafeUrl) {
+        URL.revokeObjectURL(unsafeUrl);
+      }
+    }
+
+    this.previewUrl = null;
+    this.previewText = null;
+    this.previewType = null;
+    this.previewLoading = false;
   }
 
   private createEmptyDocument(): DocumentDto {

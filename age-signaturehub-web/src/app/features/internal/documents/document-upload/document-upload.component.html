@@ -148,6 +148,33 @@
           </div>
         }
 
+        @if (selectedFile) {
+          <section class="preview-card">
+            <div class="preview-header">
+              <div>
+                <h3>Preview do documento</h3>
+                <p>Visualização rápida antes do envio.</p>
+              </div>
+            </div>
+
+            @if (previewLoading) {
+              <div class="preview-loading">
+                <mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner>
+                <span>Gerando preview...</span>
+              </div>
+            } @else if (previewType === 'pdf' && previewUrl) {
+              <iframe class="document-preview-frame" [src]="previewUrl" title="Preview do PDF"></iframe>
+            } @else if (previewType === 'text') {
+              <pre class="document-preview-text">{{ previewText }}</pre>
+            } @else {
+              <div class="preview-empty">
+                <mat-icon>visibility_off</mat-icon>
+                <p>Preview indisponível para este formato. Você ainda pode enviar o arquivo normalmente.</p>
+              </div>
+            }
+          </section>
+        }
+
         <div
           class="step-actions"
         >

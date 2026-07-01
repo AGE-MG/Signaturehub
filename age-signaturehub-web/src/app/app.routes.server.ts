@@ -15,6 +15,7 @@ export const serverRoutes: ServerRoute[] = [
   },
   {
     path: '**',
-    renderMode: RenderMode.Server
+    // Internal/authenticated pages should render on client to avoid server-side calls to local APIs.
+    renderMode: RenderMode.Client
   }
 ];

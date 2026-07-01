@@ -35,6 +35,37 @@ class="details-page"
       [statusColor]="DocumentStatusColor"
     ></app-document-details-title-card>
 
+    <section class="preview-panel">
+      <div class="preview-panel-header">
+        <div>
+          <h3>Preview do documento</h3>
+          <p>Visualização rápida disponível para PDF e TXT.</p>
+        </div>
+        @if (!previewLoading && !canPreview) {
+          <button mat-stroked-button (click)="download()">
+            <mat-icon>download</mat-icon>
+            Baixar para visualizar
+          </button>
+        }
+      </div>
+
+      @if (previewLoading) {
+        <div class="preview-state">
+          <mat-spinner mode="indeterminate" diameter="32"></mat-spinner>
+          <p>Carregando preview...</p>
+        </div>
+      } @else if (previewType === 'pdf' && previewUrl) {
+        <iframe class="preview-frame" [src]="previewUrl" title="Preview do documento"></iframe>
+      } @else if (previewType === 'text') {
+        <pre class="preview-text">{{ previewText }}</pre>
+      } @else {
+        <div class="preview-state">
+          <mat-icon>visibility_off</mat-icon>
+          <p>Este formato não possui preview nativo no navegador. Use o download para abrir o arquivo completo.</p>
+        </div>
+      }
+    </section>
+
     <!-- tabs -->
     <mat-tab-group
       animationDuration="200ms"

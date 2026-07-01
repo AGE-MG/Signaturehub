@@ -149,10 +149,10 @@
                         diameter="20"
                       ></mat-progress-spinner>
                     } @else {
-                      <mat-icon>save</mat-icon>
-                    }
-                    @if (!savingProfile) {
+                      <ng-container>
+                        <mat-icon>save</mat-icon>
                       <span>Salvar Perfil</span>
+                      </ng-container>
                     }
                   </button>
                 </div>
@@ -267,10 +267,10 @@
                       diameter="20"
                     ></mat-progress-spinner>
                   } @else {
-                    <mat-icon>key</mat-icon>
-                  }
-                  @if (!savingPassword) {
-                    <span>Alterar Senha</span>
+                    <ng-container>
+                      <mat-icon>key</mat-icon>
+                      <span>Alterar Senha</span>
+                    </ng-container>
                   }
                 </button>
               </div>
