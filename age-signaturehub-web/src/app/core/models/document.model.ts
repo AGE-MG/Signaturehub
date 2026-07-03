@@ -18,6 +18,8 @@ export interface SignatoryDto {
   status?: number;
   signedAt?: string;
   completedAt?: string;
+  rejectionReason?: string;
+  signatureType?: number;
 }
 
 export interface SignatureFlowDto {

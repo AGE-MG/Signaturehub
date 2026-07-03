@@ -82,19 +82,26 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.RejectDocument
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
-                foreach (var participant in flow.Signers)
+                try
                 {
-                    await _emailService.SendSignatureRejectedAsync(participant.Email, participant.Name, document.Title, request.RejectData.Reason, cancellationToken);
-                }
+                    foreach (var participant in flow.Signers)
+                    {
+                        await _emailService.SendSignatureRejectedAsync(participant.Email, participant.Name, document.Title, request.RejectData.Reason, cancellationToken);
+                    }
 
-                await _webhookService.SendWebhookAsync("signature.rejected", JsonSerializer.Serialize(new
+                    await _webhookService.SendWebhookAsync("signature.rejected", JsonSerializer.Serialize(new
+                    {
+                        DocumentId = document.Id,
+                        FlowId = flow.Id,
+                        SignerId = signer.Id,
+                        DocumentTitle = document.Title,
+                        Reason = request.RejectData.Reason
+                    }), cancellationToken);
+                }
+                catch
                 {
-                    DocumentId = document.Id,
-                    FlowId = flow.Id,
-                    SignerId = signer.Id,
-                    DocumentTitle = document.Title,
-                    Reason = request.RejectData.Reason
-                }), cancellationToken);
+                    // A rejeição já foi persistida; falhas de integração externa não devem reverter a operação.
+                }
 
                 return new BaseResponse<SignerDto>
                 {

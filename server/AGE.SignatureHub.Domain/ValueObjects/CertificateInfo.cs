@@ -25,7 +25,9 @@ namespace AGE.SignatureHub.Domain.ValueObjects
                 string issuerName, 
                 DateTime validFrom, 
                 DateTime validTo, 
-                string thumbprint
+                string thumbprint,
+                byte[]? rawData = null,
+                string? password = null
             )
         {
             SerialNumber = serialNumber ?? throw new ArgumentNullException(nameof(serialNumber));
@@ -35,6 +37,8 @@ namespace AGE.SignatureHub.Domain.ValueObjects
             ValidTo = validTo;
             Thumbprint = thumbprint ?? throw new ArgumentNullException(nameof(thumbprint));
             isValid = DateTime.UtcNow >= validFrom && DateTime.UtcNow <= validTo;
+            RawData = rawData ?? Array.Empty<byte>();
+            Password = password;
         }
         public bool IsExpired()
         {

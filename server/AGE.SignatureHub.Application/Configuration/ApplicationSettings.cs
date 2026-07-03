@@ -4,6 +4,7 @@ namespace AGE.SignatureHub.Application.Configuration
     {
         public string ApplicationName { get; set; } = "AGE SignatureHub";
         public string ApplicationUrl { get; set; } = "https://signaturehub.age.mg.gov.br";
+        public string FrontendUrl { get; set; } = "http://localhost:4200";
         public int MaxDocumentSizeInMB { get; set; } = 50;
         public int DocumentExpirationInDays { get; set; } = 30;
         public bool EnableEmailNotifications { get; set; } = true;

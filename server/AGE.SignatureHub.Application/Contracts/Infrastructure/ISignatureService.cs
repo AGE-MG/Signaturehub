@@ -12,8 +12,9 @@ namespace AGE.SignatureHub.Application.Contracts.Infrastructure
         Task<byte[]> SignDocumentAsync(
             Stream documentStream,
             SignatureType signatureType,
-            CertificateInfo certificateInfo,
+            CertificateInfo? certificateInfo,
             SignatureMetadata metadata,
+            DocumentSignatureVisualContext visualContext,
             CancellationToken cancellationToken = default);
         
         Task<bool> ValidateSignatureAsync(
@@ -21,7 +22,8 @@ namespace AGE.SignatureHub.Application.Contracts.Infrastructure
             CancellationToken cancellationToken = default);
         
         Task<CertificateInfo> ValidateCertificateAsync(
-            byte[] certificateData                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,
+            byte[] certificateData,
+            string? password = null,
             CancellationToken cancellationToken = default);
 
         Task<byte[]> ComputeHashAsync(

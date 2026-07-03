@@ -13,6 +13,7 @@ class="details-page"
     <app-document-details-header
       [title]="document.title"
       [canSign]="canSign"
+      [canReject]="canReject"
       [canDelete]="canDelete"
       [canStartFlow]="canStartFlow"
       [canTransferResponsibility]="canTransferResponsibility"
@@ -24,6 +25,7 @@ class="details-page"
       (startFlowClicked)="startSignatureFlow()"
       (transferResponsibilityClicked)="transferResponsibility()"
       (signClicked)="confirmSign()"
+      (rejectClicked)="confirmReject()"
       (deleteClicked)="confirmDelete()"
     ></app-document-details-header>
 

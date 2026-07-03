@@ -1,0 +1,44 @@
+<div class="reject-dialog">
+  <div class="reject-dialog__header" mat-dialog-title>
+    <div>
+      <h2>Rejeitar assinatura</h2>
+      <p>Informe o motivo da rejeição para registrar no histórico do documento.</p>
+    </div>
+    <mat-icon color="warn">cancel</mat-icon>
+  </div>
+
+  <div mat-dialog-content class="reject-dialog__content">
+    <div class="reject-dialog__signer">
+      <strong>{{ data.signer.name || 'Assinante' }}</strong>
+      <span>{{ data.signer.email }}</span>
+    </div>
+
+    <form [formGroup]="form" class="reject-dialog__form">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Motivo da rejeição</mat-label>
+        <textarea
+          matInput
+          rows="5"
+          maxlength="500"
+          formControlName="reason"
+          placeholder="Explique por que este documento está sendo rejeitado"
+        ></textarea>
+        <mat-hint align="end">{{ form.get('reason')?.value?.length || 0 }}/500</mat-hint>
+        @if (form.get('reason')?.hasError('required') && form.get('reason')?.touched) {
+          <mat-error>O motivo da rejeição é obrigatório.</mat-error>
+        }
+      </mat-form-field>
+    </form>
+  </div>
+
+  <div mat-dialog-actions align="end" class="reject-dialog__actions">
+    <button mat-stroked-button (click)="cancel()" [disabled]="loading">Cancelar</button>
+    <button mat-raised-button color="warn" (click)="confirm()" [disabled]="loading || form.invalid">
+      @if (loading) {
+        <mat-spinner diameter="18"></mat-spinner>
+      } @else {
+        <span>Rejeitar documento</span>
+      }
+    </button>
+  </div>
+</div>

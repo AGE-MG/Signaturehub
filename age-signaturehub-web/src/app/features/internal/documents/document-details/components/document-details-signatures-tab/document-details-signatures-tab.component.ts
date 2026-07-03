@@ -4,6 +4,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { SignatureFlowDto } from '../../../../../../core/models/document.model';
+import { SignatureStatus, SignatureType, SignatureTypeLabel } from '../../../../../../core/models/signer.model';
 
 @Component({
   selector: 'app-document-details-signatures-tab',
@@ -19,6 +20,8 @@ export class DocumentDetailsSignaturesTabComponent {
   @Input({ required: true }) signedCount = 0;
   @Input({ required: true }) signatureProcess = 0;
 
+  readonly SignatureStatus = SignatureStatus;
+
   getSignatoryInitials(name?: string): string {
     if (!name) {
       return '??';
@@ -29,5 +32,13 @@ export class DocumentDetailsSignaturesTabComponent {
       .slice(0, 2)
       .map((n) => n.charAt(0).toUpperCase())
       .join('');
+  }
+
+  getSignatureTypeLabel(signatureType?: number): string | null {
+    if (!signatureType || !(signatureType in SignatureTypeLabel)) {
+      return null;
+    }
+
+    return SignatureTypeLabel[signatureType as SignatureType];
   }
 }

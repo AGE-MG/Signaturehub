@@ -26,8 +26,9 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                     || x.SignData.SignatureType == SignatureType.DigitalA3);
             
             RuleFor(x => x.SignData.Pin)
-                .NotNull().WithMessage("PIN is required")
-                .When(x => x.SignData.SignatureType == SignatureType.Eletronic);
+                .NotEmpty().WithMessage("PIN / senha do certificado é obrigatória")
+                .When(x => x.SignData.SignatureType == SignatureType.DigitalA1
+                    || x.SignData.SignatureType == SignatureType.DigitalA3);
 
         }
     }

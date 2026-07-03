@@ -18,6 +18,7 @@ export class DocumentDetailsHeaderComponent {
   @Input() canDelete = false;
   @Input() canStartFlow = false;
   @Input() canTransferResponsibility = false;
+  @Input() canReject = false;
   @Input() actionLoading = false;
   @Input() canCurrentUserSign = false;
   @Input() signBlockReason: string | null = null;
@@ -25,6 +26,7 @@ export class DocumentDetailsHeaderComponent {
   @Output() backClicked = new EventEmitter<void>();
   @Output() downloadClicked = new EventEmitter<void>();
   @Output() signClicked = new EventEmitter<void>();
+  @Output() rejectClicked = new EventEmitter<void>();
   @Output() deleteClicked = new EventEmitter<void>();
   @Output() startFlowClicked = new EventEmitter<void>();
   @Output() transferResponsibilityClicked = new EventEmitter<void>();

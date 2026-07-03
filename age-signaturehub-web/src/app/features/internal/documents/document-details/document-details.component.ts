@@ -13,12 +13,15 @@ import { AuditLogDto } from '../../../../core/models/signer.model';
 import { AuditLogService, SignatureFlowService } from '../../../../core/services/signer.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CreateSignatureFlowDto, SignerRole } from '../../../../core/models/signer.model';
+import { CreateSignatureFlowDto, SignerDto, SignerRole, SignatureStatus, SignatureType } from '../../../../core/models/signer.model';
 import { DocumentDetailsHeaderComponent } from './components/document-details-header/document-details-header.component';
 import { DocumentDetailsTitleCardComponent } from './components/document-details-title-card/document-details-title-card.component';
 import { DocumentDetailsInfoTabComponent } from './components/document-details-info-tab/document-details-info-tab.component';
 import { DocumentDetailsSignaturesTabComponent } from './components/document-details-signatures-tab/document-details-signatures-tab.component';
 import { DocumentDetailsHistoryTabComponent } from './components/document-details-history-tab/document-details-history-tab.component';
+import { MatDialog } from '@angular/material/dialog';
+import { SignDialogComponent } from '../../../../shared/components/sign-dialog.component/sign-dialog.component';
+import { RejectDialogComponent } from '../../../../shared/components/reject-dialog.component/reject-dialog.component';
 
 @Component({
   selector: 'app-document-details',
@@ -93,6 +96,7 @@ export class DocumentDetailsComponent implements OnInit {
     private signatureFlowService: SignatureFlowService,
     private authService: AuthService,
     private snackBar: MatSnackBar,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
@@ -194,6 +198,10 @@ export class DocumentDetailsComponent implements OnInit {
     )
   }
 
+  get canReject(): boolean {
+    return this.canSign;
+  }
+
   get canDelete(): boolean {
     return (
       this.document.status === DocumentStatus.Draft ||
@@ -286,36 +294,59 @@ export class DocumentDetailsComponent implements OnInit {
       return;
     }
 
-    if (!confirm('Tem certeza que deseja assinar este documento?')) return;
-
-    this.actionLoading = true;
-
-    const signPayload = {
-      signerId: this.currentUserPendingSignerId,
-      signatureType: 1,
-      pin: '',
-      ipAddress: this.getSafeIpAddress(),
-      userAgent: this.getSafeUserAgent(),
-      deviceInfo: this.getSafeDeviceInfo(),
-      location: 'WebApp'
+    const signerForDialog: SignerDto = {
+      id: this.currentUserPendingSignerId,
+      name: this.authService.getUserValue()?.fullName ?? 'Assinante',
+      email: this.currentUserEmail ?? '',
+      document: this.document.title,
+      role: SignerRole.Signer,
+      signOrder: 1,
+      status: SignatureStatus.Pending,
+      signatureType: SignatureType.Electronic,
     };
 
-    this.documentService.signDocument(signPayload).subscribe({
-      next: () => {
-        this.actionLoading = false;
-        this.cdr.markForCheck();
+    this.dialog.open(SignDialogComponent, {
+      data: { signer: signerForDialog },
+      width: '560px'
+    }).afterClosed().subscribe((result) => {
+      if (result) {
         this.snackBar.open('Documento assinado com sucesso', 'Fechar', { duration: 3000 });
         this.loadDocument();
-      },
-      error: (err) => {
-        this.actionLoading = false;
-        this.cdr.markForCheck();
-        const apiMessage = Array.isArray(err?.error)
-          ? err.error.join(' | ')
-          : err?.error?.message || err?.error?.title || null;
-        this.snackBar.open(apiMessage ?? 'Falha ao assinar o documento', 'Fechar', { duration: 4000 });
       }
-    })
+    });
+  }
+
+  confirmReject(): void {
+    if (!this.document.id || !this.canReject) return;
+    this.refreshSignState();
+
+    if (!this.currentUserPendingSignerId) {
+      this.snackBar.open(this.signBlockReason ?? 'Você não possui pendência de assinatura neste documento.', 'Fechar', { duration: 4000 });
+      return;
+    }
+
+    const signerForDialog: SignerDto = {
+      id: this.currentUserPendingSignerId,
+      name: this.authService.getUserValue()?.fullName ?? 'Assinante',
+      email: this.currentUserEmail ?? '',
+      document: this.document.title,
+      role: SignerRole.Signer,
+      signOrder: 1,
+      status: SignatureStatus.Pending,
+      signatureType: SignatureType.Electronic,
+    };
+
+    this.dialog.open(RejectDialogComponent, {
+      data: { signer: signerForDialog },
+      width: '560px',
+      maxWidth: 'calc(100vw - 32px)',
+      autoFocus: false,
+    }).afterClosed().subscribe((result) => {
+      if (result) {
+        this.snackBar.open('Documento rejeitado com sucesso', 'Fechar', { duration: 3000 });
+        this.loadDocument();
+      }
+    });
   }
 
   private computeCurrentUserPendingSignerId(): string | null {

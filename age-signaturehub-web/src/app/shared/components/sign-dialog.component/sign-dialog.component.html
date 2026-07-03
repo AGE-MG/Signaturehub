@@ -20,12 +20,13 @@
     </mat-form-field>
 
     @if (requiresCertificate) {
-      <mat-form-field appearance="outline" class="full-w">
-        <mat-label>Dados do Certificado (Base64)</mat-label>
-        <mat-icon matPrefix>security</mat-icon>
-        <textarea matInput formControlName="certificateData" rows="3"
-          placeholder="Cole os dados do certificado aqui..."></textarea>
-      </mat-form-field>
+      <div class="certificate-upload">
+        <label class="certificate-upload-label" for="certificateFile">
+          <mat-icon>upload_file</mat-icon>
+          <span>{{ certificateFileName || 'Selecionar certificado .pfx/.p12' }}</span>
+        </label>
+        <input id="certificateFile" type="file" accept=".pfx,.p12" (change)="onCertificateSelected($event)" />
+      </div>
       <mat-form-field appearance="outline" class="full-w">
         <mat-label>PIN / Senha do Certificado</mat-label>
         <mat-icon matPrefix>pin</mat-icon>

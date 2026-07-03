@@ -1,0 +1,260 @@
+.verification-page {
+  min-height: calc(100vh - 160px);
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  padding: 48px 0 72px;
+}
+
+.verification-container {
+  max-width: 1120px;
+}
+
+.state-card,
+.hero-card,
+.info-card,
+.signers-card {
+  border-radius: 20px;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.state-card {
+  background: white;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 32px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    color: #0f172a;
+  }
+
+  p {
+    margin: 0;
+    color: #64748b;
+    max-width: 540px;
+  }
+
+  &.error {
+    mat-icon {
+      color: #ef4444;
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+    }
+  }
+}
+
+.hero-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  color: white;
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    line-height: 1.15;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.84);
+    max-width: 700px;
+    line-height: 1.6;
+  }
+}
+
+.hero-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.875rem;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.status-chip,
+.version-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.version-chip {
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 24px;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.info-card,
+.signers-card {
+  background: white;
+  padding: 24px;
+
+  h2 {
+    margin: 0 0 20px;
+    color: #0f172a;
+    font-size: 1.25rem;
+  }
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .label {
+    font-size: 0.8125rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  strong {
+    color: #0f172a;
+    font-size: 0.95rem;
+  }
+
+  code {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    word-break: break-all;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+}
+
+.signers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.signer-item {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 48px 1fr;
+  }
+}
+
+.signer-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.signer-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  strong {
+    color: #0f172a;
+    font-size: 0.95rem;
+  }
+
+  span {
+    color: #64748b;
+    font-size: 0.84rem;
+  }
+}
+
+.signer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+  text-align: right;
+
+  span {
+    color: #475569;
+    font-size: 0.82rem;
+  }
+
+  strong {
+    color: #0f172a;
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 720px) {
+    grid-column: 2;
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+.empty-signers {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  color: #64748b;
+
+  mat-icon {
+    font-size: 42px;
+    width: 42px;
+    height: 42px;
+    color: #94a3b8;
+  }
+}

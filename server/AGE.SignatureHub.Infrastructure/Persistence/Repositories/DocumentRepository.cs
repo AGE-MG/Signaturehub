@@ -24,9 +24,15 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Repositories
             .ToListAsync(cancellationToken);
         }
 
+        public async Task AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default)
+        {
+            await _dbContext.DocumentVersions.AddAsync(version, cancellationToken);
+        }
+
         public async Task<Document?> GetByIdWithAllRelationsAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return await _dbSet
+            .AsSplitQuery()
             .Include(d => d.SignatureFlows)
             .ThenInclude(sf => sf.Signers)
             .Include(d => d.Versions.OrderByDescending(v => v.VersionNumber))

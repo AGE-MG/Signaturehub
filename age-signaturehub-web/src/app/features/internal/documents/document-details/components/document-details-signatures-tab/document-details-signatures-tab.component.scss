@@ -106,6 +106,10 @@
   &.signed {
     background: #f0fdf4;
   }
+
+  &.rejected {
+    background: #fff5f5;
+  }
 }
 
 .signatory-avatar {
@@ -143,6 +147,13 @@
   white-space: nowrap;
 }
 
+.signatory-reason {
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+  line-height: 1.35;
+}
+
 .signatory-status {
   display: flex;
   align-items: center;
@@ -158,6 +169,10 @@
   color: #f59e0b;
 }
 
+.rejected-icon {
+  color: #dc2626;
+}
+
 .signed-details {
   display: flex;
   flex-direction: column;
@@ -168,6 +183,10 @@
   color: #16a34a;
   font-size: 0.8125rem;
   font-weight: 700;
+}
+
+.signatory-row.rejected .signed-label {
+  color: #dc2626;
 }
 
 .signed-date,

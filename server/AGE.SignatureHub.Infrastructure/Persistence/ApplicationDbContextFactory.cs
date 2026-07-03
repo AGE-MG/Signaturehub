@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AGE.SignatureHub.Infrastructure.Persistence;
 
@@ -21,6 +22,6 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDBContext>();
         optionsBuilder.UseNpgsql(connectionString);
 
-        return new ApplicationDBContext(optionsBuilder.Options);
+        return new ApplicationDBContext(optionsBuilder.Options, NullLogger<ApplicationDBContext>.Instance);
     }
 }

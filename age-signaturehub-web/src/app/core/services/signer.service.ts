@@ -66,7 +66,8 @@ export class SignerService {
     return {
       userAgent: navigator.userAgent,
       deviceInfo: `${navigator.platform} - ${navigator.language}`,
-      ipAddress: undefined, // IP address would typically be obtained from the server or a third-party service
+      ipAddress: '0.0.0.0',
+      location: 'WebApp',
     };
   }
 }

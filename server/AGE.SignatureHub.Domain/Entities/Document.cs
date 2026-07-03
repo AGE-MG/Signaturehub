@@ -76,14 +76,15 @@ namespace AGE.SignatureHub.Domain.Entities
             SetUpdatedAt();
         }
 
-        public void AddVersion(int versionNumber, string storagePath, string contentHash, string changeDescription)
+        public DocumentVersion AddVersion(int versionNumber, string storagePath, string contentHash, string changeDescription)
         {
             var version = new DocumentVersion(Id, versionNumber, storagePath, contentHash, changeDescription);
             _versions.Add(version);
             SetUpdatedAt();
+            return version;
         }
 
-        public void RegisterSignedVersion(string storagePath, string contentHash, long fileSizeInBytes, string changeDescription)
+        public DocumentVersion RegisterSignedVersion(string storagePath, string contentHash, long fileSizeInBytes, string changeDescription)
         {
             if (string.IsNullOrWhiteSpace(storagePath))
                 throw new ArgumentNullException(nameof(storagePath));
@@ -102,7 +103,7 @@ namespace AGE.SignatureHub.Domain.Entities
                 ? 1
                 : _versions.Max(v => v.VersionNumber) + 1;
 
-            AddVersion(nextVersionNumber, storagePath, contentHash, changeDescription);
+            return AddVersion(nextVersionNumber, storagePath, contentHash, changeDescription);
         }
 
         public bool IsExpired()

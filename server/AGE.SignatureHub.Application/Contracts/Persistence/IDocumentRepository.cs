@@ -20,5 +20,6 @@ namespace AGE.SignatureHub.Application.Contracts.Persistence
         Task<IReadOnlyList<Document>> GetByCreatorAsync(Guid creatorId, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Document>> GetExpiredDocumentsAsync(CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Document>> GetPendingDocumentsAsync(CancellationToken cancellationToken = default);
+        Task AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default);
     }
 }

@@ -51,6 +51,20 @@
     }
 
     @if (canSign) {
+      @if (canReject) {
+        <button
+          mat-stroked-button
+          color="warn"
+          (click)="rejectClicked.emit()"
+          [disabled]="actionLoading || !canCurrentUserSign"
+        >
+          <span class="button-content">
+            <mat-icon>cancel</mat-icon>
+            Rejeitar Documento
+          </span>
+        </button>
+      }
+
       <button
         mat-raised-button
         color="primary"

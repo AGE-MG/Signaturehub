@@ -1,0 +1,99 @@
+<section class="verification-page">
+  <div class="container verification-container">
+    @if (loading) {
+      <div class="state-card">
+        <mat-progress-spinner mode="indeterminate" diameter="44"></mat-progress-spinner>
+        <h2>Validando documento</h2>
+        <p>Consultando os dados públicos de autenticidade.</p>
+      </div>
+    } @else if (error || !documentVerification) {
+      <div class="state-card error">
+        <mat-icon>error_outline</mat-icon>
+        <h2>Documento não encontrado</h2>
+        <p>Não foi possível localizar os dados públicos de verificação para este link.</p>
+        <a mat-raised-button color="primary" routerLink="/">Voltar ao início</a>
+      </div>
+    } @else {
+      <div class="hero-card">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <mat-icon>verified</mat-icon>
+            <span>Validação pública de assinatura</span>
+          </div>
+
+          <h1>{{ documentVerification.title }}</h1>
+          <p>
+            Este documento possui trilha pública de validação gerada pelo Hub de Assinaturas.
+          </p>
+
+          <div class="hero-meta">
+            <span class="status-chip" [style.background]="getStatusChipColor(documentVerification.status) + '22'" [style.color]="getStatusChipColor(documentVerification.status)">
+              {{ statusLabel[documentVerification.status] }}
+            </span>
+            <span class="version-chip">Versão {{ documentVerification.versionNumber }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <mat-card class="info-card">
+          <h2>Dados do documento</h2>
+
+          <div class="detail-list">
+            <div class="detail-row">
+              <span class="label">Arquivo original</span>
+              <strong>{{ documentVerification.originalFileName }}</strong>
+            </div>
+            <div class="detail-row">
+              <span class="label">Criado em</span>
+              <strong>{{ documentVerification.createdAt | date:'dd/MM/yyyy HH:mm' }}</strong>
+            </div>
+            <div class="detail-row">
+              <span class="label">Última atualização</span>
+              <strong>{{ (documentVerification.updatedAt || documentVerification.createdAt) | date:'dd/MM/yyyy HH:mm' }}</strong>
+            </div>
+            <div class="detail-row hash-row">
+              <span class="label">Hash da versão</span>
+              <code>{{ documentVerification.contentHash }}</code>
+            </div>
+            <div class="detail-row hash-row">
+              <span class="label">Link de validação</span>
+              <code>{{ documentVerification.verificationUrl }}</code>
+            </div>
+          </div>
+        </mat-card>
+
+        <mat-card class="signers-card">
+          <h2>Assinaturas registradas</h2>
+
+          @if (documentVerification.signedSigners.length === 0) {
+            <div class="empty-signers">
+              <mat-icon>draw</mat-icon>
+              <p>Nenhuma assinatura registrada para esta versão.</p>
+            </div>
+          } @else {
+            <div class="signers-list">
+              @for (signer of documentVerification.signedSigners; track signer.signerId) {
+                <div class="signer-item">
+                  <div class="signer-avatar">
+                    {{ signer.name.charAt(0).toUpperCase() }}
+                  </div>
+
+                  <div class="signer-main">
+                    <strong>{{ signer.name }}</strong>
+                    <span>{{ signer.email }}</span>
+                  </div>
+
+                  <div class="signer-meta">
+                    <span>{{ getSignatureTypeLabel(signer.signatureType) }}</span>
+                    <strong>{{ signer.signedAt | date:'dd/MM/yyyy HH:mm' }}</strong>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </mat-card>
+      </div>
+    }
+  </div>
+</section>

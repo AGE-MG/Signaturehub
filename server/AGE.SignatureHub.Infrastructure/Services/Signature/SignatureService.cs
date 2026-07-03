@@ -6,10 +6,19 @@ using System.Threading.Tasks;
 using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Domain.Enums;
 using AGE.SignatureHub.Domain.ValueObjects;
+using iText.Barcodes;
+using iText.IO.Font.Constants;
+using iText.Kernel.Font;
+using iText.Kernel.Colors;
 using iText.Kernel.Crypto;
 using iText.Kernel.Geom;
 using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas;
+using iText.Kernel.Pdf.Extgstate;
 using iText.Signatures;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
@@ -21,6 +30,7 @@ using iText.Commons.Bouncycastle.Crypto;
 using iText.Bouncycastle.X509;
 using iText.Bouncycastle.Crypto;
 using iText.Forms.Form.Element;
+using LayoutCanvas = iText.Layout.Canvas;
 
 namespace AGE.SignatureHub.Infrastructure.Services.Signature
 {
@@ -85,14 +95,14 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
             return System.Text.Encoding.UTF8.GetBytes(hashString);
         }
 
-        public Task<byte[]> SignDocumentAsync(Stream documentStream, SignatureType signatureType, AlterCertificateInfo certificateInfo, SignatureMetadata metadata, CancellationToken cancellationToken = default)
+        public Task<byte[]> SignDocumentAsync(Stream documentStream, SignatureType signatureType, AlterCertificateInfo? certificateInfo, SignatureMetadata metadata, DocumentSignatureVisualContext visualContext, CancellationToken cancellationToken = default)
         {
             try
             {
                 return signatureType switch
                 {
-                    SignatureType.Eletronic => SignEletronicallyAsync(documentStream, metadata, cancellationToken),
-                    SignatureType.DigitalA1 or SignatureType.DigitalA3 => SignWithCertficateAsync(documentStream, certificateInfo, metadata, cancellationToken),
+                    SignatureType.Eletronic => SignEletronicallyAsync(documentStream, metadata, visualContext, cancellationToken),
+                    SignatureType.DigitalA1 or SignatureType.DigitalA3 => SignWithCertficateAsync(documentStream, certificateInfo ?? throw new InvalidOperationException("Certificado digital é obrigatório para este tipo de assinatura."), metadata, visualContext, cancellationToken),
                     _ => throw new ArgumentException("Tipo de assinatura não suportado.", nameof(signatureType))
                 };
             }
@@ -103,11 +113,11 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
             }
         }
 
-        public async Task<AlterCertificateInfo> ValidateCertificateAsync(byte[] certificateData, CancellationToken cancellationToken = default)
+        public async Task<AlterCertificateInfo> ValidateCertificateAsync(byte[] certificateData, string? password = null, CancellationToken cancellationToken = default)
         {
             try
             {
-                var x509Certificate = X509CertificateLoader.LoadPkcs12(certificateData, null, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
+                var x509Certificate = X509CertificateLoader.LoadPkcs12(certificateData, password, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.MachineKeySet);
 
                 var validFrom = x509Certificate.NotBefore;
                 var validTo = x509Certificate.NotAfter;
@@ -136,7 +146,9 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
                     issuerName: x509Certificate.Issuer,
                     validFrom: validFrom,
                     validTo: validTo,
-                    thumbprint: x509Certificate.Thumbprint
+                    thumbprint: x509Certificate.Thumbprint,
+                    rawData: certificateData,
+                    password: password
                 );
 
                 _logger.LogInformation(
@@ -204,7 +216,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
             }
         }
 
-        private async Task<byte[]> SignEletronicallyAsync(Stream documentStream, SignatureMetadata metadata, CancellationToken cancellationToken = default)
+        private async Task<byte[]> SignEletronicallyAsync(Stream documentStream, SignatureMetadata metadata, DocumentSignatureVisualContext visualContext, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -212,6 +224,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
                 using var pdfReader = new PdfReader(documentStream);
                 using var pdfWriter = new PdfWriter(memoryStream);
                 using var pdfDocument = new PdfDocument(pdfReader, pdfWriter);
+                ApplyVisualSignatureElements(pdfDocument, visualContext);
 
                 var info = pdfDocument.GetDocumentInfo();
                 info.AddCreationDate();
@@ -238,7 +251,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
             }
         }
 
-        private async Task<byte[]> SignWithCertficateAsync(Stream documentStream, AlterCertificateInfo certificateInfo, SignatureMetadata metadata, CancellationToken cancellationToken = default)
+        private async Task<byte[]> SignWithCertficateAsync(Stream documentStream, AlterCertificateInfo certificateInfo, SignatureMetadata metadata, DocumentSignatureVisualContext visualContext, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -255,11 +268,15 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
                 var itextPrivateKey = new PrivateKeyBC(bcPrivateKey);
 
                 using var memoryStream = new MemoryStream();
-                var pdfReader = new PdfReader(documentStream);
                 var stamperProperties = new StampingProperties().UseAppendMode();
 
                 var signerProperties = new SignerProperties();
                 var fieldName = $"Signature_{DateTime.UtcNow:yyyyMMddHHmmss}";
+                using var stagingStream = await PrepareVisualPdfForCertificateAsync(documentStream, visualContext, cancellationToken);
+                using var pageCountReader = new PdfReader(new MemoryStream(stagingStream.ToArray()));
+                using var pageCountDocument = new PdfDocument(pageCountReader);
+                var lastPageNumber = pageCountDocument.GetNumberOfPages();
+                var preparedReader = new PdfReader(new MemoryStream(stagingStream.ToArray()));
                 
                 signerProperties
                     .SetFieldName(fieldName)
@@ -268,14 +285,14 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
                     .SetSignatureCreator("AGE SignatureHub");
             
                 var appearance = new SignatureFieldAppearance(fieldName)
-                    .SetContent("Assinado digitalmente por AGE SignatureHub");
+                    .SetContent($"Assinado digitalmente por {ResolveLatestSignerName(visualContext)}");
                 
                 signerProperties
-                    .SetPageNumber(1)
-                    .SetPageRect(new Rectangle(36, 648, 200, 100))
+                    .SetPageNumber(Math.Max(1, lastPageNumber))
+                    .SetPageRect(new Rectangle(36, 160, 220, 90))
                     .SetSignatureAppearance(appearance);
 
-                var signer = new PdfSigner(pdfReader, memoryStream, stamperProperties);
+                var signer = new PdfSigner(preparedReader, memoryStream, stamperProperties);
                 signer.SetSignerProperties(signerProperties);
 
                 IExternalSignature externalSignature = new PrivateKeySignature(itextPrivateKey, DigestAlgorithms.SHA256);
@@ -305,5 +322,145 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
                     ex);
             }
         }
+
+        private async Task<MemoryStream> PrepareVisualPdfForCertificateAsync(Stream originalStream, DocumentSignatureVisualContext visualContext, CancellationToken cancellationToken)
+        {
+            var preparedStream = new MemoryStream();
+            if (originalStream.CanSeek)
+            {
+                originalStream.Position = 0;
+            }
+
+            await originalStream.CopyToAsync(preparedStream, cancellationToken);
+            preparedStream.Position = 0;
+
+            var output = new MemoryStream();
+            using (var pdfReader = new PdfReader(preparedStream))
+            using (var pdfWriter = new PdfWriter(output))
+            using (var pdfDocument = new PdfDocument(pdfReader, pdfWriter))
+            {
+                ApplyVisualSignatureElements(pdfDocument, visualContext);
+            }
+
+            output.Position = 0;
+            return output;
+        }
+
+        private void ApplyVisualSignatureElements(PdfDocument pdfDocument, DocumentSignatureVisualContext visualContext)
+        {
+            if (pdfDocument.GetNumberOfPages() == 0)
+            {
+                pdfDocument.AddNewPage();
+            }
+
+            var footerText = $"Este documento foi assinado ({GetSignatureTypeLabel(visualContext.CurrentSignatureType)}) via Hub de Assinaturas nos termos da Lei 14.063/2020.";
+            var verificationUrl = visualContext.VerificationUrl;
+            var latestPage = pdfDocument.GetLastPage();
+
+            DrawFooterOnPage(pdfDocument, latestPage, footerText, verificationUrl);
+            DrawSignatureSummary(pdfDocument, latestPage, visualContext);
+        }
+
+        private void DrawFooterOnPage(PdfDocument pdfDocument, PdfPage page, string footerText, string verificationUrl)
+        {
+            var pageSize = page.GetPageSize();
+            var footerHeight = 110f;
+            var footerY = 18f;
+            var footerWidth = pageSize.GetWidth() - 72f;
+            var footerX = 36f;
+
+            var canvas = new PdfCanvas(page.NewContentStreamAfter(), page.GetResources(), pdfDocument);
+            canvas.SaveState();
+            canvas.SetFillColor(new DeviceRgb(250, 250, 252));
+            canvas.Rectangle(footerX, footerY, footerWidth, footerHeight);
+            canvas.Fill();
+            canvas.RestoreState();
+
+            var pageNumber = page.GetDocument().GetPageNumber(page);
+            using var layoutCanvas = new LayoutCanvas(canvas, page.GetPageSize());
+            var qrCode = new BarcodeQRCode(verificationUrl);
+            var qrForm = qrCode.CreateFormXObject(ColorConstants.BLACK, pdfDocument);
+            var qrImage = new Image(qrForm).ScaleAbsolute(72, 72);
+            qrImage.SetFixedPosition(pageNumber, pageSize.GetWidth() - 120, footerY + 18);
+            layoutCanvas.Add(qrImage);
+
+            var paragraph = new Paragraph()
+                .Add(new Text("Validação pública\n").SetFontSize(10))
+                .Add(new Text($"{footerText}\n").SetFontSize(9))
+                .Add(new Text(verificationUrl).SetFontSize(8).SetFontColor(ColorConstants.BLUE));
+
+            paragraph.SetFixedPosition(pageNumber, footerX + 12, footerY + 18, footerWidth - 110);
+            paragraph.SetFontSize(9);
+            layoutCanvas.Add(paragraph);
+        }
+
+        private void DrawSignatureSummary(PdfDocument pdfDocument, PdfPage page, DocumentSignatureVisualContext visualContext)
+        {
+            var signedSigners = visualContext.SignedSigners
+                .OrderBy(s => s.SignedAt)
+                .GroupBy(s => s.SignerId)
+                .Select(group => group.Last())
+                .ToList();
+
+            if (signedSigners.Count == 0)
+            {
+                return;
+            }
+
+            var pageNumber = page.GetDocument().GetPageNumber(page);
+            var pageSize = page.GetPageSize();
+            var startY = 135f;
+            var leftX = 36f;
+            var availableWidth = pageSize.GetWidth() - 72f;
+            var columnCount = Math.Max(1, Math.Min(3, signedSigners.Count));
+            var columnWidth = (availableWidth - ((columnCount - 1) * 18f)) / columnCount;
+            using var layoutCanvas = new LayoutCanvas(new PdfCanvas(page.NewContentStreamAfter(), page.GetResources(), pdfDocument), page.GetPageSize());
+
+            for (var i = 0; i < signedSigners.Count; i++)
+            {
+                var signer = signedSigners[i];
+                var row = i / columnCount;
+                var col = i % columnCount;
+                var x = leftX + col * (columnWidth + 18f);
+                var y = startY - row * 74f;
+
+                var name = new Paragraph(signer.Name)
+                    .SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA_OBLIQUE))
+                    .SetFontSize(15)
+                    .SetFontColor(new DeviceRgb(31, 41, 55));
+                name.SetFixedPosition(pageNumber, x, y + 28f, columnWidth);
+                layoutCanvas.Add(name);
+
+                var lineCanvas = new PdfCanvas(page.NewContentStreamAfter(), page.GetResources(), pdfDocument);
+                lineCanvas.SetLineWidth(0.75f);
+                lineCanvas.SetStrokeColor(new DeviceRgb(148, 163, 184));
+                lineCanvas.MoveTo(x, y + 24f);
+                lineCanvas.LineTo(x + columnWidth, y + 24f);
+                lineCanvas.Stroke();
+
+                var meta = new Paragraph($"{GetSignatureTypeLabel(signer.SignatureType)} • {signer.SignedAt:dd/MM/yyyy HH:mm}")
+                    .SetFontSize(8)
+                    .SetFontColor(new DeviceRgb(71, 85, 105));
+                meta.SetFixedPosition(pageNumber, x, y + 8f, columnWidth);
+                layoutCanvas.Add(meta);
+            }
+        }
+
+        private static string ResolveLatestSignerName(DocumentSignatureVisualContext visualContext)
+        {
+            return visualContext.SignedSigners
+                .OrderByDescending(s => s.SignedAt)
+                .Select(s => s.Name)
+                .FirstOrDefault() ?? "AGE SignatureHub";
+        }
+
+        private static string GetSignatureTypeLabel(SignatureType signatureType) => signatureType switch
+        {
+            SignatureType.Eletronic => "Assinatura Eletrônica",
+            SignatureType.DigitalA1 => "Certificado Digital A1",
+            SignatureType.DigitalA3 => "Certificado Digital A3",
+            SignatureType.Biometric => "Biometria",
+            _ => signatureType.ToString()
+        };
     }
 }

@@ -110,7 +110,9 @@ export class PendingSignaturesComponent implements OnInit {
   openRejectDialog(signer: SignerDto): void {
     const dialogRef = this.dialog.open(RejectDialogComponent, {
       data: { signer, reject: true },
-      width: '520px'
+      width: '520px',
+      maxWidth: 'calc(100vw - 32px)',
+      autoFocus: false,
     }).afterClosed().subscribe(result => {
       if (result) {
         this.snackbar.open('Documento rejeitado com sucesso!', 'Fechar', { duration: 3000 });

@@ -60,6 +60,10 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
 
                 var flow = signer.SignatureFlow;
                 var document = flow.Document;
+                if (!string.Equals(document.FileExtension, ".pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new BusinessException("Nesta fase, o artefato assinado oficial com QR e validação pública está disponível apenas para documentos PDF.");
+                }
 
                 document.CheckAndUpdateExpiration();
                 if (document.IsExpired())
@@ -79,7 +83,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                 if (request.SignData.SignatureType == SignatureType.DigitalA1 ||
                     request.SignData.SignatureType == SignatureType.DigitalA3)
                 {
-                    certificateInfo = await _signatureService.ValidateCertificateAsync(request.SignData.CertificateData, cancellationToken);
+                    certificateInfo = await _signatureService.ValidateCertificateAsync(request.SignData.CertificateData, request.SignData.Pin, cancellationToken);
                     if (certificateInfo.IsExpired())
                     {
                         throw new BusinessException("The provided digital certificate has expired.");
@@ -95,12 +99,18 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                     location: TrimToLength(request.SignData.Location, 255),
                     documentHash: document.ContentHash
                 );
+                var nextVersionNumber = document.Versions.Count == 0
+                    ? 1
+                    : document.Versions.Max(v => v.VersionNumber) + 1;
+                var verificationUrl = BuildPublicVerificationUrl(document.Id, nextVersionNumber);
+                var visualContext = BuildVisualContext(flow, signer, request.SignData.SignatureType, document, nextVersionNumber, verificationUrl);
 
                 var signedDocumentBytes = await _signatureService.SignDocumentAsync(
                     documentStream,
                     request.SignData.SignatureType,
                     certificateInfo,
                     metadata,
+                    visualContext,
                     cancellationToken);
 
                 using var signedStream = new MemoryStream(signedDocumentBytes);
@@ -114,12 +124,13 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                 var newHash = await _signatureService.ComputeHashAsync(signedStream, cancellationToken);
                 var newHashString = Convert.ToBase64String(newHash);
 
-                document.RegisterSignedVersion(
+                var newVersion = document.RegisterSignedVersion(
                     newStoragePath,
                     newHashString,
                     signedDocumentBytes.LongLength,
                     $"Signed by {signer.Name} ({signer.Email}) using {request.SignData.SignatureType}."
                 );
+                await _unitOfWork.Documents.AddVersionAsync(newVersion, cancellationToken);
 
                 signer.Sign(
                     request.SignData.SignatureType,
@@ -246,6 +257,53 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
             return normalized.Length <= maxLength
                 ? normalized
                 : normalized[..maxLength];
+        }
+
+        private string BuildPublicVerificationUrl(Guid documentId, int versionNumber)
+        {
+            var baseUrl = (_settings.FrontendUrl ?? _settings.ApplicationUrl ?? string.Empty).TrimEnd('/');
+            return $"{baseUrl}/verification/documents/{documentId}?version={versionNumber}";
+        }
+
+        private static DocumentSignatureVisualContext BuildVisualContext(
+            SignatureFlow flow,
+            Signer currentSigner,
+            SignatureType currentSignatureType,
+            Document document,
+            int nextVersionNumber,
+            string verificationUrl)
+        {
+            var signedSigners = flow.Signers
+                .Where(s => s.SignedAt.HasValue && s.SignatureType.HasValue)
+                .Select(s => new SignedSignerVisualInfo
+                {
+                    SignerId = s.Id,
+                    Name = s.Name,
+                    Email = s.Email,
+                    SignatureType = s.SignatureType!.Value,
+                    SignedAt = s.SignedAt!.Value
+                })
+                .ToList();
+
+            signedSigners.Add(new SignedSignerVisualInfo
+            {
+                SignerId = currentSigner.Id,
+                Name = currentSigner.Name,
+                Email = currentSigner.Email,
+                SignatureType = currentSignatureType,
+                SignedAt = DateTime.UtcNow
+            });
+
+            return new DocumentSignatureVisualContext
+            {
+                DocumentId = document.Id,
+                DocumentTitle = document.Title,
+                OriginalFileName = document.OriginalFileName,
+                VersionNumber = nextVersionNumber,
+                VerificationUrl = verificationUrl,
+                CurrentSignatureType = currentSignatureType,
+                SignedSigners = signedSigners
+            };
         }
     }
 }

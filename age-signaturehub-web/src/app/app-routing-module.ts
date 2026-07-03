@@ -5,6 +5,7 @@ import { HomeComponent } from './features/public/home/home.component';
 import { FaqComponent } from './features/public/faq/faq.component';
 import { PrivacyPolicyComponent } from './features/public/privacy-policy/privacy-policy.component';
 import { LoginComponent } from './features/auth/login/login.component';
+import { DocumentVerificationComponent } from './features/public/document-verification/document-verification.component';
 import { InternalLayoutComponent } from './layout/internal-layout/internal-layout.component';
 import { authGuard } from './core/guards/auth.guard';
 import { DashboardComponent } from './features/internal/dashboard/dashboard.component';
@@ -31,6 +32,10 @@ const routes: Routes = [
       {
         path: 'privacy-policy',
         component: PrivacyPolicyComponent
+      },
+      {
+        path: 'verification/documents/:id',
+        component: DocumentVerificationComponent
       }
     ]
   },

@@ -30,6 +30,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 export class SignDialogComponent {
   loading = false
   form!: FormGroup
+  certificateFileName: string | null = null;
 
   constructor(
     public dialogRef: MatDialogRef<SignDialogComponent>,
@@ -39,13 +40,22 @@ export class SignDialogComponent {
     private snackbar: MatSnackBar
   ) {
     this.form = this.fb.group({
-      signatureType: [this.data.signer.signatureType, Validators.required],
-      certificateData: [''],
+      signatureType: [this.data.signer.signatureType ?? SignatureType.Electronic, Validators.required],
+      certificateData: [null],
       pin: [''],
+    });
+
+    this.updateCertificateValidators(this.form.get('signatureType')?.value as SignatureType);
+    this.form.get('signatureType')?.valueChanges.subscribe((value) => {
+      this.updateCertificateValidators(value as SignatureType);
     });
   }
 
-  readonly signatureTypeOptions = Object.values(SignatureType).filter((v) => typeof v === 'number').map((v) => ({
+  readonly signatureTypeOptions = [
+    SignatureType.Electronic,
+    SignatureType.DigitalA1,
+    SignatureType.DigitalA3,
+  ].map((v) => ({
     value: v as SignatureType,
     label: SignatureTypeLabel[v as SignatureType],
     icon: SignatureTypeIcon[v as SignatureType],
@@ -54,6 +64,43 @@ export class SignDialogComponent {
   get requiresCertificate(): boolean {
     const t = this.form.get('signatureType')?.value;
     return t === SignatureType.DigitalA1 || t === SignatureType.DigitalA3;
+  }
+
+  async onCertificateSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      this.certificateFileName = null;
+      this.form.patchValue({ certificateData: null });
+      return;
+    }
+
+    const buffer = await file.arrayBuffer();
+    const bytes = Array.from(new Uint8Array(buffer));
+    this.certificateFileName = file.name;
+    this.form.patchValue({ certificateData: bytes });
+    this.form.get('certificateData')?.markAsDirty();
+    this.form.get('certificateData')?.updateValueAndValidity();
+  }
+
+  private updateCertificateValidators(signatureType: SignatureType): void {
+    const certificateControl = this.form.get('certificateData');
+    const pinControl = this.form.get('pin');
+    const requiresCertificate = signatureType === SignatureType.DigitalA1 || signatureType === SignatureType.DigitalA3;
+
+    if (requiresCertificate) {
+      certificateControl?.setValidators([Validators.required]);
+      pinControl?.setValidators([Validators.required]);
+    } else {
+      certificateControl?.clearValidators();
+      pinControl?.clearValidators();
+      this.certificateFileName = null;
+      this.form.patchValue({ certificateData: null, pin: '' }, { emitEvent: false });
+    }
+
+    certificateControl?.updateValueAndValidity({ emitEvent: false });
+    pinControl?.updateValueAndValidity({ emitEvent: false });
   }
 
   confirm(): void {

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace AGE.SignatureHub.Infrastructure.Persistence
 {
@@ -23,10 +24,14 @@ namespace AGE.SignatureHub.Infrastructure.Persistence
     IdentityUserToken<Guid>>
     {
         private IDbContextTransaction _currentTransaction;
+        private readonly ILogger<ApplicationDBContext> _logger;
 
-        public ApplicationDBContext(DbContextOptions<ApplicationDBContext> options)
+        public ApplicationDBContext(
+            DbContextOptions<ApplicationDBContext> options,
+            ILogger<ApplicationDBContext> logger)
             : base(options)
         {
+            _logger = logger;
         }
 
         public DbSet<Document> Documents { get; set; }
@@ -77,6 +82,12 @@ namespace AGE.SignatureHub.Infrastructure.Persistence
 
                 await _currentTransaction?.CommitAsync(cancellationToken);
             }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                LogConcurrencyConflict(ex);
+                await RollbackTransactionAsync(cancellationToken);
+                throw;
+            }
             catch
             {
                 await RollbackTransactionAsync(cancellationToken);
@@ -89,6 +100,36 @@ namespace AGE.SignatureHub.Infrastructure.Persistence
                     _currentTransaction.Dispose();
                     _currentTransaction = null;
                 }
+            }
+        }
+
+        private void LogConcurrencyConflict(DbUpdateConcurrencyException ex)
+        {
+            foreach (var entry in ex.Entries)
+            {
+                var primaryKey = entry.Metadata.FindPrimaryKey();
+                var keyValues = primaryKey == null
+                    ? string.Empty
+                    : string.Join(
+                        ", ",
+                        primaryKey.Properties.Select(property =>
+                        {
+                            var currentValue = entry.Property(property.Name).CurrentValue;
+                            return $"{property.Name}={currentValue ?? "null"}";
+                        }));
+
+                var modifiedProperties = entry.Properties
+                    .Where(property => property.IsModified)
+                    .Select(property => $"{property.Metadata.Name}={property.CurrentValue ?? "null"}")
+                    .ToArray();
+
+                _logger.LogError(
+                    ex,
+                    "Concurrency conflict for entity {EntityType} with state {EntityState}. Keys: {Keys}. Modified properties: {ModifiedProperties}",
+                    entry.Metadata.ClrType.Name,
+                    entry.State,
+                    keyValues,
+                    modifiedProperties.Length == 0 ? "[none]" : string.Join("; ", modifiedProperties));
             }
         }
 

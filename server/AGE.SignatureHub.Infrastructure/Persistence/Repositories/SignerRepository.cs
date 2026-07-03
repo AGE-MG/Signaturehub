@@ -36,6 +36,7 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Repositories
         public async Task<Signer?> GetByIdWithFlowAndDocumentAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return await _dbSet
+            .AsSplitQuery()
             .Include(s => s.SignatureFlow)
             .ThenInclude(sf => sf.Document)
             .ThenInclude(d => d.Versions)
