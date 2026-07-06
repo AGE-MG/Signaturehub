@@ -70,6 +70,7 @@ namespace AGE.SignatureHub.Infrastructure
             services.Configure<StorageSettings>(configuration.GetSection("Storage"));
             services.Configure<EmailSettings>(configuration.GetSection("Email"));
             services.Configure<WebhookSettings>(configuration.GetSection("Webhooks"));
+            services.Configure<ActiveDirectorySettings>(configuration.GetSection(ActiveDirectorySettings.SectionName));
 
             var storageProvider = configuration.GetValue<string>("Storage:Provider") ?? "LocalFileSystem";
 
@@ -92,6 +93,7 @@ namespace AGE.SignatureHub.Infrastructure
             }
 
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ActiveDirectoryAuthenticationService>();
             services.AddScoped<IUserManagementService, UserManagementService>();
             services.AddScoped<ITokenService, TokenService>();
 

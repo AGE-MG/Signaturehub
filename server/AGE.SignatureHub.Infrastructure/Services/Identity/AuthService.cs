@@ -22,6 +22,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
         private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly ITokenService _tokenService;
         private readonly IMapper _mapper;
+        private readonly ActiveDirectoryAuthenticationService _activeDirectoryAuthenticationService;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(
@@ -30,6 +31,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             RoleManager<ApplicationRole> roleManager,
             ITokenService tokenService,
             IMapper mapper,
+            ActiveDirectoryAuthenticationService activeDirectoryAuthenticationService,
             ILogger<AuthService> logger)
         {
             _userManager = userManager;
@@ -37,6 +39,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             _roleManager = roleManager;
             _tokenService = tokenService;
             _mapper = mapper;
+            _activeDirectoryAuthenticationService = activeDirectoryAuthenticationService;
             _logger = logger;
         }
         public async Task<BaseResponse<bool>> ChangePasswordAsync(string userId, string currentPassword, string newPassword)
@@ -114,6 +117,22 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
 
             try
             {
+                if (_activeDirectoryAuthenticationService.IsEnabled)
+                {
+                    var adResult = await _activeDirectoryAuthenticationService.AuthenticateAsync(request.Email, request.Password);
+                    if (adResult != null)
+                    {
+                        return await SignInWithActiveDirectoryAsync(adResult, request.RememberMe);
+                    }
+
+                    if (!_activeDirectoryAuthenticationService.AllowLocalFallback)
+                    {
+                        response.Success = false;
+                        response.Message = "Invalid network username or password.";
+                        return response;
+                    }
+                }
+
                 var user = await _userManager.FindByEmailAsync(request.Email);
 
                 if (user == null)
@@ -185,6 +204,88 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 response.Errors = new List<string> { ex.Message };
                 return response;
             }
+        }
+
+        private async Task<BaseResponse<LoginResponse>> SignInWithActiveDirectoryAsync(ActiveDirectoryAuthenticationResult adResult, bool rememberMe)
+        {
+            var response = new BaseResponse<LoginResponse>();
+
+            var email = adResult.Email.Trim().ToLowerInvariant();
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    FullName = string.IsNullOrWhiteSpace(adResult.DisplayName) ? adResult.AccountName : adResult.DisplayName,
+                    Department = adResult.Department,
+                    Position = adResult.Position,
+                    RegistrationNumber = adResult.RegistrationNumber,
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    response.Success = false;
+                    response.Message = "Could not provision the Active Directory user locally.";
+                    response.Errors = createResult.Errors.Select(e => e.Description).ToList();
+                    return response;
+                }
+
+                if (await _roleManager.RoleExistsAsync("User"))
+                {
+                    await _userManager.AddToRoleAsync(user, "User");
+                }
+                else
+                {
+                    _logger.LogWarning("Default role 'User' was not found while provisioning Active Directory user {Email}", email);
+                }
+            }
+            else
+            {
+                user.UserName = email;
+                user.Email = email;
+                user.FullName = string.IsNullOrWhiteSpace(adResult.DisplayName) ? user.FullName : adResult.DisplayName;
+                user.Department = adResult.Department;
+                user.Position = adResult.Position;
+                user.RegistrationNumber = adResult.RegistrationNumber;
+                user.IsActive = true;
+            }
+
+            if (!user.IsActive)
+            {
+                response.Success = false;
+                response.Message = "User account is inactive.";
+                return response;
+            }
+
+            user.LastLoginAt = DateTime.UtcNow;
+            user.RefreshToken = _tokenService.GenerateRefreshToken();
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(rememberMe ? 14 : 7);
+            await _userManager.UpdateAsync(user);
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var accessToken = _tokenService.GenerateAccessToken(user, roles);
+            var userDto = _mapper.Map<UserDto>(user);
+            userDto.Roles = roles.ToList();
+
+            response.Success = true;
+            response.Message = "Login successful.";
+            response.Data = new LoginResponse
+            {
+                Token = accessToken,
+                RefreshToken = user.RefreshToken,
+                TokenExpiration = DateTime.UtcNow.AddHours(1),
+                User = userDto
+            };
+
+            _logger.LogInformation("User {Email} logged in successfully via Active Directory", email);
+            return response;
         }
         public async Task<BaseResponse<bool>> LogoutAsync(string userId)
         {
