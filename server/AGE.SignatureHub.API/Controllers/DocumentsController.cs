@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using AGE.SignatureHub.Application.Contracts.Identity;
 using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Document;
 using AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocument;
+using AGE.SignatureHub.Application.Features.Documents.Commands.TransferDocumentDepartment;
 using AGE.SignatureHub.Application.Features.Documents.Queries.DownloadDocument;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentById;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentByStatus;
@@ -25,13 +27,15 @@ namespace AGE.SignatureHub.API.Controllers
         private readonly ILogger<DocumentsController> _logger;
         private readonly IMediator _mediator;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IUserManagementService _userManagementService;
         private readonly IMapper _mapper;
 
-        public DocumentsController(ILogger<DocumentsController> logger, IMediator mediator, IUnitOfWork unitOfWork, IMapper mapper)
+        public DocumentsController(ILogger<DocumentsController> logger, IMediator mediator, IUnitOfWork unitOfWork, IUserManagementService userManagementService, IMapper mapper)
         {
             _logger = logger;
             _mediator = mediator;
             _unitOfWork = unitOfWork;
+            _userManagementService = userManagementService;
             _mapper = mapper;
         }
 
@@ -75,9 +79,13 @@ namespace AGE.SignatureHub.API.Controllers
                 return Unauthorized();
             }
 
-            var documents = status.HasValue
-                ? await _unitOfWork.Documents.GetByStatusAsync(status.Value, cancellationToken)
-                : await _unitOfWork.Documents.GetByCreatorAsync(parsedUserId, cancellationToken);
+            var currentUser = await _userManagementService.GetByIdAsync(parsedUserId, cancellationToken);
+            var documents = await _unitOfWork.Documents.GetAccessibleDocumentsAsync(
+                parsedUserId,
+                currentUser.Email,
+                currentUser.Department,
+                status,
+                cancellationToken);
 
             var result = _mapper.Map<List<DocumentDto>>(documents);
             return Ok(result);
@@ -91,7 +99,20 @@ namespace AGE.SignatureHub.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetDocumentById(Guid id, CancellationToken cancellationToken)
         {
-            var query = new GetDocumentByIdQuery { DocumentId = id };
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            var currentUser = await _userManagementService.GetByIdAsync(parsedUserId, cancellationToken);
+            var query = new GetDocumentByIdQuery
+            {
+                DocumentId = id,
+                RequestingUserId = parsedUserId,
+                RequestingUserEmail = currentUser.Email,
+                RequestingUserDepartment = currentUser.Department
+            };
             var result = await _mediator.Send(query, cancellationToken);
             return HandleResponse(result);
         }
@@ -103,7 +124,20 @@ namespace AGE.SignatureHub.API.Controllers
         [ProducesResponseType(typeof(IEnumerable<DocumentDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetDocumentsByStatus(DocumentStatus status, CancellationToken cancellationToken)
         {
-            var query = new GetDocumentByStatusQuery { Status = status };
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            var currentUser = await _userManagementService.GetByIdAsync(parsedUserId, cancellationToken);
+            var query = new GetDocumentByStatusQuery
+            {
+                Status = status,
+                RequestingUserId = parsedUserId,
+                RequestingUserEmail = currentUser.Email,
+                RequestingUserDepartment = currentUser.Department
+            };
             var result = await _mediator.Send(query, cancellationToken);
             return HandleResponse(result);
         }
@@ -116,10 +150,20 @@ namespace AGE.SignatureHub.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DownloadDocument(Guid id, [FromQuery] int? version, CancellationToken cancellationToken)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            var currentUser = await _userManagementService.GetByIdAsync(parsedUserId, cancellationToken);
             var query = new DownloadDocumentQuery
             {
                 DocumentId = id,
-                VersionNumber = version
+                VersionNumber = version,
+                RequestingUserId = parsedUserId,
+                RequestingUserEmail = currentUser.Email,
+                RequestingUserDepartment = currentUser.Department
             };
 
             var result = await _mediator.Send(query, cancellationToken);
@@ -144,7 +188,13 @@ namespace AGE.SignatureHub.API.Controllers
                 return Unauthorized();
             }
 
-            var document = await _unitOfWork.Documents.GetByIdWithAllRelationsAsync(id, cancellationToken);
+            var currentUser = await _userManagementService.GetByIdAsync(parsedUserId, cancellationToken);
+            var document = await _unitOfWork.Documents.GetAccessibleByIdWithAllRelationsAsync(
+                id,
+                parsedUserId,
+                currentUser.Email,
+                currentUser.Department,
+                cancellationToken);
             if (document is null)
             {
                 return NotFound(new[] { "Documento não encontrado." });
@@ -176,6 +226,36 @@ namespace AGE.SignatureHub.API.Controllers
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return NoContent();
+        }
+
+        /// <summary>
+        /// Transfers the document ownership department to the target participant department.
+        /// </summary>
+        [HttpPost("{id}/transfer-department")]
+        [ProducesResponseType(typeof(DocumentDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> TransferDepartment(Guid id, [FromBody] TransferDocumentDepartmentDto transferData, CancellationToken cancellationToken)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            transferData.RequestingUserId = parsedUserId;
+            transferData.IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
+            transferData.UserAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+
+            var command = new TransferDocumentDepartmentCommand
+            {
+                DocumentId = id,
+                TransferData = transferData
+            };
+
+            var result = await _mediator.Send(command, cancellationToken);
+            return HandleResponse(result);
         }
     }
 }

@@ -14,6 +14,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatButtonModule } from "@angular/material/button";
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltip } from "@angular/material/tooltip";
+import { MatDialog } from '@angular/material/dialog';
+import { ProfileDialogComponent } from '../../shared/components/profile-dialog.component/profile-dialog.component';
 
 @Component({
   selector: 'app-topbar',
@@ -34,6 +36,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
     private dashboardService: DashboardService,
     private router: Router,
     private snackBar: MatSnackBar,
+    private dialog: MatDialog,
     private ngZone: NgZone,
     @Inject(PLATFORM_ID) private platformId: object
   ) {
@@ -235,7 +238,14 @@ export class TopbarComponent implements OnInit, OnDestroy {
   }
 
   goToProfile(): void {
-    this.router.navigate(['/profile']);
+    this.dialog.open(ProfileDialogComponent, {
+      width: '680px',
+      maxWidth: '95vw',
+      panelClass: 'profile-dialog-panel',
+      data: {
+        user: this.currentUser
+      }
+    });
   }
 
   goToSettings(): void {

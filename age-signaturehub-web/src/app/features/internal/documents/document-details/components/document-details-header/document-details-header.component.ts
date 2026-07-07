@@ -18,6 +18,7 @@ export class DocumentDetailsHeaderComponent {
   @Input() canDelete = false;
   @Input() canStartFlow = false;
   @Input() canTransferResponsibility = false;
+  @Input() canTransferDepartment = false;
   @Input() canReject = false;
   @Input() actionLoading = false;
   @Input() canCurrentUserSign = false;
@@ -30,4 +31,5 @@ export class DocumentDetailsHeaderComponent {
   @Output() deleteClicked = new EventEmitter<void>();
   @Output() startFlowClicked = new EventEmitter<void>();
   @Output() transferResponsibilityClicked = new EventEmitter<void>();
+  @Output() transferDepartmentClicked = new EventEmitter<void>();
 }

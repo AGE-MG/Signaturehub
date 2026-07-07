@@ -23,7 +23,12 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.DownloadDocume
 
         public async Task<DownloadDocumentResponse> Handle(DownloadDocumentQuery request, CancellationToken cancellationToken)
         {
-            var document = await _unitOfWork.Documents.GetByIdWithVersionsAsync(request.DocumentId, cancellationToken);
+            var document = await _unitOfWork.Documents.GetAccessibleByIdWithVersionsAsync(
+                request.DocumentId,
+                request.RequestingUserId,
+                request.RequestingUserEmail,
+                request.RequestingUserDepartment,
+                cancellationToken);
 
             if (document == null)
             {

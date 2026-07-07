@@ -1,0 +1,61 @@
+.transfer-dialog {
+  min-width: min(620px, calc(100vw - 32px));
+}
+
+.transfer-dialog__header,
+.transfer-dialog__document,
+.transfer-dialog__target-meta,
+.transfer-dialog__loading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.transfer-dialog__header {
+  margin-bottom: 8px;
+}
+
+.transfer-dialog__header h2,
+.transfer-dialog__document strong {
+  margin: 0;
+}
+
+.transfer-dialog__header p,
+.transfer-dialog__document span {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.transfer-dialog__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.transfer-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transfer-dialog__target-meta {
+  justify-content: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.transfer-dialog__loading {
+  justify-content: flex-start;
+  padding: 12px 0;
+}
+
+.transfer-dialog__actions {
+  padding-top: 8px;
+}
+
+.full-width {
+  width: 100%;
+}

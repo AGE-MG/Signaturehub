@@ -1,0 +1,6 @@
+.tmp-*
+.claude
+.agents
+.codex
+.github
+.vscode

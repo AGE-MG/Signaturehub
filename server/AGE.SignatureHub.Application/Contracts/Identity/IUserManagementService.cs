@@ -4,6 +4,7 @@ namespace AGE.SignatureHub.Application.Contracts.Identity
 {
     public interface IUserManagementService
     {
+        Task<UserDto> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default);
         Task<List<UserDto>> ListAllAsync(CancellationToken cancellationToken = default);
         Task<UserDto> UpdateMyProfileAsync(string userId, UpdateProfileDto dto, CancellationToken cancellationToken = default);
         Task<UserDto> UpdateUserRolesAsync(Guid userId, List<string> roles, CancellationToken cancellationToken = default);

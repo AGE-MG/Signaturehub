@@ -6,7 +6,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.getToken();
 
-  const isAuthEndpoint = req.url.includes('/auth/login') || req.url.includes('/auth/register');
+  const isAuthEndpoint =
+    req.url.includes('/auth/login') ||
+    req.url.includes('/auth/register') ||
+    req.url.includes('/auth/windows-sso');
 
   if (token && !isAuthEndpoint) {
     req = req.clone({

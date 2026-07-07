@@ -12,5 +12,8 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentByS
     public class GetDocumentByStatusQuery : IRequest<BaseResponse<List<DocumentDto>>>
     {
         public DocumentStatus Status { get; set; }
+        public Guid RequestingUserId { get; set; }
+        public string RequestingUserEmail { get; set; } = string.Empty;
+        public string? RequestingUserDepartment { get; set; }
     }
 }

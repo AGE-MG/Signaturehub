@@ -8,6 +8,7 @@ namespace AGE.SignatureHub.Domain.Entities
 {
     public class ApplicationUser : IdentityUser<Guid>
     {
+        public string NetworkUserName { get; set; }
         public string FullName { get; set; }
         public string? ProfilePicture { get; set; }
         public string? Department { get; set; }
@@ -21,6 +22,7 @@ namespace AGE.SignatureHub.Domain.Entities
 
         public ApplicationUser()
         {
+            NetworkUserName = string.Empty;
             FullName = string.Empty;
             Id = Guid.NewGuid();
             CreatedAt = DateTime.UtcNow;

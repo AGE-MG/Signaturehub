@@ -5,6 +5,9 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.Contracts.Identity;
 using AGE.SignatureHub.Application.DTOs.Auth;
+using AGE.SignatureHub.Infrastructure.Configuration;
+using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,11 +19,13 @@ namespace AGE.SignatureHub.API.Controllers
     {
         private readonly ILogger<AuthController> _logger;
         private readonly IAuthService _authService;
+        private readonly ActiveDirectorySettings _activeDirectorySettings;
 
-        public AuthController(ILogger<AuthController> logger, IAuthService authService)
+        public AuthController(ILogger<AuthController> logger, IAuthService authService, IOptions<ActiveDirectorySettings> activeDirectorySettings)
         {
             _logger = logger;
             _authService = authService;
+            _activeDirectorySettings = activeDirectorySettings.Value;
         }
 
         /// <summary>
@@ -33,6 +38,32 @@ namespace AGE.SignatureHub.API.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var result = await _authService.LoginAsync(request);
+            return result.Success ? Ok(result) : Unauthorized(result);
+        }
+
+        /// <summary>
+        /// Executes Windows/Active Directory SSO using the current machine user.
+        /// </summary>
+        [HttpGet("windows-sso")]
+        [Authorize(AuthenticationSchemes = NegotiateDefaults.AuthenticationScheme)]
+        [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> WindowsSso()
+        {
+            if (!_activeDirectorySettings.EnableWindowsSso)
+            {
+                return BadRequest(new { success = false, message = "Windows SSO is disabled." });
+            }
+
+            var request = new WindowsSsoLoginRequest
+            {
+                IdentityName = User.Identity?.Name ?? string.Empty,
+                Email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue(ClaimTypes.Upn),
+                FullName = User.FindFirstValue(ClaimTypes.Name),
+                RememberMe = true
+            };
+
+            var result = await _authService.WindowsSsoLoginAsync(request);
             return result.Success ? Ok(result) : Unauthorized(result);
         }
 

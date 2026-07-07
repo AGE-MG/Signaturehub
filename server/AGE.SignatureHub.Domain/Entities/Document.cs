@@ -21,6 +21,8 @@ namespace AGE.SignatureHub.Domain.Entities
         public string Description { get; private set; } = string.Empty;
         public DateTime? ExpiresAt { get; private set; }
         public Guid CreatedByUserId { get; private set; }
+        public string OwningDepartment { get; private set; } = string.Empty;
+        public bool IsConfidential { get; private set; }
 
         private readonly List<SignatureFlow> _signatureFlows = new();
         public IReadOnlyCollection<SignatureFlow> SignatureFlows => _signatureFlows.AsReadOnly();
@@ -41,6 +43,8 @@ namespace AGE.SignatureHub.Domain.Entities
                 string title,
                 string description,
                 Guid createdByUserId,
+                string owningDepartment,
+                bool isConfidential = false,
                 DateTime? expiresAt = null
             )
         {
@@ -56,6 +60,8 @@ namespace AGE.SignatureHub.Domain.Entities
             Description = description;
             ExpiresAt = expiresAt;
             CreatedByUserId = createdByUserId;
+            OwningDepartment = owningDepartment ?? string.Empty;
+            IsConfidential = isConfidential;
 
             AddVersion(1, storagePath, contentHash, "Initial version");
         }
@@ -73,6 +79,18 @@ namespace AGE.SignatureHub.Domain.Entities
             {
                 UpdateStatus(DocumentStatus.PendingSignatures);
             }
+            SetUpdatedAt();
+        }
+
+        public void TransferOwnershipToDepartment(string owningDepartment)
+        {
+            OwningDepartment = owningDepartment?.Trim() ?? string.Empty;
+            SetUpdatedAt();
+        }
+
+        public void SetConfidentiality(bool isConfidential)
+        {
+            IsConfidential = isConfidential;
             SetUpdatedAt();
         }
 

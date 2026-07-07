@@ -20,6 +20,8 @@ namespace AGE.SignatureHub.Application.DTOs.Document
         public string Description { get; set; } = string.Empty;
         public DateTime? ExpiresAt { get; set; }
         public Guid CreatedByUserId { get; set; }
+        public string OwningDepartment { get; set; } = string.Empty;
+        public bool IsConfidential { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public List<SignatureFlowDto> SignatureFlows { get; set; } = new();

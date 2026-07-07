@@ -10,12 +10,14 @@ namespace AGE.SignatureHub.Application.DTOs.Auth
         public string Email { get; set; }
         public string Password { get; set; }
         public bool RememberMe { get; set; }
+        public LoginMode LoginMode { get; set; }
 
         public LoginRequest()
         {
             Email = string.Empty;
             Password = string.Empty;
             RememberMe = false;
+            LoginMode = LoginMode.Internal;
         }
     }
 }

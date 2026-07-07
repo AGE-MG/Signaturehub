@@ -24,6 +24,35 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Repositories
             .ToListAsync(cancellationToken);
         }
 
+        public async Task<IReadOnlyList<Document>> GetAccessibleDocumentsAsync(
+            Guid userId,
+            string email,
+            string? department,
+            DocumentStatus? status = null,
+            CancellationToken cancellationToken = default)
+        {
+            var normalizedEmail = Normalize(email);
+            var normalizedDepartment = Normalize(department);
+
+            var query = _dbSet.AsQueryable();
+
+            if (status.HasValue)
+            {
+                query = query.Where(d => d.Status == status.Value);
+            }
+
+            query = query.Where(d =>
+                d.CreatedByUserId == userId ||
+                d.SignatureFlows.Any(sf => sf.Signers.Any(s => s.Email.ToLower() == normalizedEmail)) ||
+                (!d.IsConfidential &&
+                 !string.IsNullOrWhiteSpace(normalizedDepartment) &&
+                 d.OwningDepartment.ToLower() == normalizedDepartment));
+
+            return await query
+                .OrderByDescending(d => d.UpdatedAt > d.CreatedAt ? d.UpdatedAt : d.CreatedAt)
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default)
         {
             await _dbContext.DocumentVersions.AddAsync(version, cancellationToken);
@@ -39,6 +68,31 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Repositories
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
         }
 
+        public async Task<Document?> GetAccessibleByIdWithAllRelationsAsync(
+            Guid id,
+            Guid userId,
+            string email,
+            string? department,
+            CancellationToken cancellationToken = default)
+        {
+            var normalizedEmail = Normalize(email);
+            var normalizedDepartment = Normalize(department);
+
+            return await _dbSet
+                .AsSplitQuery()
+                .Include(d => d.SignatureFlows)
+                .ThenInclude(sf => sf.Signers)
+                .Include(d => d.Versions.OrderByDescending(v => v.VersionNumber))
+                .FirstOrDefaultAsync(d =>
+                    d.Id == id &&
+                    (d.CreatedByUserId == userId ||
+                     d.SignatureFlows.Any(sf => sf.Signers.Any(s => s.Email.ToLower() == normalizedEmail)) ||
+                     (!d.IsConfidential &&
+                      !string.IsNullOrWhiteSpace(normalizedDepartment) &&
+                      d.OwningDepartment.ToLower() == normalizedDepartment)),
+                    cancellationToken);
+        }
+
         public async Task<Document?> GetByIdWithFlowsAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return await _dbSet
@@ -51,6 +105,30 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Repositories
             return await _dbSet
             .Include(d => d.Versions.OrderByDescending(v => v.VersionNumber))
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+        }
+
+        public async Task<Document?> GetAccessibleByIdWithVersionsAsync(
+            Guid id,
+            Guid userId,
+            string email,
+            string? department,
+            CancellationToken cancellationToken = default)
+        {
+            var normalizedEmail = Normalize(email);
+            var normalizedDepartment = Normalize(department);
+
+            return await _dbSet
+                .Include(d => d.Versions.OrderByDescending(v => v.VersionNumber))
+                .Include(d => d.SignatureFlows)
+                .ThenInclude(sf => sf.Signers)
+                .FirstOrDefaultAsync(d =>
+                    d.Id == id &&
+                    (d.CreatedByUserId == userId ||
+                     d.SignatureFlows.Any(sf => sf.Signers.Any(s => s.Email.ToLower() == normalizedEmail)) ||
+                     (!d.IsConfidential &&
+                      !string.IsNullOrWhiteSpace(normalizedDepartment) &&
+                      d.OwningDepartment.ToLower() == normalizedDepartment)),
+                    cancellationToken);
         }
 
         public async Task<IReadOnlyList<Document>> GetByStatusAsync(DocumentStatus status, CancellationToken cancellationToken = default)
@@ -75,6 +153,11 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Repositories
             .Where(d => d.Status == DocumentStatus.PendingSignatures || d.Status == DocumentStatus.PartiallyCompleted)
             .OrderByDescending(d => d.CreatedAt)
             .ToListAsync(cancellationToken);
+        }
+
+        private static string Normalize(string? value)
+        {
+            return value?.Trim().ToLower() ?? string.Empty;
         }
     }
 }

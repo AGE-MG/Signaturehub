@@ -10,6 +10,9 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.DownloadDocume
     {
         public Guid DocumentId { get; set; }
         public int? VersionNumber { get; set; }
+        public Guid RequestingUserId { get; set; }
+        public string RequestingUserEmail { get; set; } = string.Empty;
+        public string? RequestingUserDepartment { get; set; }
     }
 
     public class DownloadDocumentResponse

@@ -118,6 +118,7 @@ export interface AuditLogFilter {
 
 export interface UserDto {
   id: string;
+  networkUserName?: string;
   fullName: string;
   email: string;
   profilePicture?: string;

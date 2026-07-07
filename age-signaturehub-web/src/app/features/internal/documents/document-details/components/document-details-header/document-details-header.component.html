@@ -50,6 +50,20 @@
       </button>
     }
 
+    @if (canTransferDepartment) {
+      <button
+        mat-stroked-button
+        color="primary"
+        (click)="transferDepartmentClicked.emit()"
+        [disabled]="actionLoading"
+      >
+        <span class="button-content">
+          <mat-icon>move_up</mat-icon>
+          Movimentar Departamento
+        </span>
+      </button>
+    }
+
     @if (canSign) {
       @if (canReject) {
         <button

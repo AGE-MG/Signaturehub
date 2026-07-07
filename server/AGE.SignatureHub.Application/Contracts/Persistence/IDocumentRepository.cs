@@ -18,6 +18,9 @@ namespace AGE.SignatureHub.Application.Contracts.Persistence
         Task<Document?> GetByIdWithAllRelationsAsync(Guid id, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Document>> GetByStatusAsync(DocumentStatus status, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Document>> GetByCreatorAsync(Guid creatorId, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<Document>> GetAccessibleDocumentsAsync(Guid userId, string email, string? department, DocumentStatus? status = null, CancellationToken cancellationToken = default);
+        Task<Document?> GetAccessibleByIdWithAllRelationsAsync(Guid id, Guid userId, string email, string? department, CancellationToken cancellationToken = default);
+        Task<Document?> GetAccessibleByIdWithVersionsAsync(Guid id, Guid userId, string email, string? department, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Document>> GetExpiredDocumentsAsync(CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Document>> GetPendingDocumentsAsync(CancellationToken cancellationToken = default);
         Task AddVersionAsync(DocumentVersion version, CancellationToken cancellationToken = default);

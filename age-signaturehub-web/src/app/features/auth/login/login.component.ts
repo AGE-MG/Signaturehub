@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '../../../core/services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { LoginMode } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-login',
@@ -28,12 +29,14 @@ import { ActivatedRoute, Router } from '@angular/router';
   styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent {
+  readonly LoginMode = LoginMode;
   loginForm: FormGroup;
   hidePassword = true;
   loading = false;
   errorMessage: string | null = null;
   returnUrl: string;
   private isBrowser: boolean;
+  selectedLoginMode: LoginMode = LoginMode.ActiveDirectory;
 
   constructor(
     private fb: FormBuilder,
@@ -51,7 +54,7 @@ export class LoginComponent {
     }
 
     this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
+      email: ['', [Validators.required, Validators.minLength(3)]],
       password: ['', [Validators.required, Validators.minLength(6)]],
       rememberMe: [false]
     });
@@ -60,11 +63,20 @@ export class LoginComponent {
   }
 
   onSubmit(): void {
+    if (this.isActiveDirectoryMode) {
+      this.loginWithActiveDirectorySession();
+      return;
+    }
+
     if (this.loginForm.valid) {
       this.loading = true;
       this.errorMessage = null;
 
-      const loginRequest = this.loginForm.value;
+      const loginRequest = {
+        ...this.loginForm.value,
+        email: String(this.loginForm.value.email ?? '').trim(),
+        loginMode: this.selectedLoginMode,
+      };
 
       this.authService.login(loginRequest).subscribe({
         next: (response) => {
@@ -121,5 +133,82 @@ export class LoginComponent {
       verticalPosition: 'top',
       panelClass: ['info-snackbar']
     });
+  }
+
+  loginWithActiveDirectorySession(): void {
+    this.loading = true;
+    this.errorMessage = null;
+
+    this.authService.loginWithWindowsSession().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.snackBar.open('Login AD realizado com sucesso!', 'Fechar', {
+            duration: 3000,
+            horizontalPosition: 'end',
+            verticalPosition: 'top',
+            panelClass: ['success-snackbar']
+          });
+          this.router.navigate([this.returnUrl]);
+          return;
+        }
+
+        this.errorMessage = response.message || 'Falha no login via Active Directory.';
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Windows SSO login error', error);
+
+        if (error.error?.message) {
+          this.errorMessage = error.error.message;
+        } else if (error.status === 401) {
+          this.errorMessage = 'O navegador não conseguiu autenticar com o usuário da máquina. Verifique se a API está na intranet/zona confiável e com Windows Authentication habilitado.';
+        } else if (error.status === 0) {
+          this.errorMessage = 'Não foi possível conectar ao servidor para o login AD.';
+        } else {
+          this.errorMessage = 'Falha no login automático com Active Directory.';
+        }
+
+        this.loading = false;
+      }
+    });
+  }
+
+  selectLoginMode(mode: LoginMode): void {
+    this.selectedLoginMode = mode;
+    this.errorMessage = null;
+  }
+
+  get isActiveDirectoryMode(): boolean {
+    return this.selectedLoginMode === LoginMode.ActiveDirectory;
+  }
+
+  get loginFieldLabel(): string {
+    return this.isActiveDirectoryMode
+      ? 'Usuário de rede AD'
+      : 'Usuário interno ou e-mail';
+  }
+
+  get loginTitle(): string {
+    return this.isActiveDirectoryMode
+      ? 'Entrar com Active Directory'
+      : 'Entrar com conta interna';
+  }
+
+  get loginSubtitle(): string {
+    return this.isActiveDirectoryMode
+      ? 'Use a mesma credencial de rede da organização.'
+      : 'Use a conta interna cadastrada no SignatureHub.';
+  }
+
+  get loginPlaceholder(): string {
+    return this.isActiveDirectoryMode
+      ? 'm10700379'
+      : 'usuario.interno@age.mg.gov.br';
+  }
+
+  get loginHintText(): string {
+    return this.isActiveDirectoryMode
+      ? 'Este modo autentica diretamente no domínio/AD da organização.'
+      : 'Este modo usa usuário e senha internos da aplicação.';
   }
 }

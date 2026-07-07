@@ -8,6 +8,7 @@ namespace AGE.SignatureHub.Application.DTOs.Auth
     public class UserDto
     {
         public Guid Id { get; set; }
+        public string NetworkUserName { get; set; }
         public string FullName { get; set; }
         public string Email { get; set; }
         public string? ProfilePicture { get; set; }
@@ -17,6 +18,7 @@ namespace AGE.SignatureHub.Application.DTOs.Auth
         public List<string> Roles { get; set; }
         public UserDto()
         {
+            NetworkUserName = string.Empty;
             FullName = string.Empty;
             Email = string.Empty;
             Roles = new List<string>();

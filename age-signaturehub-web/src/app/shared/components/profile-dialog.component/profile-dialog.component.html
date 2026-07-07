@@ -1,0 +1,71 @@
+<div class="profile-dialog">
+  <div class="profile-dialog__header" mat-dialog-title>
+    <div>
+      <h2>Meu perfil</h2>
+      <p>Dados da sessão atual e informações sincronizadas do usuário.</p>
+    </div>
+    <button mat-icon-button type="button" (click)="close()" aria-label="Fechar modal de perfil">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div mat-dialog-content class="profile-dialog__content">
+    @if (initialLoading && !user) {
+      <div class="profile-dialog__loading">
+        <mat-progress-spinner diameter="36" mode="indeterminate"></mat-progress-spinner>
+      </div>
+    } @else {
+      <div class="profile-dialog__hero">
+        <div class="profile-dialog__avatar">{{ getInitials() }}</div>
+        <div class="profile-dialog__identity">
+          <h3>{{ getDisplayValue(user?.fullName) }}</h3>
+          <p>{{ getDisplayValue(user?.email) }}</p>
+          <span class="profile-dialog__source">{{ getAuthSource() }}</span>
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <div class="profile-dialog__grid">
+        <div class="profile-dialog__item">
+          <span class="label">Usuário de rede</span>
+          <strong>{{ getDisplayValue(user?.networkUserName) }}</strong>
+        </div>
+
+        <div class="profile-dialog__item">
+          <span class="label">MASP</span>
+          <strong>{{ getDisplayValue(user?.registrationNumber) }}</strong>
+        </div>
+
+        <div class="profile-dialog__item">
+          <span class="label">Departamento</span>
+          <strong>{{ getDisplayValue(user?.department) }}</strong>
+        </div>
+
+        <div class="profile-dialog__item">
+          <span class="label">Cargo</span>
+          <strong>{{ getDisplayValue(user?.position) }}</strong>
+        </div>
+
+        <div class="profile-dialog__item profile-dialog__item--full">
+          <span class="label">Roles internas</span>
+          <strong>{{ getRoleLabel() }}</strong>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div mat-dialog-actions align="end" class="profile-dialog__actions">
+    <button mat-stroked-button type="button" (click)="refreshUser()" [disabled]="loading">
+      @if (loading) {
+        <mat-progress-spinner diameter="18" mode="indeterminate"></mat-progress-spinner>
+      } @else {
+        <mat-icon>refresh</mat-icon>
+      }
+      Atualizar
+    </button>
+    <button mat-flat-button color="primary" type="button" (click)="close()">
+      Fechar
+    </button>
+  </div>
+</div>

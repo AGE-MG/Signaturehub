@@ -1,0 +1,72 @@
+<div class="transfer-dialog">
+  <div class="transfer-dialog__header" mat-dialog-title>
+    <div>
+      <h2>Movimentar entre departamentos</h2>
+      <p>O documento será transferido para o departamento do participante selecionado.</p>
+    </div>
+    <mat-icon color="primary">swap_horiz</mat-icon>
+  </div>
+
+  <div mat-dialog-content class="transfer-dialog__content">
+    <div class="transfer-dialog__document">
+      <strong>{{ data.documentTitle }}</strong>
+      <span>Escolha um participante já vinculado ao fluxo do documento.</span>
+    </div>
+
+    @if (usersLoading) {
+      <div class="transfer-dialog__loading">
+        <mat-spinner diameter="28"></mat-spinner>
+        <span>Carregando participantes elegíveis...</span>
+      </div>
+    } @else {
+      <form [formGroup]="form" class="transfer-dialog__form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Participante de destino</mat-label>
+          <mat-select formControlName="targetUserId">
+            @for (user of eligibleUsers; track user.id) {
+              <mat-option [value]="user.id">
+                {{ user.fullName }} — {{ user.department || 'Sem departamento' }}
+              </mat-option>
+            }
+          </mat-select>
+          @if (form.get('targetUserId')?.hasError('required') && form.get('targetUserId')?.touched) {
+            <mat-error>Selecione um participante de destino.</mat-error>
+          }
+        </mat-form-field>
+
+        @if (form.get('targetUserId')?.value) {
+          <div class="transfer-dialog__target-meta">
+            <mat-icon>apartment</mat-icon>
+            <span>Departamento de destino: <strong>{{ getSelectedUserDepartment() }}</strong></span>
+          </div>
+        }
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Motivo da movimentação</mat-label>
+          <textarea
+            matInput
+            rows="5"
+            maxlength="1000"
+            formControlName="reason"
+            placeholder="Explique por que este documento está sendo encaminhado para outro departamento"
+          ></textarea>
+          <mat-hint align="end">{{ form.get('reason')?.value?.length || 0 }}/1000</mat-hint>
+          @if (form.get('reason')?.hasError('required') && form.get('reason')?.touched) {
+            <mat-error>O motivo da movimentação é obrigatório.</mat-error>
+          }
+        </mat-form-field>
+      </form>
+    }
+  </div>
+
+  <div mat-dialog-actions align="end" class="transfer-dialog__actions">
+    <button mat-stroked-button (click)="cancel()" [disabled]="loading">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="confirm()" [disabled]="loading || usersLoading || form.invalid || eligibleUsers.length === 0">
+      @if (loading) {
+        <mat-spinner diameter="18"></mat-spinner>
+      } @else {
+        <span>Confirmar movimentação</span>
+      }
+    </button>
+  </div>
+</div>

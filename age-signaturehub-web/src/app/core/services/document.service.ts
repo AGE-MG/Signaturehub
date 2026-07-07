@@ -1,7 +1,7 @@
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { HttpClient, HttpParams } from "@angular/common/http";
-import { CreateDocumentDto, DocumentDto, DocumentFilterParams, DocumentPagedResult, DocumentStatus } from "../models/document.model";
+import { CreateDocumentDto, DocumentDto, DocumentFilterParams, DocumentPagedResult, DocumentStatus, TransferDocumentDepartmentDto } from "../models/document.model";
 import { map, Observable } from "rxjs";
 import { ApiResponse } from "../models/api-response.model";
 
@@ -54,6 +54,7 @@ export class DocumentService {
       formData.append('expiresAt', data.expiresAt);
     }
     formData.append('createdByUserId', data.createdByUserId);
+    formData.append('isConfidential', String(!!data.isConfidential));
 
     return this.http
       .post<DocumentDto | ApiResponse<DocumentDto>>(this.baseUrl, formData)
@@ -77,6 +78,12 @@ export class DocumentService {
 
   deleteDocument(documentId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${documentId}`);
+  }
+
+  transferDepartment(documentId: string, payload: TransferDocumentDepartmentDto): Observable<DocumentDto> {
+    return this.http
+      .post<DocumentDto | ApiResponse<DocumentDto>>(`${this.baseUrl}/${documentId}/transfer-department`, payload)
+      .pipe(map((response) => this.unwrapApiResponse<DocumentDto>(response)));
   }
 
   archiveDocument(documentId: string): Observable<DocumentDto> {

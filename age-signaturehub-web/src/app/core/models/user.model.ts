@@ -1,5 +1,11 @@
+export enum LoginMode {
+  Internal = 1,
+  ActiveDirectory = 2,
+}
+
 export interface User {
   id: string;
+  networkUserName?: string;
   fullName: string;
   email: string;
   profilePicture?: string;
@@ -13,6 +19,7 @@ export interface LoginRequest {
   email: string;
   password: string;
   rememberMe: boolean;
+  loginMode: LoginMode;
 }
 
 export interface LoginResponse {

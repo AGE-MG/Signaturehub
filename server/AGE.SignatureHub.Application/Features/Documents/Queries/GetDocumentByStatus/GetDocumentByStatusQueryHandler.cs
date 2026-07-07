@@ -23,7 +23,13 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentByS
 
         public async Task<BaseResponse<List<DocumentDto>>> Handle(GetDocumentByStatusQuery request, CancellationToken cancellationToken)
         {
-            var documents = await _unitOfWork.Documents.GetByStatusAsync(request.Status);
+            var documents = await _unitOfWork.Documents.GetAccessibleDocumentsAsync(
+                request.RequestingUserId,
+                request.RequestingUserEmail,
+                request.RequestingUserDepartment,
+                request.Status,
+                cancellationToken);
+
             return new BaseResponse<List<DocumentDto>>
             {
                 Success = true,

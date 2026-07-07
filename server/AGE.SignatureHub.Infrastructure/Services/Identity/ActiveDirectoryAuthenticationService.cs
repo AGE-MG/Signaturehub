@@ -23,6 +23,49 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
 
         public bool AllowLocalFallback => _settings.AllowLocalFallback;
 
+        public async Task<ActiveDirectoryAuthenticationResult?> LookupUserAsync(string login, string? email = null, CancellationToken cancellationToken = default)
+        {
+            if (!IsEnabled || string.IsNullOrWhiteSpace(login))
+            {
+                return null;
+            }
+
+            return await Task.Run(() =>
+            {
+                var normalizedLogin = login.Trim();
+                var accountName = ExtractAccountName(normalizedLogin);
+                var upn = BuildUserPrincipalName(accountName);
+
+                try
+                {
+                    using var connection = CreateLookupConnection();
+                    connection.Bind();
+
+                    var userInfo = TryLoadUserInfo(connection, normalizedLogin, upn, accountName);
+                    if (userInfo.IsEmpty)
+                    {
+                        return null;
+                    }
+
+                    return new ActiveDirectoryAuthenticationResult
+                    {
+                        AccountName = userInfo.AccountName ?? accountName,
+                        UserPrincipalName = userInfo.UserPrincipalName ?? upn,
+                        Email = userInfo.Email ?? BuildEmail(accountName, email ?? upn),
+                        DisplayName = userInfo.DisplayName ?? accountName,
+                        Department = userInfo.Department,
+                        Position = userInfo.Position,
+                        RegistrationNumber = userInfo.RegistrationNumber
+                    };
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to look up Active Directory attributes for {Login}", normalizedLogin);
+                    return null;
+                }
+            }, cancellationToken);
+        }
+
         public async Task<ActiveDirectoryAuthenticationResult?> AuthenticateAsync(string login, string password, CancellationToken cancellationToken = default)
         {
             if (!IsEnabled)
@@ -91,6 +134,42 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             return connection;
         }
 
+        private LdapConnection CreateLookupConnection()
+        {
+            var identifier = new LdapDirectoryIdentifier(_settings.Server, _settings.Port);
+
+            LdapConnection connection;
+
+            if (!string.IsNullOrWhiteSpace(_settings.LookupBindUser) && !string.IsNullOrWhiteSpace(_settings.LookupBindPassword))
+            {
+                var bindUser = BuildUserPrincipalName(_settings.LookupBindUser.Trim());
+                var credential = new NetworkCredential(bindUser, _settings.LookupBindPassword);
+                connection = new LdapConnection(identifier, credential, AuthType.Basic);
+            }
+            else if (_settings.LookupUseDefaultCredentials)
+            {
+                connection = new LdapConnection(identifier)
+                {
+                    AuthType = AuthType.Negotiate,
+                    Credential = CredentialCache.DefaultNetworkCredentials
+                };
+            }
+            else
+            {
+                connection = new LdapConnection(identifier);
+            }
+
+            connection.SessionOptions.ProtocolVersion = 3;
+            connection.SessionOptions.ReferralChasing = ReferralChasingOptions.None;
+
+            if (_settings.UseSsl)
+            {
+                connection.SessionOptions.SecureSocketLayer = true;
+            }
+
+            return connection;
+        }
+
         private ActiveDirectoryUserInfo TryLoadUserInfo(LdapConnection connection, string login, string upn, string accountName)
         {
             try
@@ -105,12 +184,13 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 var upnEscaped = EscapeLdapFilter(upn);
                 var accountEscaped = EscapeLdapFilter(accountName);
                 var filter = $"(&(objectClass=user)(|(userPrincipalName={upnEscaped})(sAMAccountName={accountEscaped})(mail={loginEscaped})))";
+                var requestedAttributes = BuildRequestedAttributes();
 
                 var request = new SearchRequest(
                     searchBase,
                     filter,
                     SearchScope.Subtree,
-                    new[] { "displayName", "mail", "department", "title", "employeeID", "userPrincipalName", "sAMAccountName" });
+                    requestedAttributes);
 
                 var response = (SearchResponse)connection.SendRequest(request);
                 var entry = response.Entries.Cast<SearchResultEntry>().FirstOrDefault();
@@ -121,11 +201,11 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
 
                 return new ActiveDirectoryUserInfo
                 {
-                    DisplayName = GetAttributeValue(entry, "displayName"),
+                    DisplayName = GetFirstAttributeValue(entry, _settings.DisplayNameAttributes),
                     Email = GetAttributeValue(entry, "mail"),
-                    Department = GetAttributeValue(entry, "department"),
-                    Position = GetAttributeValue(entry, "title"),
-                    RegistrationNumber = GetAttributeValue(entry, "employeeID"),
+                    Department = GetFirstAttributeValue(entry, _settings.DepartmentAttributes),
+                    Position = GetFirstAttributeValue(entry, _settings.PositionAttributes),
+                    RegistrationNumber = GetFirstAttributeValue(entry, _settings.RegistrationNumberAttributes),
                     UserPrincipalName = GetAttributeValue(entry, "userPrincipalName"),
                     AccountName = GetAttributeValue(entry, "sAMAccountName")
                 };
@@ -219,6 +299,33 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 : values[0]?.ToString();
         }
 
+        private string[] BuildRequestedAttributes()
+        {
+            return _settings.DisplayNameAttributes
+                .Concat(_settings.DepartmentAttributes)
+                .Concat(_settings.PositionAttributes)
+                .Concat(_settings.RegistrationNumberAttributes)
+                .Concat(["mail", "userPrincipalName", "sAMAccountName"])
+                .Where(attribute => !string.IsNullOrWhiteSpace(attribute))
+                .Select(attribute => attribute.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        private static string? GetFirstAttributeValue(SearchResultEntry entry, IEnumerable<string> attributeNames)
+        {
+            foreach (var attributeName in attributeNames.Where(attribute => !string.IsNullOrWhiteSpace(attribute)))
+            {
+                var value = GetAttributeValue(entry, attributeName.Trim());
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return null;
+        }
+
         private static string EscapeLdapFilter(string value)
         {
             return value
@@ -238,6 +345,14 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             public string? Department { get; init; }
             public string? Position { get; init; }
             public string? RegistrationNumber { get; init; }
+            public bool IsEmpty =>
+                string.IsNullOrWhiteSpace(AccountName) &&
+                string.IsNullOrWhiteSpace(UserPrincipalName) &&
+                string.IsNullOrWhiteSpace(Email) &&
+                string.IsNullOrWhiteSpace(DisplayName) &&
+                string.IsNullOrWhiteSpace(Department) &&
+                string.IsNullOrWhiteSpace(Position) &&
+                string.IsNullOrWhiteSpace(RegistrationNumber);
         }
     }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AGE.SignatureHub.Application.Contracts.Identity;
 using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Common;
@@ -17,13 +18,20 @@ namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocumen
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStorageService _storageService;
         private readonly ICryptographyService _cryptographyService;
+        private readonly IUserManagementService _userManagementService;
         private readonly IMapper _mapper;
 
-        public CreateDocumentCommandHandler(IUnitOfWork unitOfWork, IStorageService storageService, ICryptographyService cryptographyService, IMapper mapper)
+        public CreateDocumentCommandHandler(
+            IUnitOfWork unitOfWork,
+            IStorageService storageService,
+            ICryptographyService cryptographyService,
+            IUserManagementService userManagementService,
+            IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _storageService = storageService;
             _cryptographyService = cryptographyService;
+            _userManagementService = userManagementService;
             _mapper = mapper;
         }
 
@@ -36,6 +44,7 @@ namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocumen
             var FileExtension = Path.GetExtension(request.FileName);
             var mimeType = GetMimeType(FileExtension);
             var storagePath = await _storageService.UploadFileAsync(request.FileStream, request.FileName, mimeType, cancellationToken);
+            var creator = await _userManagementService.GetByIdAsync(request.DocumentData.CreatedByUserId, cancellationToken);
 
             var document = new Document(
                 fileName: Guid.NewGuid().ToString() + FileExtension,
@@ -48,6 +57,8 @@ namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocumen
                 title: request.DocumentData.Title,
                 description: request.DocumentData.Description,
                 createdByUserId: request.DocumentData.CreatedByUserId,
+                owningDepartment: creator.Department ?? string.Empty,
+                isConfidential: request.DocumentData.IsConfidential,
                 expiresAt: request.DocumentData.ExpiresAt
             );
 

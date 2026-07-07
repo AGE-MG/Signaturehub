@@ -14,6 +14,7 @@ using AGE.SignatureHub.API.Middleware;
 using AGE.SignatureHub.Application.BackgroundJobs;
 using Hangfire.Dashboard;
 using AGE.SignatureHub.Infrastructure.Persistence.Seed;
+using Microsoft.AspNetCore.Authentication.Negotiate;
 
 try
 {
@@ -93,7 +94,8 @@ try
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    }).AddJwtBearer(options =>
+    })
+    .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -106,7 +108,8 @@ try
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
             ClockSkew = TimeSpan.Zero
         };
-    });
+    })
+    .AddNegotiate();
 
     builder.Services.AddAuthorization();
 

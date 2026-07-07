@@ -1,0 +1,140 @@
+.profile-dialog {
+  width: min(680px, 100%);
+}
+
+.profile-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 8px;
+
+  h2 {
+    margin: 0 0 6px;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+}
+
+.profile-dialog__content {
+  padding-top: 8px;
+}
+
+.profile-dialog__loading {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-dialog__hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.profile-dialog__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), #4f8cff);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profile-dialog__identity {
+  min-width: 0;
+
+  h3 {
+    margin: 0 0 6px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  p {
+    margin: 0 0 10px;
+    color: var(--text-secondary);
+    word-break: break-word;
+  }
+}
+
+.profile-dialog__source {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(21, 101, 192, 0.08);
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.profile-dialog__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.profile-dialog__item {
+  padding: 16px;
+  border: 1px solid #e6eaf2;
+  border-radius: 14px;
+  background: #f9fbff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .label {
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+}
+
+.profile-dialog__item--full {
+  grid-column: 1 / -1;
+}
+
+.profile-dialog__actions {
+  padding-top: 16px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-dialog__hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-dialog__grid {
+    grid-template-columns: 1fr;
+  }
+}

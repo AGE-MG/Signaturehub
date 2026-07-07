@@ -11,5 +11,8 @@ namespace AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentByI
     public class GetDocumentByIdQuery : IRequest<BaseResponse<DocumentDto>>
     {
         public Guid DocumentId { get; set; }
+        public Guid RequestingUserId { get; set; }
+        public string RequestingUserEmail { get; set; } = string.Empty;
+        public string? RequestingUserDepartment { get; set; }
     }
 }

@@ -82,6 +82,22 @@ export class AuthService {
     )
   }
 
+  loginWithWindowsSession(): Observable<ApiResponse<LoginResponse>> {
+    return this.http.get<ApiResponse<LoginResponse>>(`${this.API_URL}/windows-sso`, {
+      withCredentials: true,
+    }).pipe(
+      tap(response => {
+        if (response.success && response.data) {
+          this.setSession(response.data);
+        }
+      }),
+      catchError(error => {
+        console.error('Windows SSO login error', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   refreshToken(): Observable<ApiResponse<LoginResponse>> {
     const token = this.getToken();
     const refreshToken = this.getRefreshToken();

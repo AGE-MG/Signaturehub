@@ -22,6 +22,7 @@ import { DocumentDetailsHistoryTabComponent } from './components/document-detail
 import { MatDialog } from '@angular/material/dialog';
 import { SignDialogComponent } from '../../../../shared/components/sign-dialog.component/sign-dialog.component';
 import { RejectDialogComponent } from '../../../../shared/components/reject-dialog.component/reject-dialog.component';
+import { TransferDepartmentDialogComponent } from '../../../../shared/components/transfer-department-dialog.component/transfer-department-dialog.component';
 
 @Component({
   selector: 'app-document-details',
@@ -78,6 +79,7 @@ export class DocumentDetailsComponent implements OnInit {
     'document_viewed':     { label: 'Visualizado',         icon: 'visibility',   color: '#64748b' },
     'flow_created':        { label: 'Fluxo criado',        icon: 'account_tree', color: '#3b82f6' },
     'flow_completed':      { label: 'Fluxo concluído',     icon: 'check_circle', color: '#10b981' },
+    'document_department_transferred': { label: 'Departamento movido', icon: 'swap_horiz', color: '#2563eb' },
   };
 
   readonly DocumentStatus = DocumentStatus
@@ -279,6 +281,18 @@ export class DocumentDetailsComponent implements OnInit {
           this.snackBar.open('Falha ao baixar o documento', 'Fechar', { duration: 3000 });
         }
       })
+  }
+
+  get canTransferDepartment(): boolean {
+    if (!this.document.id || !this.currentUserEmail) {
+      return false;
+    }
+
+    return (this.document.signatureFlows ?? []).some((flow) =>
+      (flow.signers ?? []).some((signer) =>
+        this.normalizeEmail(signer.email) === this.currentUserEmail
+      )
+    );
   }
 
   get canPreview(): boolean {
@@ -583,6 +597,46 @@ export class DocumentDetailsComponent implements OnInit {
     this.router.navigate(['/documents']);
   }
 
+  transferDepartment(): void {
+    if (!this.document.id || !this.canTransferDepartment) {
+      return;
+    }
+
+    const currentUserId = this.authService.getUserValue()?.id ?? null;
+    const participantEmails = Array.from(new Set(
+      (this.document.signatureFlows ?? [])
+        .flatMap((flow) => flow.signers ?? [])
+        .map((signer) => this.normalizeEmail(signer.email))
+        .filter((email): email is string => !!email)
+    ));
+
+    this.dialog.open(TransferDepartmentDialogComponent, {
+      width: '680px',
+      maxWidth: 'calc(100vw - 32px)',
+      data: {
+        documentId: this.document.id,
+        documentTitle: this.document.title,
+        participantEmails,
+        currentUserId,
+      }
+    }).afterClosed().subscribe((updatedDocument: DocumentDto | undefined) => {
+      if (!updatedDocument) {
+        return;
+      }
+
+      this.document = {
+        ...this.document,
+        ...updatedDocument,
+        signatureFlows: updatedDocument.signatureFlows ?? this.document.signatureFlows,
+      };
+      this.auditLogs = [];
+      this.loadAuditLogs();
+      this.snackBar.open('Documento movimentado com sucesso entre departamentos.', 'Fechar', { duration: 3500 });
+      this.loadDocument();
+      this.cdr.markForCheck();
+    });
+  }
+
   private loadPreview(): void {
     this.clearPreview();
 
@@ -658,6 +712,8 @@ export class DocumentDetailsComponent implements OnInit {
       title: '',
       description: '',
       createdByUserId: '',
+      owningDepartment: '',
+      isConfidential: false,
       createdAt: '',
       updatedAt: '',
       signatureFlows: []

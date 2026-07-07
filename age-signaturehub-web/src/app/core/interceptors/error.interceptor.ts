@@ -5,10 +5,11 @@ import { catchError, throwError } from "rxjs";
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const isWindowsSsoEndpoint = req.url.includes('/auth/windows-sso');
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401) {
+      if (error.status === 401 && !isWindowsSsoEndpoint) {
         authService.handleUnauthorized();
       }
 

@@ -7,10 +7,12 @@ using AGE.SignatureHub.Application.Contracts.Identity;
 using AGE.SignatureHub.Application.DTOs.Auth;
 using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.Exceptions;
-using AGE.SignatureHub.Application.Exceptions;
 using AGE.SignatureHub.Domain.Entities;
+using AGE.SignatureHub.Infrastructure.Configuration;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 
 namespace AGE.SignatureHub.Infrastructure.Services.Identity
@@ -23,6 +25,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
         private readonly ITokenService _tokenService;
         private readonly IMapper _mapper;
         private readonly ActiveDirectoryAuthenticationService _activeDirectoryAuthenticationService;
+        private readonly ActiveDirectorySettings _activeDirectorySettings;
         private readonly ILogger<AuthService> _logger;
 
         public AuthService(
@@ -32,6 +35,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             ITokenService tokenService,
             IMapper mapper,
             ActiveDirectoryAuthenticationService activeDirectoryAuthenticationService,
+            IOptions<ActiveDirectorySettings> activeDirectorySettings,
             ILogger<AuthService> logger)
         {
             _userManager = userManager;
@@ -40,6 +44,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             _tokenService = tokenService;
             _mapper = mapper;
             _activeDirectoryAuthenticationService = activeDirectoryAuthenticationService;
+            _activeDirectorySettings = activeDirectorySettings.Value;
             _logger = logger;
         }
         public async Task<BaseResponse<bool>> ChangePasswordAsync(string userId, string currentPassword, string newPassword)
@@ -117,28 +122,38 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
 
             try
             {
-                if (_activeDirectoryAuthenticationService.IsEnabled)
+                if (request.LoginMode == LoginMode.ActiveDirectory)
                 {
+                    if (!_activeDirectoryAuthenticationService.IsEnabled)
+                    {
+                        response.Success = false;
+                        response.Message = "Active Directory login is disabled.";
+                        return response;
+                    }
+
                     var adResult = await _activeDirectoryAuthenticationService.AuthenticateAsync(request.Email, request.Password);
                     if (adResult != null)
                     {
                         return await SignInWithActiveDirectoryAsync(adResult, request.RememberMe);
                     }
 
-                    if (!_activeDirectoryAuthenticationService.AllowLocalFallback)
-                    {
-                        response.Success = false;
-                        response.Message = "Invalid network username or password.";
-                        return response;
-                    }
+                    response.Success = false;
+                    response.Message = "Invalid network username or password.";
+                    return response;
                 }
 
-                var user = await _userManager.FindByEmailAsync(request.Email);
+                var normalizedLogin = request.Email.Trim();
+                var user = await _userManager.FindByEmailAsync(normalizedLogin);
+
+                if (user == null && !normalizedLogin.Contains('@'))
+                {
+                    user = await _userManager.Users.FirstOrDefaultAsync(u => u.NetworkUserName == normalizedLogin, CancellationToken.None);
+                }
 
                 if (user == null)
                 {
                     response.Success = false;
-                    response.Message = "Invalid email or password.";
+                    response.Message = "Invalid internal username or password.";
                     return response;
                 }
 
@@ -155,14 +170,14 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 {
                     if (result.IsLockedOut)
                     {
-                        _logger.LogWarning("User {Email} account locked out.", request.Email);
+                        _logger.LogWarning("User {Login} account locked out.", request.Email);
                         response.Success = false;
                         response.Message = "Account locked due to multiple failed login attempts. Please try again later.";
                         return response;
                     }
 
                     response.Success = false;
-                    response.Message = "Invalid email or password.";
+                    response.Message = "Invalid internal username or password.";
                     return response;
                 }
 
@@ -193,7 +208,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                     User = userDto
                 };
 
-                _logger.LogInformation("User {Email} logged in successfully", request.Email);
+                _logger.LogInformation("User {Login} logged in successfully via internal login", request.Email);
                 return response;
             }
             catch (Exception ex)
@@ -206,23 +221,93 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             }
         }
 
+        public async Task<BaseResponse<LoginResponse>> WindowsSsoLoginAsync(WindowsSsoLoginRequest request)
+        {
+            var response = new BaseResponse<LoginResponse>();
+
+            try
+            {
+                if (!_activeDirectorySettings.EnableWindowsSso)
+                {
+                    response.Success = false;
+                    response.Message = "Windows SSO is disabled.";
+                    return response;
+                }
+
+                if (string.IsNullOrWhiteSpace(request.IdentityName))
+                {
+                    response.Success = false;
+                    response.Message = "Windows identity was not provided.";
+                    return response;
+                }
+
+                var accountName = ExtractAccountName(request.IdentityName);
+                if (string.IsNullOrWhiteSpace(accountName))
+                {
+                    response.Success = false;
+                    response.Message = "Could not resolve the Windows account name.";
+                    return response;
+                }
+
+                var adLookup = await _activeDirectoryAuthenticationService.LookupUserAsync(accountName, request.Email, CancellationToken.None);
+
+                var adResult = adLookup ?? new ActiveDirectoryAuthenticationResult
+                {
+                    AccountName = accountName,
+                    UserPrincipalName = BuildUserPrincipalName(accountName),
+                    Email = BuildEmail(accountName, request.Email),
+                    DisplayName = string.IsNullOrWhiteSpace(request.FullName) ? accountName : request.FullName.Trim(),
+                    Department = NormalizeOptional(request.Department),
+                    Position = NormalizeOptional(request.Position),
+                    RegistrationNumber = NormalizeOptional(request.RegistrationNumber),
+                };
+
+                if (adLookup == null && !string.IsNullOrWhiteSpace(request.FullName))
+                {
+                    adResult = new ActiveDirectoryAuthenticationResult
+                    {
+                        AccountName = adResult.AccountName,
+                        UserPrincipalName = adResult.UserPrincipalName,
+                        Email = adResult.Email,
+                        DisplayName = request.FullName.Trim(),
+                        Department = adResult.Department,
+                        Position = adResult.Position,
+                        RegistrationNumber = adResult.RegistrationNumber,
+                    };
+                }
+
+                return await SignInWithActiveDirectoryAsync(adResult, request.RememberMe);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during Windows SSO login for identity {IdentityName}", request.IdentityName);
+                response.Success = false;
+                response.Message = "An error occurred during Windows SSO login.";
+                response.Errors = new List<string> { ex.Message };
+                return response;
+            }
+        }
+
         private async Task<BaseResponse<LoginResponse>> SignInWithActiveDirectoryAsync(ActiveDirectoryAuthenticationResult adResult, bool rememberMe)
         {
             var response = new BaseResponse<LoginResponse>();
 
             var email = adResult.Email.Trim().ToLowerInvariant();
+            var networkUserName = adResult.AccountName.Trim();
             var user = await _userManager.FindByEmailAsync(email);
+            user ??= await _userManager.Users.FirstOrDefaultAsync(u => u.NetworkUserName == networkUserName);
 
             if (user == null)
             {
                 user = new ApplicationUser
                 {
+                    NetworkUserName = networkUserName,
                     UserName = email,
                     Email = email,
-                    FullName = string.IsNullOrWhiteSpace(adResult.DisplayName) ? adResult.AccountName : adResult.DisplayName,
-                    Department = adResult.Department,
-                    Position = adResult.Position,
-                    RegistrationNumber = adResult.RegistrationNumber,
+                    FullName = string.IsNullOrWhiteSpace(adResult.DisplayName) ? networkUserName : adResult.DisplayName.Trim(),
+                    Department = string.IsNullOrWhiteSpace(adResult.Department) ? null : adResult.Department.Trim(),
+                    Position = string.IsNullOrWhiteSpace(adResult.Position) ? null : adResult.Position.Trim(),
+                    RegistrationNumber = string.IsNullOrWhiteSpace(adResult.RegistrationNumber) ? null : adResult.RegistrationNumber.Trim(),
                     EmailConfirmed = true,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
@@ -248,12 +333,13 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             }
             else
             {
+                user.NetworkUserName = networkUserName;
                 user.UserName = email;
                 user.Email = email;
-                user.FullName = string.IsNullOrWhiteSpace(adResult.DisplayName) ? user.FullName : adResult.DisplayName;
-                user.Department = adResult.Department;
-                user.Position = adResult.Position;
-                user.RegistrationNumber = adResult.RegistrationNumber;
+                user.FullName = string.IsNullOrWhiteSpace(adResult.DisplayName) ? user.FullName : adResult.DisplayName.Trim();
+                user.Department = string.IsNullOrWhiteSpace(adResult.Department) ? null : adResult.Department.Trim();
+                user.Position = string.IsNullOrWhiteSpace(adResult.Position) ? null : adResult.Position.Trim();
+                user.RegistrationNumber = string.IsNullOrWhiteSpace(adResult.RegistrationNumber) ? null : adResult.RegistrationNumber.Trim();
                 user.IsActive = true;
             }
 
@@ -286,6 +372,57 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
 
             _logger.LogInformation("User {Email} logged in successfully via Active Directory", email);
             return response;
+        }
+
+        private string ExtractAccountName(string identityName)
+        {
+            var normalized = identityName.Trim();
+
+            if (normalized.Contains('\\'))
+            {
+                return normalized[(normalized.LastIndexOf('\\') + 1)..];
+            }
+
+            if (normalized.Contains('@'))
+            {
+                return normalized[..normalized.IndexOf('@')];
+            }
+
+            return normalized;
+        }
+
+        private string BuildUserPrincipalName(string accountName)
+        {
+            var suffix = !string.IsNullOrWhiteSpace(_activeDirectorySettings.UserPrincipalNameSuffix)
+                ? _activeDirectorySettings.UserPrincipalNameSuffix
+                : _activeDirectorySettings.Domain;
+
+            return string.IsNullOrWhiteSpace(suffix)
+                ? accountName
+                : $"{accountName}@{suffix}";
+        }
+
+        private string BuildEmail(string accountName, string? emailFromClaims)
+        {
+            if (!string.IsNullOrWhiteSpace(emailFromClaims))
+            {
+                return emailFromClaims.Trim().ToLowerInvariant();
+            }
+
+            var domain = !string.IsNullOrWhiteSpace(_activeDirectorySettings.EmailDomain)
+                ? _activeDirectorySettings.EmailDomain
+                : !string.IsNullOrWhiteSpace(_activeDirectorySettings.UserPrincipalNameSuffix)
+                    ? _activeDirectorySettings.UserPrincipalNameSuffix
+                    : _activeDirectorySettings.Domain;
+
+            return string.IsNullOrWhiteSpace(domain)
+                ? accountName.Trim().ToLowerInvariant()
+                : $"{accountName.Trim().ToLowerInvariant()}@{domain}";
+        }
+
+        private static string? NormalizeOptional(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
         public async Task<BaseResponse<bool>> LogoutAsync(string userId)
         {
@@ -394,6 +531,7 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
 
                 var user = new ApplicationUser
                 {
+                    NetworkUserName = request.Email.Contains('@') ? request.Email[..request.Email.IndexOf('@')] : request.Email,
                     UserName = request.Email,
                     Email = request.Email,
                     FullName = request.FullName,

@@ -46,6 +46,8 @@ export interface DocumentDto {
   description?: string;
   expiresAt?: string;
   createdByUserId: string;
+  owningDepartment: string;
+  isConfidential: boolean;
   createdAt: string;
   updatedAt?: string;
   signatureFlows: SignatureFlowDto[];
@@ -56,6 +58,12 @@ export interface CreateDocumentDto {
   description?: string;
   expiresAt?: string;
   createdByUserId: string;
+  isConfidential?: boolean;
+}
+
+export interface TransferDocumentDepartmentDto {
+  targetUserId: string;
+  reason: string;
 }
 
 export interface DocumentPagedResult {

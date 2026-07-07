@@ -69,9 +69,37 @@ export class DashboardComponent implements OnInit {
 
   private loadUserName(): void {
     const user = this.authService.getUserValue();
-    if (user?.fullName) {
-      this.userName = user.fullName.split(' ')[0];
+    const fullName = user?.fullName?.trim();
+    const networkUserName = user?.networkUserName?.trim();
+
+    if (fullName) {
+      this.userName = fullName.split(' ')[0];
+      return;
     }
+
+    if (networkUserName) {
+      this.userName = this.extractFriendlyLogin(networkUserName);
+      return;
+    }
+
+    const email = user?.email?.trim();
+    if (email) {
+      this.userName = email.split('@')[0];
+    }
+  }
+
+  private extractFriendlyLogin(value: string): string {
+    const normalized = value.trim();
+
+    if (normalized.includes('\\')) {
+      return normalized.substring(normalized.lastIndexOf('\\') + 1);
+    }
+
+    if (normalized.includes('@')) {
+      return normalized.substring(0, normalized.indexOf('@'));
+    }
+
+    return normalized;
   }
 
   private loadDashboardData(): void {

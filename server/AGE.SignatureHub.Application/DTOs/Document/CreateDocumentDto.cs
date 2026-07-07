@@ -11,5 +11,6 @@ namespace AGE.SignatureHub.Application.DTOs.Document
         public string Description { get; set; } = string.Empty;
         public DateTime? ExpiresAt { get; set; }
         public Guid CreatedByUserId { get; set; }
+        public bool IsConfidential { get; set; }
     }
 }

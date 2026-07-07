@@ -13,6 +13,16 @@
     </div>
 
     <div class="title-badges">
+      @if (document.owningDepartment) {
+        <span class="status-chip">
+          {{ document.owningDepartment }}
+        </span>
+      }
+      @if (document.isConfidential) {
+        <span class="status-chip" style="background:#7f1d1d18;color:#991b1b;border-color:#991b1b50;">
+          Sigiloso
+        </span>
+      }
       <span
         class="status-chip"
         [style.background]="statusColor[document.status] + '18'"

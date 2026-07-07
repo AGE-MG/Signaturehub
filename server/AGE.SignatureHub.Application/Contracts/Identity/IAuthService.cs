@@ -10,6 +10,7 @@ namespace AGE.SignatureHub.Application.Contracts.Identity
     public interface IAuthService
     {
         Task<BaseResponse<LoginResponse>> LoginAsync(LoginRequest request);
+        Task<BaseResponse<LoginResponse>> WindowsSsoLoginAsync(WindowsSsoLoginRequest request);
         Task<BaseResponse<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request);
         Task<BaseResponse<bool>> LogoutAsync(string userId);
         Task<BaseResponse<UserDto>> RegisterAsync(RegisterRequest request);

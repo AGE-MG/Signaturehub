@@ -24,6 +24,22 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             _mapper = mapper;
         }
 
+        public async Task<UserDto> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            var user = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+            if (user is null)
+            {
+                throw new NotFoundException(nameof(ApplicationUser), userId);
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var dto = _mapper.Map<UserDto>(user);
+            dto.Roles = roles.ToList();
+            return dto;
+        }
+
         public async Task<List<UserDto>> ListAllAsync(CancellationToken cancellationToken = default)
         {
             var users = await _userManager.Users

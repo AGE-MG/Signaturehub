@@ -44,6 +44,12 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Configurations
                 .HasConversion<string>();
             builder.Property(d => d.CreatedByUserId)
                 .IsRequired();
+            builder.Property(d => d.OwningDepartment)
+                .IsRequired()
+                .HasMaxLength(255);
+            builder.Property(d => d.IsConfidential)
+                .IsRequired()
+                .HasDefaultValue(false);
             builder.Property(d => d.CreatedAt)
                 .IsRequired();
             builder.Property(d => d.UpdatedAt)
@@ -64,6 +70,7 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
             
             builder.HasIndex(d => d.CreatedByUserId);
+            builder.HasIndex(d => d.OwningDepartment);
             builder.HasIndex(d => d.Status);
             builder.HasIndex(d => d.CreatedAt);
             builder.HasIndex(d => d.ExpiresAt);

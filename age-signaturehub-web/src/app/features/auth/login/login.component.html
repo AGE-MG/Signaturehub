@@ -43,8 +43,28 @@
     <div class="login-form-panel">
       <div class="form-container">
         <div class="form-header">
-          <h2>Bem-vindo de volta</h2>
-          <p>Entre com suas credenciais da AGE-MG</p>
+          <h2>{{ loginTitle }}</h2>
+          <p>{{ loginSubtitle }}</p>
+        </div>
+
+        <div class="login-mode-switch">
+          <button
+            type="button"
+            class="mode-button"
+            [class.active]="selectedLoginMode === LoginMode.ActiveDirectory"
+            (click)="selectLoginMode(LoginMode.ActiveDirectory)">
+            <mat-icon>domain</mat-icon>
+            <span>Login AD</span>
+          </button>
+
+          <button
+            type="button"
+            class="mode-button"
+            [class.active]="selectedLoginMode === LoginMode.Internal"
+            (click)="selectLoginMode(LoginMode.Internal)">
+            <mat-icon>person</mat-icon>
+            <span>Login interno</span>
+          </button>
         </div>
 
         <div *ngIf="errorMessage" class="error-alert">
@@ -52,77 +72,101 @@
           <span>{{ errorMessage }}</span>
         </div>
 
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>E-mail</mat-label>
-            <input
-              matInput
-              type="email"
-              formControlName="email"
-              placeholder="seu.email@age.mg.gov.br"
-              autocomplete="email">
-            <mat-icon matPrefix>email</mat-icon>
-            <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
-              E-mail é obrigatório
-            </mat-error>
-            <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
-              E-mail inválido
-            </mat-error>
-          </mat-form-field>
+        @if (isActiveDirectoryMode) {
+          <div class="sso-panel">
+            <div class="sso-card">
+              <mat-icon>domain</mat-icon>
+              <div>
+                <strong>Entrar com o usuário da máquina</strong>
+                <p>O navegador tentará autenticar automaticamente com a sessão Windows ativa.</p>
+              </div>
+            </div>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Senha</mat-label>
-            <input
-              matInput
-              [type]="hidePassword ? 'password' : 'text'"
-              formControlName="password"
-              placeholder="Digite sua senha"
-              autocomplete="current-password">
-            <mat-icon matPrefix>lock</mat-icon>
             <button
-              mat-icon-button
-              matSuffix
+              mat-raised-button
+              color="primary"
               type="button"
-              (click)="togglePasswordVisibility()"
-              [attr.aria-label]="'Alternar visibilidade da senha'"
-              [attr.aria-pressed]="!hidePassword">
-              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              class="login-button"
+              [disabled]="loading"
+              (click)="loginWithActiveDirectorySession()">
+              <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+              <span *ngIf="!loading">Entrar com AD da máquina</span>
             </button>
-            <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
-              Senha é obrigatória
-            </mat-error>
-            <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
-              Senha deve ter no mínimo 6 caracteres
-            </mat-error>
-          </mat-form-field>
-
-          <div class="form-options">
-            <mat-checkbox formControlName="rememberMe">
-              Lembrar-me
-            </mat-checkbox>
-            <a href="#" class="forgot-password" (click)="$event.preventDefault()">
-              Esqueceu a senha?
-            </a>
           </div>
+        } @else {
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>{{ loginFieldLabel }}</mat-label>
+              <input
+                matInput
+                type="text"
+                formControlName="email"
+                [placeholder]="loginPlaceholder"
+                autocomplete="username">
+              <mat-icon matPrefix>badge</mat-icon>
+              <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
+                Usuário interno ou e-mail é obrigatório
+              </mat-error>
+            </mat-form-field>
 
-          <button
-            mat-raised-button
-            color="primary"
-            type="submit"
-            class="login-button"
-            [disabled]="loading || loginForm.invalid">
-            <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
-            <span *ngIf="!loading">Entrar</span>
-          </button>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Senha</mat-label>
+              <input
+                matInput
+                [type]="hidePassword ? 'password' : 'text'"
+                formControlName="password"
+                placeholder="Digite sua senha"
+                autocomplete="current-password">
+              <mat-icon matPrefix>lock</mat-icon>
+              <button
+                mat-icon-button
+                matSuffix
+                type="button"
+                (click)="togglePasswordVisibility()"
+                [attr.aria-label]="'Alternar visibilidade da senha'"
+                [attr.aria-pressed]="!hidePassword">
+                <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+              <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+                Senha é obrigatória
+              </mat-error>
+              <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
+                Senha deve ter no mínimo 6 caracteres
+              </mat-error>
+            </mat-form-field>
 
-          <div class="form-footer">
-            <p class="help-text">
-              <mat-icon>help_outline</mat-icon>
-              Problemas para acessar?
-              <a href="mailto:suporte@age.mg.gov.br">Entre em contato</a>
-            </p>
-          </div>
-        </form>
+            <div class="form-options">
+              <mat-checkbox formControlName="rememberMe">
+                Lembrar-me
+              </mat-checkbox>
+              <a href="#" class="forgot-password" (click)="$event.preventDefault()">
+                Esqueceu a senha?
+              </a>
+            </div>
+
+            <button
+              mat-raised-button
+              color="primary"
+              type="submit"
+              class="login-button"
+              [disabled]="loading || loginForm.invalid">
+              <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+              <span *ngIf="!loading">Entrar</span>
+            </button>
+          </form>
+        }
+
+        <div class="form-footer">
+          <p class="help-text">
+            <mat-icon>help_outline</mat-icon>
+            {{ loginHintText }}
+          </p>
+          <p class="help-text">
+            <mat-icon>support_agent</mat-icon>
+            Problemas para acessar?
+            <a href="mailto:suporte@age.mg.gov.br">Entre em contato</a>
+          </p>
+        </div>
 
         <div class="external-login">
           <div class="divider">

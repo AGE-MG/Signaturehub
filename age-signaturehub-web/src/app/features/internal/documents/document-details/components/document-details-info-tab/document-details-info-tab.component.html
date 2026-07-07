@@ -39,6 +39,14 @@
           </span>
         </div>
         <div class="detail-row">
+          <span class="detail-label">Departamento atual</span>
+          <span class="detail-value">{{ document.owningDepartment || 'Não informado' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Sigilo</span>
+          <span class="detail-value">{{ document.isConfidential ? 'Sigiloso' : 'Não sigiloso' }}</span>
+        </div>
+        <div class="detail-row">
           <span class="detail-label">Criado em</span>
           <span class="detail-value">{{ document.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
         </div>
