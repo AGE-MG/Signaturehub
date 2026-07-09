@@ -53,9 +53,13 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                         UserPrincipalName = userInfo.UserPrincipalName ?? upn,
                         Email = userInfo.Email ?? BuildEmail(accountName, email ?? upn),
                         DisplayName = userInfo.DisplayName ?? accountName,
-                        Department = userInfo.Department,
+                        Department = userInfo.Department ?? userInfo.OrganizationalPath,
                         Position = userInfo.Position,
-                        RegistrationNumber = userInfo.RegistrationNumber
+                        RegistrationNumber = userInfo.RegistrationNumber,
+                        DistinguishedName = userInfo.DistinguishedName,
+                        CanonicalName = userInfo.CanonicalName,
+                        OrganizationalUnits = userInfo.OrganizationalUnits,
+                        OrganizationalPath = userInfo.OrganizationalPath
                     };
                 }
                 catch (Exception ex)
@@ -99,9 +103,13 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                         UserPrincipalName = userInfo.UserPrincipalName ?? upn,
                         Email = userInfo.Email ?? BuildEmail(accountName, upn),
                         DisplayName = userInfo.DisplayName ?? accountName,
-                        Department = userInfo.Department,
+                        Department = userInfo.Department ?? userInfo.OrganizationalPath,
                         Position = userInfo.Position,
-                        RegistrationNumber = userInfo.RegistrationNumber
+                        RegistrationNumber = userInfo.RegistrationNumber,
+                        DistinguishedName = userInfo.DistinguishedName,
+                        CanonicalName = userInfo.CanonicalName,
+                        OrganizationalUnits = userInfo.OrganizationalUnits,
+                        OrganizationalPath = userInfo.OrganizationalPath
                     };
                 }
                 catch (LdapException ex)
@@ -207,7 +215,11 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                     Position = GetFirstAttributeValue(entry, _settings.PositionAttributes),
                     RegistrationNumber = GetFirstAttributeValue(entry, _settings.RegistrationNumberAttributes),
                     UserPrincipalName = GetAttributeValue(entry, "userPrincipalName"),
-                    AccountName = GetAttributeValue(entry, "sAMAccountName")
+                    AccountName = GetAttributeValue(entry, "sAMAccountName"),
+                    DistinguishedName = GetAttributeValue(entry, "distinguishedName"),
+                    CanonicalName = GetAttributeValue(entry, "canonicalName"),
+                    OrganizationalUnits = ExtractOrganizationalUnits(GetAttributeValue(entry, "distinguishedName")),
+                    OrganizationalPath = BuildOrganizationalPath(ExtractOrganizationalUnits(GetAttributeValue(entry, "distinguishedName")))
                 };
             }
             catch (Exception ex)
@@ -305,11 +317,49 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 .Concat(_settings.DepartmentAttributes)
                 .Concat(_settings.PositionAttributes)
                 .Concat(_settings.RegistrationNumberAttributes)
-                .Concat(["mail", "userPrincipalName", "sAMAccountName"])
+                .Concat(["mail", "userPrincipalName", "sAMAccountName", "distinguishedName", "canonicalName"])
                 .Where(attribute => !string.IsNullOrWhiteSpace(attribute))
                 .Select(attribute => attribute.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+        }
+
+        private List<string> ExtractOrganizationalUnits(string? distinguishedName)
+        {
+            if (string.IsNullOrWhiteSpace(distinguishedName))
+            {
+                return [];
+            }
+
+            return distinguishedName
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Trim())
+                .Where(part => part.StartsWith("OU=", StringComparison.OrdinalIgnoreCase))
+                .Select(part => part[3..].Trim())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Reverse()
+                .ToList();
+        }
+
+        private string? BuildOrganizationalPath(List<string> organizationalUnits)
+        {
+            if (organizationalUnits.Count == 0)
+            {
+                return null;
+            }
+
+            var filtered = organizationalUnits
+                .Where(ou => !_settings.DepartmentOuIgnoreList.Any(ignore => string.Equals(ignore, ou, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+            if (filtered.Count == 0)
+            {
+                filtered = organizationalUnits;
+            }
+
+            return filtered.Count == 0
+                ? null
+                : string.Join(" / ", filtered);
         }
 
         private static string? GetFirstAttributeValue(SearchResultEntry entry, IEnumerable<string> attributeNames)
@@ -345,6 +395,10 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             public string? Department { get; init; }
             public string? Position { get; init; }
             public string? RegistrationNumber { get; init; }
+            public string? DistinguishedName { get; init; }
+            public string? CanonicalName { get; init; }
+            public List<string> OrganizationalUnits { get; init; } = [];
+            public string? OrganizationalPath { get; init; }
             public bool IsEmpty =>
                 string.IsNullOrWhiteSpace(AccountName) &&
                 string.IsNullOrWhiteSpace(UserPrincipalName) &&
@@ -352,7 +406,11 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 string.IsNullOrWhiteSpace(DisplayName) &&
                 string.IsNullOrWhiteSpace(Department) &&
                 string.IsNullOrWhiteSpace(Position) &&
-                string.IsNullOrWhiteSpace(RegistrationNumber);
+                string.IsNullOrWhiteSpace(RegistrationNumber) &&
+                string.IsNullOrWhiteSpace(DistinguishedName) &&
+                string.IsNullOrWhiteSpace(CanonicalName) &&
+                OrganizationalUnits.Count == 0 &&
+                string.IsNullOrWhiteSpace(OrganizationalPath);
         }
     }
 
@@ -365,5 +423,9 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
         public string? Department { get; init; }
         public string? Position { get; init; }
         public string? RegistrationNumber { get; init; }
+        public string? DistinguishedName { get; init; }
+        public string? CanonicalName { get; init; }
+        public List<string> OrganizationalUnits { get; init; } = [];
+        public string? OrganizationalPath { get; init; }
     }
 }

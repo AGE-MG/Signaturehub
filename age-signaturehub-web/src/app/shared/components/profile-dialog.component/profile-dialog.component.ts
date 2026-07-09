@@ -8,6 +8,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { AuthService } from '../../../core/services/auth.service';
 import { User } from '../../../core/models/user.model';
 import { finalize, timeout } from 'rxjs';
+import { getFriendlyUserInitials, getFriendlyUserName } from '../../../core/utils/user-display.util';
 
 export interface ProfileDialogData {
   user: User | null;
@@ -68,17 +69,11 @@ export class ProfileDialogComponent implements OnInit {
   }
 
   getInitials(): string {
-    const name = this.user?.fullName?.trim();
-    if (!name) {
-      return '??';
-    }
+    return getFriendlyUserInitials(this.user);
+  }
 
-    const parts = name.split(' ').filter(Boolean);
-    if (parts.length === 1) {
-      return parts[0].slice(0, 2).toUpperCase();
-    }
-
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  getDisplayName(): string {
+    return getFriendlyUserName(this.user);
   }
 
   getAuthSource(): string {

@@ -16,6 +16,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltip } from "@angular/material/tooltip";
 import { MatDialog } from '@angular/material/dialog';
 import { ProfileDialogComponent } from '../../shared/components/profile-dialog.component/profile-dialog.component';
+import { getFriendlyUserInitials, getFriendlyUserName } from '../../core/utils/user-display.util';
 
 @Component({
   selector: 'app-topbar',
@@ -119,12 +120,11 @@ export class TopbarComponent implements OnInit, OnDestroy {
   }
 
   getUserInitials(): string {
-    if (!this.currentUser?.fullName) {
-      return '??';
-    }
+    return getFriendlyUserInitials(this.currentUser);
+  }
 
-    const names = this.currentUser.fullName.split(' ');
-    return names.length > 1 ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase() : names[0].substring(0, 2).toUpperCase();
+  getUserDisplayName(): string {
+    return getFriendlyUserName(this.currentUser);
   }
 
   getNotificationIcon(type: NotificationType): string {

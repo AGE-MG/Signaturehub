@@ -22,5 +22,6 @@ namespace AGE.SignatureHub.Infrastructure.Configuration
         public string[] DepartmentAttributes { get; set; } = ["department"];
         public string[] PositionAttributes { get; set; } = ["title"];
         public string[] RegistrationNumberAttributes { get; set; } = ["employeeID", "employeeNumber", "extensionAttribute1"];
+        public string[] DepartmentOuIgnoreList { get; set; } = ["Users", "Usuários", "Colaboradores", "Funcionarios", "Funcionários"];
     }
 }

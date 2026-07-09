@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Collections;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.Contracts.Identity;
 using AGE.SignatureHub.Application.DTOs.Auth;
@@ -283,6 +284,74 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
                 _logger.LogError(ex, "Error during Windows SSO login for identity {IdentityName}", request.IdentityName);
                 response.Success = false;
                 response.Message = "An error occurred during Windows SSO login.";
+                response.Errors = new List<string> { ex.Message };
+                return response;
+            }
+        }
+
+        public async Task<BaseResponse<ActiveDirectoryDiagnosticDto>> GetActiveDirectoryDiagnosticAsync(string identityName, string? login = null, string? email = null, string? fullName = null, IDictionary<string, string?>? claims = null)
+        {
+            var response = new BaseResponse<ActiveDirectoryDiagnosticDto>();
+
+            try
+            {
+                if (!_activeDirectorySettings.EnableWindowsSso && !_activeDirectoryAuthenticationService.IsEnabled)
+                {
+                    response.Success = false;
+                    response.Message = "Active Directory diagnostic is disabled.";
+                    return response;
+                }
+
+                var requestedLogin = string.IsNullOrWhiteSpace(login) ? identityName : login.Trim();
+                var resolvedAccountName = ExtractAccountName(requestedLogin);
+
+                if (string.IsNullOrWhiteSpace(resolvedAccountName))
+                {
+                    response.Success = false;
+                    response.Message = "Could not resolve the Active Directory account name.";
+                    return response;
+                }
+
+                var lookup = await _activeDirectoryAuthenticationService.LookupUserAsync(resolvedAccountName, email, CancellationToken.None);
+
+                response.Success = true;
+                response.Message = lookup == null
+                    ? "LDAP bind alone only confirms success/failure. No directory attributes were resolved for this user."
+                    : "Active Directory lookup completed successfully.";
+
+                response.Data = new ActiveDirectoryDiagnosticDto
+                {
+                    RequestedLogin = requestedLogin,
+                    IdentityName = identityName,
+                    ResolvedAccountName = resolvedAccountName,
+                    EmailClaim = email,
+                    FullNameClaim = fullName,
+                    LookupSucceeded = lookup != null,
+                    Message = response.Message,
+                    Claims = claims?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? new Dictionary<string, string?>(),
+                    Lookup = lookup == null ? null : new ActiveDirectoryLookupDto
+                    {
+                        AccountName = lookup.AccountName,
+                        UserPrincipalName = lookup.UserPrincipalName,
+                        Email = lookup.Email,
+                        DisplayName = lookup.DisplayName,
+                        Department = lookup.Department,
+                        Position = lookup.Position,
+                        RegistrationNumber = lookup.RegistrationNumber,
+                        DistinguishedName = lookup.DistinguishedName,
+                        CanonicalName = lookup.CanonicalName,
+                        OrganizationalUnits = lookup.OrganizationalUnits.ToList(),
+                        OrganizationalPath = lookup.OrganizationalPath
+                    }
+                };
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during Active Directory diagnostic for {IdentityName}", identityName);
+                response.Success = false;
+                response.Message = "An error occurred during Active Directory diagnostic.";
                 response.Errors = new List<string> { ex.Message };
                 return response;
             }

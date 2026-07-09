@@ -16,5 +16,6 @@ namespace AGE.SignatureHub.Application.Contracts.Identity
         Task<BaseResponse<UserDto>> RegisterAsync(RegisterRequest request);
         Task<BaseResponse<UserDto>> GetCurrentUserAsync(string userId);
         Task<BaseResponse<bool>> ChangePasswordAsync(string userId, string currentPassword, string newPassword);
+        Task<BaseResponse<ActiveDirectoryDiagnosticDto>> GetActiveDirectoryDiagnosticAsync(string identityName, string? login = null, string? email = null, string? fullName = null, IDictionary<string, string?>? claims = null);
     }
 }

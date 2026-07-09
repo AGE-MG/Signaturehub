@@ -13,5 +13,21 @@
     "codegraphy.selectedD3Color": "Spectral",
     "codegraphy.selectedNodeColor": "#fff",
     "codegraphy.favoriteNodeColor": "#ffd700",
-    "codegraphy.outlineColor": "#ffd700"
+    "codegraphy.outlineColor": "#ffd700",
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "192.168.113.150",
+            "port": 3306,
+            "driver": "MariaDB",
+            "name": "intra_amanda",
+            "database": "intra_amanda",
+            "username": "root"
+        }
+    ]
 }

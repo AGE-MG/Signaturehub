@@ -68,6 +68,38 @@ namespace AGE.SignatureHub.API.Controllers
         }
 
         /// <summary>
+        /// Returns a diagnostic JSON payload for the current Active Directory user lookup.
+        /// </summary>
+        [HttpGet("windows-sso/diagnostic")]
+        [Authorize(AuthenticationSchemes = NegotiateDefaults.AuthenticationScheme)]
+        [ProducesResponseType(typeof(ActiveDirectoryDiagnosticDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> WindowsSsoDiagnostic([FromQuery] string? login = null)
+        {
+            if (!_activeDirectorySettings.EnableWindowsSso)
+            {
+                return BadRequest(new { success = false, message = "Windows SSO is disabled." });
+            }
+
+            var claims = User.Claims
+                .GroupBy(claim => claim.Type)
+                .ToDictionary(group => group.Key, group => group.FirstOrDefault()?.Value);
+
+            var identityName = User.Identity?.Name ?? string.Empty;
+            var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue(ClaimTypes.Upn);
+            var fullName = User.FindFirstValue(ClaimTypes.Name);
+
+            var result = await _authService.GetActiveDirectoryDiagnosticAsync(
+                identityName,
+                login,
+                email,
+                fullName,
+                claims);
+
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
         /// Renew the access token using a refresh token
         /// </summary>
         [HttpPost("refresh-token")]
