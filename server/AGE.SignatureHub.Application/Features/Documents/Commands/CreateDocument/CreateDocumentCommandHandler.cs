@@ -8,6 +8,7 @@ using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.DTOs.Document;
 using AGE.SignatureHub.Domain.Entities;
+using AGE.SignatureHub.Application.DTOs.Notifications;
 using AutoMapper;
 using MediatR;
 
@@ -20,19 +21,22 @@ namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocumen
         private readonly ICryptographyService _cryptographyService;
         private readonly IUserManagementService _userManagementService;
         private readonly IMapper _mapper;
+        private readonly IDocumentNotificationDispatcher _notifications;
 
         public CreateDocumentCommandHandler(
             IUnitOfWork unitOfWork,
             IStorageService storageService,
             ICryptographyService cryptographyService,
             IUserManagementService userManagementService,
-            IMapper mapper)
+            IMapper mapper,
+            IDocumentNotificationDispatcher notifications)
         {
             _unitOfWork = unitOfWork;
             _storageService = storageService;
             _cryptographyService = cryptographyService;
             _userManagementService = userManagementService;
             _mapper = mapper;
+            _notifications = notifications;
         }
 
         public async Task<BaseResponse<DocumentDto>> Handle(CreateDocumentCommand request, CancellationToken cancellationToken)
@@ -75,6 +79,14 @@ namespace AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocumen
 
             await _unitOfWork.AuditLogs.AddAsync(auditLog, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _notifications.EnqueueAsync(new DocumentEventNotification
+            {
+                EventType = "document.created",
+                DocumentId = document.Id,
+                DocumentTitle = document.Title,
+                ActorUserId = document.CreatedByUserId
+            }, cancellationToken);
 
             return new BaseResponse<DocumentDto>
             {

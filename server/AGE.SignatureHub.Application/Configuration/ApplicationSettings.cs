@@ -21,6 +21,8 @@ namespace AGE.SignatureHub.Application.Configuration
     {
         public string SmtpUsername { get; set; } = string.Empty;
         public string SmtpPassword { get; set; } = string.Empty;
+        public string Username { get => SmtpUsername; set => SmtpUsername = value; }
+        public string Password { get => SmtpPassword; set => SmtpPassword = value; }
         public string SenderEmail { get; set; } = string.Empty;
         public string SenderName { get; set; } = string.Empty;
         public string SmtpServer { get; set; } = string.Empty;

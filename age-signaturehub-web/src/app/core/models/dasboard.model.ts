@@ -45,5 +45,7 @@ export enum NotificationType {
   DocumentExpired = 4,
   DocumentCompleted = 5,
   SignatureRequested = 6,
-  System = 7
+  System = 7,
+  DocumentUpdated = 8,
+  DocumentDeleted = 9
 }

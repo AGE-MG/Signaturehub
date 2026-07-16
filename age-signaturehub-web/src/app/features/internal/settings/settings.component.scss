@@ -1,6 +1,6 @@
 .settings-page {
   padding: 24px;
-  max-width: 1000px;
+  max-width: 1440px;
 }
 
 .page-header { margin-bottom: 20px; }
@@ -26,11 +26,19 @@
 // ─── Profile Layout ───────────────────────────────────────────────────────────
 .profile-layout {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 220px minmax(460px, 1fr) 320px;
   gap: 20px;
   align-items: start;
 
-  @media (max-width: 720px) { grid-template-columns: 1fr; }
+  @media (max-width: 1180px) {
+    grid-template-columns: 220px 1fr;
+    .notifications-card { grid-column: 1 / -1; }
+  }
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+    .notifications-card { grid-column: auto; }
+  }
 }
 
 .avatar-card {
@@ -93,6 +101,103 @@
   button { display: flex; align-items: center; gap: 6px; }
 }
 
+// ─── Notification channels ──────────────────────────────────────────────────
+.notifications-card { padding: 20px !important; }
+
+.notifications-heading, .external-title, .channel-item, .service-row {
+  display: flex;
+  align-items: center;
+}
+
+.notifications-heading {
+  gap: 12px;
+  margin-bottom: 16px;
+
+  h3 { margin: 0; color: #0f172a; font-size: 1rem; font-weight: 700; }
+  p { margin: 2px 0 0; color: #64748b; font-size: .75rem; }
+}
+
+.notifications-heading-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: grid; place-items: center;
+  background: #dbeafe; color: #1d4ed8;
+}
+
+.notification-loading {
+  min-height: 180px; display: flex; align-items: center; justify-content: center;
+  gap: 10px; color: #64748b; font-size: .8125rem;
+}
+
+.channel-list { display: flex; flex-direction: column; gap: 14px; padding-top: 16px; }
+
+.channel-item {
+  gap: 10px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px;
+  background: #fff;
+}
+
+.browser-channel { align-items: flex-start; .notification-switch { margin-left: auto; } }
+
+.notification-switch {
+  width: 38px; height: 22px; border: 0; border-radius: 999px; padding: 3px;
+  background: #cbd5e1; cursor: pointer; transition: background .18s ease; flex: 0 0 auto;
+  span { display: block; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, .3); transition: transform .18s ease; }
+  &.enabled { background: #2563eb; span { transform: translateX(16px); } }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+  &:focus-visible { outline: 3px solid rgba(37, 99, 235, .3); outline-offset: 2px; }
+}
+
+.channel-icon {
+  width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; flex: 0 0 auto;
+  mat-icon { font-size: 19px; width: 19px; height: 19px; }
+  &.email { background: #ecfdf5; color: #047857; }
+  &.browser { background: #eff6ff; color: #1d4ed8; }
+}
+
+.channel-copy {
+  min-width: 0; display: flex; flex-direction: column; gap: 2px;
+  strong { font-size: .8125rem; color: #0f172a; }
+  > span { overflow: hidden; text-overflow: ellipsis; color: #64748b; font-size: .72rem; }
+  small { display: flex; align-items: center; gap: 5px; color: #b45309; font-size: .6875rem; }
+  small.available { color: #047857; }
+}
+
+.status-dot, .service-status {
+  width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 auto;
+}
+
+.external-services { padding: 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.external-title {
+  gap: 9px; margin-bottom: 10px;
+  mat-icon { color: #475569; }
+  div { display: flex; flex-direction: column; }
+  strong { color: #0f172a; font-size: .8125rem; }
+  span { color: #64748b; font-size: .6875rem; line-height: 1.35; }
+}
+
+.service-row {
+  gap: 8px; padding: 9px 0; border-top: 1px solid #e2e8f0;
+  .service-status { color: #16a34a; }
+  > div { min-width: 0; display: flex; flex-direction: column; }
+  strong { color: #334155; font-size: .75rem; }
+  small { color: #64748b; font-size: .6875rem; }
+}
+
+.connected-chip { margin-left: auto; padding: 2px 7px; border-radius: 12px; background: #dcfce7; color: #166534; font-size: .625rem; font-weight: 700; }
+
+.empty-integrations {
+  min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; color: #94a3b8;
+  mat-icon { margin-bottom: 4px; }
+  span { color: #64748b; font-size: .75rem; font-weight: 600; }
+  small { margin-top: 2px; font-size: .65rem; }
+}
+
+.notification-footnote {
+  display: flex; gap: 7px; align-items: flex-start; margin-top: 14px; color: #64748b;
+  mat-icon { font-size: 16px; width: 16px; height: 16px; flex: 0 0 auto; }
+  span { font-size: .6875rem; line-height: 1.4; }
+}
+
 // ─── Backend notice ───────────────────────────────────────────────────────────
 .backend-notice {
   display: flex; align-items: flex-start; gap: 10px;
@@ -138,4 +243,100 @@
   color: #94a3b8; text-align: center;
   mat-icon { font-size: 48px; width: 48px; height: 48px; }
   p { margin: 0; font-size: .875rem; }
+}
+
+// ─── AD Banner ──────────────────────────────────────────────────────────────
+.ad-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1px solid #93c5fd;
+  border-radius: 10px;
+  padding: 14px 18px;
+
+  mat-icon {
+    color: #1d4ed8;
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+}
+
+.ad-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  strong {
+    font-size: 0.875rem;
+    color: #1e3a8a;
+  }
+
+  span {
+    font-size: 0.8125rem;
+    color: #1e40af;
+  }
+
+  code {
+    background: #bfdbfe;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+  }
+}
+
+// ─── AD Chip (avatar card) ────────────────────────────────────────────────────
+.ad-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-top: 4px;
+
+  mat-icon {
+    font-size: 13px !important;
+    width: 13px !important;
+    height: 13px !important;
+  }
+}
+
+// ─── AD Field Icon (inline no label) ──────────────────────────────────────────
+.ad-field-icon {
+  font-size: 14px !important;
+  width: 14px !important;
+  height: 14px !important;
+  color: #3b82f6;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+// ─── AD Password Notice ───────────────────────────────────────────────────────
+.ad-password-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 18px;
+
+  mat-icon {
+    color: #64748b;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #64748b;
+    line-height: 1.5;
+  }
 }

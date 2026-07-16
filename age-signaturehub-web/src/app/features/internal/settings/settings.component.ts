@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { UpdateProfileDto, UserDto } from '../../../core/models/signer.model';
 import { MatTableDataSource, MatColumnDef, MatTableModule } from '@angular/material/table';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
@@ -17,6 +17,7 @@ import { MatFormField, MatLabel, MatFormFieldModule } from "@angular/material/fo
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { NotificationCapabilities } from '../../../core/models/user.model';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const newPass = control.get('newPassword')?.value;
@@ -36,6 +37,10 @@ export class SettingsComponent implements OnInit {
   loadingProfile = false;
   savingProfile = false;
   savingPassword = false;
+  notificationCapabilities: NotificationCapabilities = { emailConfigured: false, externalServices: [] };
+  loadingNotificationCapabilities = true;
+  browserNotificationsEnabled = false;
+  browserNotificationPermission: NotificationPermission | 'unsupported' = 'unsupported';
 
   usersDataSource = new MatTableDataSource<UserDto>();
   usersDisplayedColumns = ['avatar', 'name', 'email', 'roles', 'actions'];
@@ -55,6 +60,7 @@ export class SettingsComponent implements OnInit {
     private userService: UserManagementService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
+    private cdr: ChangeDetectorRef,
   ) {
     this.profileForm = this.fb.group({
     fullName: ['', [Validators.required, Validators.minLength(3)]],
@@ -71,10 +77,77 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProfile();
+    this.loadNotificationSettings();
+  }
+
+  get hasAccountEmail(): boolean {
+    return !!this.currentUser?.email?.trim();
+  }
+
+  get emailChannelAvailable(): boolean {
+    return this.hasAccountEmail && this.notificationCapabilities.emailConfigured;
+  }
+
+  get browserPermissionLabel(): string {
+    switch (this.browserNotificationPermission) {
+      case 'granted': return 'Permissão concedida neste navegador';
+      case 'denied': return 'Permissão bloqueada nas configurações do navegador';
+      case 'default': return 'Aguardando sua autorização';
+      default: return 'Este navegador não oferece suporte';
+    }
+  }
+
+  loadNotificationSettings(): void {
+    if (typeof window !== 'undefined') {
+      this.browserNotificationsEnabled = localStorage.getItem('browserNotificationsEnabled') === 'true';
+      this.browserNotificationPermission = 'Notification' in window ? Notification.permission : 'unsupported';
+    }
+
+    this.authService.getNotificationCapabilities().subscribe({
+      next: response => {
+        if (response.success && response.data) this.notificationCapabilities = response.data;
+        this.loadingNotificationCapabilities = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.loadingNotificationCapabilities = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  async toggleBrowserNotifications(enabled: boolean): Promise<void> {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      this.browserNotificationsEnabled = false;
+      return;
+    }
+
+    if (enabled && Notification.permission !== 'granted') {
+      this.browserNotificationPermission = await Notification.requestPermission();
+      enabled = this.browserNotificationPermission === 'granted';
+    }
+
+    this.browserNotificationsEnabled = enabled;
+    localStorage.setItem('browserNotificationsEnabled', String(enabled));
+    this.cdr.markForCheck();
+    this.snackBar.open(enabled ? 'Notificações deste navegador ativadas.' : 'Notificações deste navegador desativadas.', 'Fechar', { duration: 3000 });
   }
 
   get isAdmin(): boolean {
     return this.authService.hasAnyRole(['Admin', 'Administrator']);
+  }
+
+  // ─── Active Directory ─────────────────────────────────────────────────────
+  /** true quando o usuário foi provisionado/sincronizado via Active Directory */
+  get isFromActiveDirectory(): boolean {
+    return !!this.currentUser?.networkUserName;
+  }
+
+  /** Login de rede formatado (remove prefixo de domínio "AGEMG\" se presente) */
+  get networkLogin(): string {
+    const raw = this.currentUser?.networkUserName ?? '';
+    const parts = raw.split('\\');
+    return parts.length > 1 ? parts[1] : raw;
   }
 
   loadProfile(): void {

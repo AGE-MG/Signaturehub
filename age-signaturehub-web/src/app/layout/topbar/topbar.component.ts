@@ -31,6 +31,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
   loadingNotifications: boolean = false;
   private readonly isBrowser: boolean;
   private destroy$ = new Subject<void>();
+  private notificationsInitialized = false;
 
   constructor(
     private authService: AuthService,
@@ -109,7 +110,26 @@ export class TopbarComponent implements OnInit, OnDestroy {
                   panelClass: ['info-snackbar']
                 }
               )
+
+              if (this.notificationsInitialized &&
+                  localStorage.getItem('browserNotificationsEnabled') === 'true' &&
+                  'Notification' in window && Notification.permission === 'granted') {
+                const newest = notifications.find(notification => !notification.isRead);
+                if (newest) {
+                  const browserNotification = new Notification(newest.title, {
+                    body: newest.message,
+                    icon: '/favicon.ico',
+                    tag: newest.id
+                  });
+                  browserNotification.onclick = () => {
+                    window.focus();
+                    if (newest.relatedDocumentId) this.router.navigate(['/documents', newest.relatedDocumentId]);
+                    browserNotification.close();
+                  };
+                }
+              }
             }
+            this.notificationsInitialized = true;
           });
         }, 0);
       },
@@ -135,7 +155,9 @@ export class TopbarComponent implements OnInit, OnDestroy {
       [NotificationType.DocumentExpired]: 'schedule',
       [NotificationType.DocumentCompleted]: 'verified',
       [NotificationType.SignatureRequested]: 'edit',
-      [NotificationType.System]: 'info'
+      [NotificationType.System]: 'info',
+      [NotificationType.DocumentUpdated]: 'update',
+      [NotificationType.DocumentDeleted]: 'delete'
     }
     return icons[type] || 'notifications';
   }
@@ -148,7 +170,9 @@ export class TopbarComponent implements OnInit, OnDestroy {
       [NotificationType.DocumentExpired]: '#FF9800',
       [NotificationType.DocumentCompleted]: '#4CAF50',
       [NotificationType.SignatureRequested]: '#2196F3',
-      [NotificationType.System]: '#9E9E9E'
+      [NotificationType.System]: '#9E9E9E',
+      [NotificationType.DocumentUpdated]: '#1976D2',
+      [NotificationType.DocumentDeleted]: '#D32F2F'
     }
     return colors[type] || '#607D8B';
   }

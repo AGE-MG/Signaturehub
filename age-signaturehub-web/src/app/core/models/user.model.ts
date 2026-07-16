@@ -44,3 +44,13 @@ export interface ChangePasswordRequest {
   newPassword: string;
   confirmPassword: string;
 }
+
+export interface ExternalNotificationService {
+  name: string;
+  eventCount: number;
+}
+
+export interface NotificationCapabilities {
+  emailConfigured: boolean;
+  externalServices: ExternalNotificationService[];
+}

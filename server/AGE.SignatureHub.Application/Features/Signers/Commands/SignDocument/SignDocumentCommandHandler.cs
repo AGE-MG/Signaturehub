@@ -8,6 +8,7 @@ using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Common;
 using AGE.SignatureHub.Application.DTOs.Signer;
+using AGE.SignatureHub.Application.DTOs.Notifications;
 using AGE.SignatureHub.Application.Exceptions;
 using AGE.SignatureHub.Domain.Entities;
 using AGE.SignatureHub.Domain.Enums;
@@ -28,6 +29,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
         private readonly IWebhookService _webhookService;
         private readonly IMapper _mapper;
         private readonly ApplicationSettings _settings;
+        private readonly IDocumentNotificationDispatcher _notifications;
 
         public SignDocumentCommandHandler(
             IUnitOfWork unitOfWork,
@@ -35,6 +37,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
             IStorageService storageService,
             IEmailService emailService,
             IWebhookService webhookService,
+            IDocumentNotificationDispatcher notifications,
             IMapper mapper,
             IOptions<ApplicationSettings> settings)
         {
@@ -43,6 +46,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
             _storageService = storageService;
             _emailService = emailService;
             _webhookService = webhookService;
+            _notifications = notifications;
             _mapper = mapper;
             _settings = settings.Value;
         }
@@ -183,6 +187,15 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
 
                 await _unitOfWork.AuditLogs.AddAsync(auditLog, cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
+
+                await _notifications.EnqueueAsync(new DocumentEventNotification
+                {
+                    EventType = shouldNotifyFlowCompletion ? "document.completed" : "document.updated",
+                    DocumentId = document.Id,
+                    DocumentTitle = document.Title,
+                    ActorUserId = document.CreatedByUserId,
+                    Details = shouldNotifyFlowCompletion ? null : $"Assinatura registrada para {signer.Name}."
+                }, cancellationToken);
 
                 try
                 {

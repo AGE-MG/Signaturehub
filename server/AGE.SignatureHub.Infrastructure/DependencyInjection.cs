@@ -15,6 +15,7 @@ using AGE.SignatureHub.Infrastructure.Services.BackgroundJobs;
 using AGE.SignatureHub.Infrastructure.Services.Cryptography;
 using AGE.SignatureHub.Infrastructure.Services.Email;
 using AGE.SignatureHub.Infrastructure.Services.Identity;
+using AGE.SignatureHub.Infrastructure.Services.Notifications;
 using AGE.SignatureHub.Infrastructure.Services.Signature;
 using AGE.SignatureHub.Infrastructure.Services.Storage;
 using AGE.SignatureHub.Infrastructure.Services.Timestamp;
@@ -68,8 +69,8 @@ namespace AGE.SignatureHub.Infrastructure
             services.AddScoped<DatabaseSeeder>();
 
             services.Configure<StorageSettings>(configuration.GetSection("Storage"));
-            services.Configure<EmailSettings>(configuration.GetSection("Email"));
-            services.Configure<WebhookSettings>(configuration.GetSection("Webhooks"));
+            services.Configure<AGE.SignatureHub.Application.Configuration.EmailSettings>(configuration.GetSection("Email"));
+            services.Configure<AGE.SignatureHub.Application.Configuration.WebhookSettings>(configuration.GetSection("Webhooks"));
             services.Configure<ActiveDirectorySettings>(configuration.GetSection(ActiveDirectorySettings.SectionName));
 
             var storageProvider = configuration.GetValue<string>("Storage:Provider") ?? "LocalFileSystem";
@@ -96,6 +97,8 @@ namespace AGE.SignatureHub.Infrastructure
             services.AddScoped<ActiveDirectoryAuthenticationService>();
             services.AddScoped<IUserManagementService, UserManagementService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IDocumentNotificationDispatcher, DocumentNotificationDispatcher>();
+            services.AddScoped<DocumentNotificationJob>();
 
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<ICryptographyService, CryptographyService>();

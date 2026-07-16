@@ -40,6 +40,18 @@
             <mat-progress-spinner mode="indeterminate" color="primary" diameter="40"></mat-progress-spinner>
           </div>
         } @else {
+
+          <!-- Banner Active Directory -->
+          @if (isFromActiveDirectory) {
+            <div class="ad-banner">
+              <mat-icon>domain</mat-icon>
+              <div class="ad-banner-text">
+                <strong>Conta sincronizada via Active Directory</strong>
+                <span>Login de rede: <code>{{ networkLogin }}</code> — dados de perfil sincronizados automaticamente</span>
+              </div>
+            </div>
+          }
+
           <div
             class="profile-layout"
           >
@@ -56,6 +68,14 @@
                 {{ currentUser?.fullName }}
               </h3>
               <p>{{ currentUser?.email }}</p>
+
+              @if (isFromActiveDirectory) {
+                <span class="ad-chip">
+                  <mat-icon>verified</mat-icon>
+                  Active Directory
+                </span>
+              }
+
               <div
                 class="role-chips"
               >
@@ -105,9 +125,15 @@
                   >
                     <mat-label>
                       Departamento
+                      @if (isFromActiveDirectory) {
+                        <mat-icon class="ad-field-icon" matTooltip="Sincronizado via Active Directory">domain</mat-icon>
+                      }
                     </mat-label>
                     <mat-icon matPrefix>business</mat-icon>
                     <input matInput formControlName="department" />
+                    @if (isFromActiveDirectory) {
+                      <mat-hint>Gerenciado pelo Active Directory</mat-hint>
+                    }
                   </mat-form-field>
                   <mat-form-field
                     appearance="outline"
@@ -115,9 +141,15 @@
                   >
                     <mat-label>
                       Cargo
+                      @if (isFromActiveDirectory) {
+                        <mat-icon class="ad-field-icon" matTooltip="Sincronizado via Active Directory">domain</mat-icon>
+                      }
                     </mat-label>
                     <mat-icon matPrefix>work</mat-icon>
                     <input matInput formControlName="position" />
+                    @if (isFromActiveDirectory) {
+                      <mat-hint>Gerenciado pelo Active Directory</mat-hint>
+                    }
                   </mat-form-field>
                 </div>
 
@@ -127,9 +159,15 @@
                 >
                   <mat-label>
                     Matrícula
+                    @if (isFromActiveDirectory) {
+                      <mat-icon class="ad-field-icon" matTooltip="Sincronizado via Active Directory">domain</mat-icon>
+                    }
                   </mat-label>
                   <mat-icon matPrefix>tag</mat-icon>
                   <input matInput formControlName="registrationNumber" />
+                  @if (isFromActiveDirectory) {
+                    <mat-hint>Gerenciado pelo Active Directory</mat-hint>
+                  }
                 </mat-form-field>
 
                 <div
@@ -158,124 +196,222 @@
                 </div>
               </form>
             </mat-card>
+
+            <mat-card class="notifications-card">
+              <div class="notifications-heading">
+                <div class="notifications-heading-icon">
+                  <mat-icon>notifications_active</mat-icon>
+                </div>
+                <div>
+                  <h3>Notificações</h3>
+                  <p>Canais vinculados à sua conta</p>
+                </div>
+              </div>
+
+              <mat-divider></mat-divider>
+
+              @if (loadingNotificationCapabilities) {
+                <div class="notification-loading">
+                  <mat-progress-spinner mode="indeterminate" diameter="24"></mat-progress-spinner>
+                  <span>Verificando canais...</span>
+                </div>
+              } @else {
+                <div class="channel-list">
+                  <div class="channel-item">
+                    <div class="channel-icon email"><mat-icon>mail</mat-icon></div>
+                    <div class="channel-copy">
+                      <strong>E-mail</strong>
+                      <span>{{ currentUser?.email || 'Nenhum e-mail vinculado' }}</span>
+                      <small [class.available]="emailChannelAvailable">
+                        <span class="status-dot"></span>
+                        @if (emailChannelAvailable) {
+                          Conta e servidor configurados
+                        } @else if (!hasAccountEmail) {
+                          Conta sem e-mail vinculado
+                        } @else {
+                          Servidor de e-mail não configurado ou ainda com valores de exemplo
+                        }
+                      </small>
+                    </div>
+                  </div>
+
+                  <div class="channel-item browser-channel">
+                    <div class="channel-icon browser"><mat-icon>desktop_windows</mat-icon></div>
+                    <div class="channel-copy">
+                      <strong>Neste navegador</strong>
+                      <span>{{ browserPermissionLabel }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="notification-switch"
+                      role="switch"
+                      [class.enabled]="browserNotificationsEnabled"
+                      [attr.aria-checked]="browserNotificationsEnabled"
+                      [disabled]="browserNotificationPermission === 'denied' || browserNotificationPermission === 'unsupported'"
+                      (click)="toggleBrowserNotifications(!browserNotificationsEnabled)"
+                      aria-label="Ativar notificações neste navegador">
+                      <span></span>
+                    </button>
+                  </div>
+
+                  <div class="external-services">
+                    <div class="external-title">
+                      <mat-icon>hub</mat-icon>
+                      <div>
+                        <strong>Serviços externos</strong>
+                        <span>Integrações que recebem eventos do SignatureHub</span>
+                      </div>
+                    </div>
+
+                    @if (notificationCapabilities.externalServices.length) {
+                      @for (service of notificationCapabilities.externalServices; track service.name) {
+                        <div class="service-row">
+                          <span class="service-status"></span>
+                          <div><strong>{{ service.name }}</strong><small>{{ service.eventCount }} eventos assinados</small></div>
+                          <span class="connected-chip">Configurado</span>
+                        </div>
+                      }
+                    } @else {
+                      <div class="empty-integrations">
+                        <mat-icon>link_off</mat-icon>
+                        <span>Nenhum serviço externo conectado</span>
+                        <small>As integrações são gerenciadas pelo administrador.</small>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="notification-footnote">
+                <mat-icon>info</mat-icon>
+                <span>O sino do sistema continua disponível para todas as notificações internas.</span>
+              </div>
+            </mat-card>
           </div>
 
-          <!-- Password section -->
-          <mat-card
-            class="form-card password-card"
-          >
-            <h3
-              class="section-title"
+          <!-- Password section — oculta para usuários sincronizados via AD -->
+          @if (!isFromActiveDirectory) {
+            <mat-card
+              class="form-card password-card"
             >
-              Alterar Senha
-            </h3>
-            <mat-divider></mat-divider>
-            <form
-              [formGroup]="passwordForm"
-              class="profile-form"
-            >
-              <mat-form-field
-                appearance="outline"
-                class="full-w"
+              <h3
+                class="section-title"
               >
-                <mat-label>
-                  Senha Atual *
-                </mat-label>
-                <mat-icon matPrefix>lock</mat-icon>
-                <input matInput [type]="hideCurrentPwd ? 'password' : 'text'" formControlName="currentPassword" />
-                <button
-                  type="button"
-                  mat-icon-button
-                  matSuffix
-                  (click)="hideCurrentPwd = !hideCurrentPwd"
-                  [attr.aria-label]="'Hide password'"
-                  [attr.aria-pressed]="hideCurrentPwd"
-                >
-                  <mat-icon>{{hideCurrentPwd ? 'visibility_off' : 'visibility'}}</mat-icon>
-                </button>
-              </mat-form-field>
-
-              <div
-                class="form-row"
+                Alterar Senha
+              </h3>
+              <mat-divider></mat-divider>
+              <form
+                [formGroup]="passwordForm"
+                class="profile-form"
               >
                 <mat-form-field
                   appearance="outline"
                   class="full-w"
                 >
                   <mat-label>
-                    Nova Senha *
+                    Senha Atual *
                   </mat-label>
                   <mat-icon matPrefix>lock</mat-icon>
-                  <input matInput [type]="hideNewPwd ? 'password' : 'text'" formControlName="newPassword" />
+                  <input matInput [type]="hideCurrentPwd ? 'password' : 'text'" formControlName="currentPassword" />
                   <button
                     type="button"
                     mat-icon-button
                     matSuffix
-                    (click)="hideNewPwd = !hideNewPwd"
+                    (click)="hideCurrentPwd = !hideCurrentPwd"
                     [attr.aria-label]="'Hide password'"
-                    [attr.aria-pressed]="hideNewPwd"
+                    [attr.aria-pressed]="hideCurrentPwd"
                   >
-                    <mat-icon>{{hideNewPwd ? 'visibility_off' : 'visibility'}}</mat-icon>
+                    <mat-icon>{{hideCurrentPwd ? 'visibility_off' : 'visibility'}}</mat-icon>
                   </button>
-                  @if (passwordForm.get('newPassword')?.hasError('minlength')) {
-                    <mat-error>
-                      A senha deve ter no mínimo 8 caracteres
-                    </mat-error>
-                  }
                 </mat-form-field>
 
-                <mat-form-field
-                  appearance="outline"
-                  class="full-w"
+                <div
+                  class="form-row"
                 >
-                  <mat-label>
-                    Confirmar Nova Senha *
-                  </mat-label>
-                  <mat-icon matPrefix>lock</mat-icon>
-                  <input matInput [type]="hideConfirmPwd ? 'password' : 'text'" formControlName="confirmPassword" />
+                  <mat-form-field
+                    appearance="outline"
+                    class="full-w"
+                  >
+                    <mat-label>
+                      Nova Senha *
+                    </mat-label>
+                    <mat-icon matPrefix>lock</mat-icon>
+                    <input matInput [type]="hideNewPwd ? 'password' : 'text'" formControlName="newPassword" />
+                    <button
+                      type="button"
+                      mat-icon-button
+                      matSuffix
+                      (click)="hideNewPwd = !hideNewPwd"
+                      [attr.aria-label]="'Hide password'"
+                      [attr.aria-pressed]="hideNewPwd"
+                    >
+                      <mat-icon>{{hideNewPwd ? 'visibility_off' : 'visibility'}}</mat-icon>
+                    </button>
+                    @if (passwordForm.get('newPassword')?.hasError('minlength')) {
+                      <mat-error>
+                        A senha deve ter no mínimo 8 caracteres
+                      </mat-error>
+                    }
+                  </mat-form-field>
+
+                  <mat-form-field
+                    appearance="outline"
+                    class="full-w"
+                  >
+                    <mat-label>
+                      Confirmar Nova Senha *
+                    </mat-label>
+                    <mat-icon matPrefix>lock</mat-icon>
+                    <input matInput [type]="hideConfirmPwd ? 'password' : 'text'" formControlName="confirmPassword" />
+                    <button
+                      type="button"
+                      mat-icon-button
+                      matSuffix
+                      (click)="hideConfirmPwd = !hideConfirmPwd"
+                      [attr.aria-label]="'Hide password'"
+                      [attr.aria-pressed]="hideConfirmPwd"
+                    >
+                      <mat-icon>{{hideConfirmPwd ? 'visibility_off' : 'visibility'}}</mat-icon>
+                    </button>
+                    @if (passwordForm.hasError('mismatch') && passwordForm.get('confirmPassword')?.touched) {
+                      <mat-error>
+                        As senhas não coincidem
+                      </mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+
+                <div
+                  class="form-actions"
+                >
                   <button
-                    type="button"
-                    mat-icon-button
-                    matSuffix
-                    (click)="hideConfirmPwd = !hideConfirmPwd"
-                    [attr.aria-label]="'Hide password'"
-                    [attr.aria-pressed]="hideConfirmPwd"
+                    mat-raised-button
+                    color="accent"
+                    type="submit"
+                    [disabled]="passwordForm.invalid || savingPassword"
+                    (click)="savePassword()"
                   >
-                    <mat-icon>{{hideConfirmPwd ? 'visibility_off' : 'visibility'}}</mat-icon>
+                    @if (savingPassword) {
+                      <mat-progress-spinner
+                        mode="indeterminate"
+                        diameter="20"
+                      ></mat-progress-spinner>
+                    } @else {
+                      <ng-container>
+                        <mat-icon>key</mat-icon>
+                        <span>Alterar Senha</span>
+                      </ng-container>
+                    }
                   </button>
-                  @if (passwordForm.hasError('mismatch') && passwordForm.get('confirmPassword')?.touched) {
-                    <mat-error>
-                      As senhas não coincidem
-                    </mat-error>
-                  }
-                </mat-form-field>
-              </div>
-
-              <div
-                class="form-actions"
-              >
-                <button
-                  mat-raised-button
-                  color="accent"
-                  type="submit"
-                  [disabled]="passwordForm.invalid || savingPassword"
-                  (click)="savePassword()"
-                >
-                  @if (savingPassword) {
-                    <mat-progress-spinner
-                      mode="indeterminate"
-                      diameter="20"
-                    ></mat-progress-spinner>
-                  } @else {
-                    <ng-container>
-                      <mat-icon>key</mat-icon>
-                      <span>Alterar Senha</span>
-                    </ng-container>
-                  }
-                </button>
-              </div>
-            </form>
-          </mat-card>
+                </div>
+              </form>
+            </mat-card>
+          } @else {
+            <div class="ad-password-notice">
+              <mat-icon>info</mat-icon>
+              <p>Sua senha é gerenciada pelo Active Directory do domínio. Para alterá-la, entre em contato com o suporte de TI.</p>
+            </div>
+          }
         }
       </div>
     </mat-tab>
@@ -427,6 +563,7 @@
                     >
                       <mat-icon>person_remove</mat-icon>
                     </button>
+                  </td>
                 </ng-container>
 
                 <tr

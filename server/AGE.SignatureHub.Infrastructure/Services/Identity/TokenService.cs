@@ -54,6 +54,11 @@ namespace AGE.SignatureHub.Infrastructure.Services.Identity
             {
                 claims.Add(new Claim("Position", user.Position));
             }
+            if (!string.IsNullOrEmpty(user.NetworkUserName))
+            {
+                claims.Add(new Claim("NetworkUserName", user.NetworkUserName));
+            }
+
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 

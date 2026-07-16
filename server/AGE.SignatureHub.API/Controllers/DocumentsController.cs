@@ -4,8 +4,10 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.Contracts.Identity;
+using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Document;
+using AGE.SignatureHub.Application.DTOs.Notifications;
 using AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocument;
 using AGE.SignatureHub.Application.Features.Documents.Commands.TransferDocumentDepartment;
 using AGE.SignatureHub.Application.Features.Documents.Queries.DownloadDocument;
@@ -29,14 +31,16 @@ namespace AGE.SignatureHub.API.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IUserManagementService _userManagementService;
         private readonly IMapper _mapper;
+        private readonly IDocumentNotificationDispatcher _notifications;
 
-        public DocumentsController(ILogger<DocumentsController> logger, IMediator mediator, IUnitOfWork unitOfWork, IUserManagementService userManagementService, IMapper mapper)
+        public DocumentsController(ILogger<DocumentsController> logger, IMediator mediator, IUnitOfWork unitOfWork, IUserManagementService userManagementService, IMapper mapper, IDocumentNotificationDispatcher notifications)
         {
             _logger = logger;
             _mediator = mediator;
             _unitOfWork = unitOfWork;
             _userManagementService = userManagementService;
             _mapper = mapper;
+            _notifications = notifications;
         }
 
         /// <summary>
@@ -224,6 +228,20 @@ namespace AGE.SignatureHub.API.Controllers
 
             await _unitOfWork.Documents.UpdateAsync(document, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _notifications.EnqueueAsync(new DocumentEventNotification
+            {
+                EventType = "document.deleted",
+                DocumentId = document.Id,
+                DocumentTitle = document.Title,
+                ActorUserId = parsedUserId,
+                RecipientEmails = document.SignatureFlows
+                    .SelectMany(flow => flow.Signers)
+                    .Select(signer => signer.Email)
+                    .Where(email => !string.IsNullOrWhiteSpace(email))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray()
+            }, cancellationToken);
 
             return NoContent();
         }

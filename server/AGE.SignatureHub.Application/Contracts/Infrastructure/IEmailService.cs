@@ -12,5 +12,6 @@ namespace AGE.SignatureHub.Application.Contracts.Infrastructure
         Task SendSignatureRejectedAsync(string toEmail, string toName, string documentTitle, string reason, CancellationToken cancellationToken = default);
         Task SendDocumentExpiredAsync(string toEmail, string toName, string documentTitle, CancellationToken cancellationToken = default);
         Task SendReminderAsync(string toEmail, string toName, string documentTitle, string signatureUrl, CancellationToken cancellationToken = default);
+        Task SendDocumentEventAsync(string toEmail, string toName, string subject, string message, CancellationToken cancellationToken = default);
     }
 }

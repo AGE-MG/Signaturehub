@@ -6,6 +6,7 @@ using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MailKit.Net.Smtp;
+using System.Net;
 
 namespace AGE.SignatureHub.Infrastructure.Services.Email
 {
@@ -56,6 +57,20 @@ namespace AGE.SignatureHub.Infrastructure.Services.Email
             var subject = $"Solicitação de assinatura para '{documentTitle}'";
             var body = GetSignatureRequestTemplate(toName, documentTitle, signatureUrl);
 
+            await SendEmailAsync(toEmail, toName, subject, body, cancellationToken);
+        }
+
+        public async Task SendDocumentEventAsync(string toEmail, string toName, string subject, string message, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(_settings.SmtpServer) ||
+                string.IsNullOrWhiteSpace(_settings.SenderEmail) ||
+                string.IsNullOrWhiteSpace(toEmail))
+            {
+                _logger.LogInformation("Email notification skipped because SMTP or recipient is not configured.");
+                return;
+            }
+
+            var body = $"<p>Olá, {WebUtility.HtmlEncode(toName)}.</p><p>{WebUtility.HtmlEncode(message)}</p>";
             await SendEmailAsync(toEmail, toName, subject, body, cancellationToken);
         }
 

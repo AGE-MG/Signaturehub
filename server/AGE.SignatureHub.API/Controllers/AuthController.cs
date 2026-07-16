@@ -20,12 +20,51 @@ namespace AGE.SignatureHub.API.Controllers
         private readonly ILogger<AuthController> _logger;
         private readonly IAuthService _authService;
         private readonly ActiveDirectorySettings _activeDirectorySettings;
+        private readonly AGE.SignatureHub.Application.Configuration.EmailSettings _emailSettings;
+        private readonly AGE.SignatureHub.Application.Configuration.WebhookSettings _webhookSettings;
 
-        public AuthController(ILogger<AuthController> logger, IAuthService authService, IOptions<ActiveDirectorySettings> activeDirectorySettings)
+        public AuthController(
+            ILogger<AuthController> logger,
+            IAuthService authService,
+            IOptions<ActiveDirectorySettings> activeDirectorySettings,
+            IOptions<AGE.SignatureHub.Application.Configuration.EmailSettings> emailSettings,
+            IOptions<AGE.SignatureHub.Application.Configuration.WebhookSettings> webhookSettings)
         {
             _logger = logger;
             _authService = authService;
             _activeDirectorySettings = activeDirectorySettings.Value;
+            _emailSettings = emailSettings.Value;
+            _webhookSettings = webhookSettings.Value;
+        }
+
+        [HttpGet("notification-capabilities")]
+        [Authorize]
+        public IActionResult GetNotificationCapabilities()
+        {
+            var emailConfigured = IsRealSetting(_emailSettings.SmtpServer) &&
+                                  IsRealSetting(_emailSettings.SenderEmail);
+
+            return Ok(new
+            {
+                success = true,
+                data = new
+                {
+                    emailConfigured,
+                    externalServices = _webhookSettings.Endpoints
+                        .Where(endpoint => !string.IsNullOrWhiteSpace(endpoint.Name) && !string.IsNullOrWhiteSpace(endpoint.Url))
+                        .Select(endpoint => new { endpoint.Name, eventCount = endpoint.Events.Count })
+                        .ToArray()
+                }
+            });
+        }
+
+        private static bool IsRealSetting(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            var normalized = value.Trim().ToLowerInvariant();
+            return !normalized.Contains("example.com") &&
+                   !normalized.StartsWith("your_") &&
+                   !normalized.StartsWith("change_me");
         }
 
         /// <summary>
