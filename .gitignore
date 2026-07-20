@@ -4,3 +4,6 @@
 .codex
 .github
 .vscode
+
+# Local Q.A. API request files
+/docs/RouteFiles/
