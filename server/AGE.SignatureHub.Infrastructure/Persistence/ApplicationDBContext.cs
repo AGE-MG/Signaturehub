@@ -40,6 +40,7 @@ namespace AGE.SignatureHub.Infrastructure.Persistence
         public DbSet<Signer> Signers { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<ExternalServiceConnection> ExternalServiceConnections { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -54,6 +55,7 @@ namespace AGE.SignatureHub.Infrastructure.Persistence
                 HasQueryFilter(sf => !sf.IsDeleted);
 
             modelBuilder.Entity<Signer>().HasQueryFilter(s => !s.IsDeleted);
+            modelBuilder.Entity<ExternalServiceConnection>().HasQueryFilter(connection => !connection.IsDeleted);
 
             modelBuilder.Entity<ApplicationUser>().ToTable("Users");
             modelBuilder.Entity<ApplicationRole>().ToTable("Roles");

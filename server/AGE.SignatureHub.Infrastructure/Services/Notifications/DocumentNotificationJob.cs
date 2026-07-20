@@ -18,14 +18,16 @@ public sealed class DocumentNotificationJob
     private readonly IEmailService _email;
     private readonly IWebhookService _webhooks;
     private readonly ILogger<DocumentNotificationJob> _logger;
+    private readonly IExternalServiceConnectionService _externalServices;
 
     public DocumentNotificationJob(IUnitOfWork unitOfWork, UserManager<ApplicationUser> users,
-        IEmailService email, IWebhookService webhooks, ILogger<DocumentNotificationJob> logger)
+        IEmailService email, IWebhookService webhooks, IExternalServiceConnectionService externalServices, ILogger<DocumentNotificationJob> logger)
     {
         _unitOfWork = unitOfWork;
         _users = users;
         _email = email;
         _webhooks = webhooks;
+        _externalServices = externalServices;
         _logger = logger;
     }
 
@@ -45,6 +47,7 @@ public sealed class DocumentNotificationJob
 
         // External channels are deliberately isolated from the durable in-app notification.
         await TryWebhookAsync(message, cancellationToken);
+        await _externalServices.DispatchAsync(message.ActorUserId, message.EventType, JsonSerializer.Serialize(message), cancellationToken);
         foreach (var recipient in recipients.Where(user => !string.IsNullOrWhiteSpace(user.Email)))
         {
             await TryEmailAsync(recipient, title, body, cancellationToken);

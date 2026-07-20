@@ -18,6 +18,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NotificationCapabilities } from '../../../core/models/user.model';
+import { ExternalServiceConnection } from '../../../core/models/external-service.model';
+import { ExternalServiceService } from '../../../core/services/external-service.service';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const newPass = control.get('newPassword')?.value;
@@ -41,6 +43,19 @@ export class SettingsComponent implements OnInit {
   loadingNotificationCapabilities = true;
   browserNotificationsEnabled = false;
   browserNotificationPermission: NotificationPermission | 'unsupported' = 'unsupported';
+  externalConnections: ExternalServiceConnection[] = [];
+  showExternalServiceForm = false;
+  savingExternalService = false;
+  editingExternalServiceId: string | null = null;
+  readonly externalServiceEvents = [
+    { value: 'document.created', label: 'Documento criado' },
+    { value: 'document.updated', label: 'Documento atualizado' },
+    { value: 'document.completed', label: 'Documento concluído' },
+    { value: 'document.deleted', label: 'Documento removido' },
+    { value: 'signature.requested', label: 'Assinatura solicitada' },
+    { value: 'signature.signed', label: 'Documento assinado' },
+    { value: 'signature.rejected', label: 'Assinatura rejeitada' }
+  ];
 
   usersDataSource = new MatTableDataSource<UserDto>();
   usersDisplayedColumns = ['avatar', 'name', 'email', 'roles', 'actions'];
@@ -48,6 +63,7 @@ export class SettingsComponent implements OnInit {
 
   profileForm!: FormGroup
   passwordForm!: FormGroup
+  externalServiceForm!: FormGroup
 
   hideCurrentPwd = true;
   hideNewPwd = true;
@@ -61,6 +77,7 @@ export class SettingsComponent implements OnInit {
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
     private cdr: ChangeDetectorRef,
+    private externalServiceService: ExternalServiceService,
   ) {
     this.profileForm = this.fb.group({
     fullName: ['', [Validators.required, Validators.minLength(3)]],
@@ -72,12 +89,18 @@ export class SettingsComponent implements OnInit {
     currentPassword: ['', [Validators.required]],
     newPassword: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required, Validators.minLength(6)]]
-  }, {validators: passwordMatchValidator})
+  }, {validators: passwordMatchValidator}),
+    this.externalServiceForm = this.fb.group({
+      name: ['', [Validators.required, Validators.maxLength(100)]],
+      url: ['', [Validators.required, Validators.pattern(/^https:\/\/[^\s]+$/i)]],
+      events: [[], Validators.required]
+    })
   }
 
   ngOnInit(): void {
     this.loadProfile();
     this.loadNotificationSettings();
+    this.loadExternalConnections();
   }
 
   get hasAccountEmail(): boolean {
@@ -131,6 +154,64 @@ export class SettingsComponent implements OnInit {
     localStorage.setItem('browserNotificationsEnabled', String(enabled));
     this.cdr.markForCheck();
     this.snackBar.open(enabled ? 'Notificações deste navegador ativadas.' : 'Notificações deste navegador desativadas.', 'Fechar', { duration: 3000 });
+  }
+
+  loadExternalConnections(): void {
+    this.externalServiceService.getAll().subscribe({
+      next: response => { this.externalConnections = response.data ?? []; this.cdr.markForCheck(); },
+      error: () => this.snackBar.open('Não foi possível carregar as integrações.', 'Fechar', { duration: 3000 })
+    });
+  }
+
+  toggleExternalEvent(eventName: string, checked: boolean): void {
+    const events = new Set<string>(this.externalServiceForm.value.events ?? []);
+    checked ? events.add(eventName) : events.delete(eventName);
+    this.externalServiceForm.patchValue({ events: [...events] });
+  }
+
+  isExternalEventSelected(eventName: string): boolean { return (this.externalServiceForm.value.events ?? []).includes(eventName); }
+
+  openExternalServiceForm(connection?: ExternalServiceConnection): void {
+    this.editingExternalServiceId = connection?.id ?? null;
+    this.externalServiceForm.reset({ name: connection?.name ?? '', url: connection?.url ?? '', events: connection?.events ?? [] });
+    this.showExternalServiceForm = true;
+  }
+
+  closeExternalServiceForm(): void { this.showExternalServiceForm = false; this.editingExternalServiceId = null; }
+
+  saveExternalService(): void {
+    if (this.externalServiceForm.invalid) { this.externalServiceForm.markAllAsTouched(); return; }
+    this.savingExternalService = true;
+    const operation = this.editingExternalServiceId
+      ? this.externalServiceService.update(this.editingExternalServiceId, this.externalServiceForm.value)
+      : this.externalServiceService.create(this.externalServiceForm.value);
+    operation.subscribe({
+      next: response => {
+        this.savingExternalService = false;
+        if (response.data?.secret) this.showGeneratedSecret(response.data.secret);
+        this.closeExternalServiceForm();
+        this.loadExternalConnections();
+        this.snackBar.open('Integração salva com sucesso.', 'Fechar', { duration: 3000 });
+      },
+      error: error => {
+        this.savingExternalService = false;
+        this.snackBar.open(error?.error?.message ?? 'Não foi possível salvar a integração.', 'Fechar', { duration: 4000 });
+      }
+    });
+  }
+
+  setExternalServiceActive(connection: ExternalServiceConnection): void {
+    this.externalServiceService.setActive(connection.id, !connection.isActive).subscribe(() => this.loadExternalConnections());
+  }
+
+  removeExternalService(connection: ExternalServiceConnection): void {
+    if (!confirm(`Remover a integração ${connection.name}?`)) return;
+    this.externalServiceService.remove(connection.id).subscribe(() => this.loadExternalConnections());
+  }
+
+  private showGeneratedSecret(secret: string): void {
+    navigator.clipboard?.writeText(secret).catch(() => undefined);
+    alert(`Segredo HMAC (copiado para a área de transferência):\n\n${secret}\n\nEle não será exibido novamente.`);
   }
 
   get isAdmin(): boolean {

@@ -261,21 +261,60 @@
                         <strong>Serviços externos</strong>
                         <span>Integrações que recebem eventos do SignatureHub</span>
                       </div>
+                      <button type="button" class="add-integration" (click)="openExternalServiceForm()" matTooltip="Conectar serviço externo">
+                        <mat-icon>add</mat-icon>
+                      </button>
                     </div>
 
-                    @if (notificationCapabilities.externalServices.length) {
-                      @for (service of notificationCapabilities.externalServices; track service.name) {
+                    @if (showExternalServiceForm) {
+                      <form class="integration-form" [formGroup]="externalServiceForm" (ngSubmit)="saveExternalService()">
+                        <label>Nome<input formControlName="name" placeholder="Ex.: Sistema de processos" /></label>
+                        <label>URL HTTPS<input formControlName="url" placeholder="https://servico.exemplo/webhooks" /></label>
+                        <span class="event-label">Eventos recebidos</span>
+                        <div class="event-options">
+                          @for (event of externalServiceEvents; track event.value) {
+                            <label class="event-option">
+                              <input type="checkbox" [checked]="isExternalEventSelected(event.value)" (change)="toggleExternalEvent(event.value, $any($event.target).checked)" />
+                              <span>{{ event.label }}</span>
+                            </label>
+                          }
+                        </div>
+                        <div class="integration-actions">
+                          <button type="button" (click)="closeExternalServiceForm()">Cancelar</button>
+                          <button type="submit" class="primary" [disabled]="savingExternalService || externalServiceForm.invalid">
+                            {{ savingExternalService ? 'Salvando...' : 'Conectar' }}
+                          </button>
+                        </div>
+                      </form>
+                    }
+
+                    @if (externalConnections.length) {
+                      @for (service of externalConnections; track service.id) {
                         <div class="service-row">
-                          <span class="service-status"></span>
-                          <div><strong>{{ service.name }}</strong><small>{{ service.eventCount }} eventos assinados</small></div>
-                          <span class="connected-chip">Configurado</span>
+                          <span class="service-status" [class.inactive]="!service.isActive"></span>
+                          <div class="service-copy">
+                            <strong>{{ service.name }}</strong>
+                            <small>{{ service.events.length }} eventos · {{ service.isActive ? 'Ativo' : 'Pausado' }}</small>
+                            @if (service.lastDeliveryAt) {
+                              <small [class.delivery-error]="service.lastDeliverySucceeded === false">
+                                Último envio: {{ service.lastDeliverySucceeded ? 'sucesso' : 'falhou' }}
+                              </small>
+                            }
+                          </div>
+                          <div class="service-actions">
+                            <button type="button" (click)="setExternalServiceActive(service)" [matTooltip]="service.isActive ? 'Pausar' : 'Ativar'">
+                              <mat-icon>{{ service.isActive ? 'pause' : 'play_arrow' }}</mat-icon>
+                            </button>
+                            <button type="button" (click)="openExternalServiceForm(service)" matTooltip="Editar"><mat-icon>edit</mat-icon></button>
+                            <button type="button" class="danger" (click)="removeExternalService(service)" matTooltip="Remover"><mat-icon>delete</mat-icon></button>
+                          </div>
                         </div>
                       }
-                    } @else {
+                    } @else if (!showExternalServiceForm) {
                       <div class="empty-integrations">
                         <mat-icon>link_off</mat-icon>
                         <span>Nenhum serviço externo conectado</span>
-                        <small>As integrações são gerenciadas pelo administrador.</small>
+                        <small>Use o botão + para conectar um webhook HTTPS.</small>
                       </div>
                     }
                   </div>

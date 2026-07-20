@@ -99,6 +99,10 @@ namespace AGE.SignatureHub.Infrastructure
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IDocumentNotificationDispatcher, DocumentNotificationDispatcher>();
             services.AddScoped<DocumentNotificationJob>();
+            services.AddHttpClient<IExternalServiceConnectionService, ExternalServiceConnectionService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(15);
+            });
 
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<ICryptographyService, CryptographyService>();
