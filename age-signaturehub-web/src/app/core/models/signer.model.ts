@@ -11,8 +11,8 @@ export enum SignatureStatus {
   Pending = 1,
   Signed = 2,
   Rejected = 3,
-  Cancelled = 4,
-  Expired = 5,
+  Expired = 4,
+  Cancelled = 5,
 }
 
 export enum SignatureType {
