@@ -53,14 +53,23 @@ namespace AGE.SignatureHub.API.Controllers
         /// Get audit logs by period of time.
         /// </summary>
         [HttpGet("date-range")]
-        [Authorize(Roles = "Admin,Administrator")]
         [ProducesResponseType(typeof(List<AuditLogDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAuditLogsByDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, CancellationToken cancellationToken)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
             var query = new GetAuditLogsByDateRangeQuery
             {
                 StartDate = startDate,
-                EndDate = endDate
+                EndDate = endDate,
+                RequestingUserId = parsedUserId,
+                RequestingUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
+                RequestingUserDepartment = User.FindFirstValue("Department"),
+                IsAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator")
             };
             var result = await _mediator.Send(query, cancellationToken);
             return HandleResponse(result);

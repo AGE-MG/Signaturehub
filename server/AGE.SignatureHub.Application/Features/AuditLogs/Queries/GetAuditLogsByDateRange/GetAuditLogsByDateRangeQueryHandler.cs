@@ -28,6 +28,22 @@ namespace AGE.SignatureHub.Application.Features.AuditLogs.Queries.GetAuditLogsBy
                 cancellationToken
             );
 
+            if (!request.IsAdmin)
+            {
+                var accessibleDocuments = await _unitOfWork.Documents.GetAccessibleDocumentsAsync(
+                    request.RequestingUserId,
+                    request.RequestingUserEmail,
+                    request.RequestingUserDepartment,
+                    status: null,
+                    cancellationToken: cancellationToken);
+                var accessibleDocumentIds = accessibleDocuments.Select(d => d.Id).ToHashSet();
+
+                auditLogs = auditLogs
+                    .Where(log => log.UserId == request.RequestingUserId ||
+                        (log.DocumentId.HasValue && accessibleDocumentIds.Contains(log.DocumentId.Value)))
+                    .ToList();
+            }
+
             return new BaseResponse<List<AuditLogDto>>
             {
                 Success = true,

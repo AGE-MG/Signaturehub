@@ -12,5 +12,9 @@ namespace AGE.SignatureHub.Application.Features.AuditLogs.Queries.GetAuditLogsBy
     {
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        public Guid RequestingUserId { get; set; }
+        public string RequestingUserEmail { get; set; } = string.Empty;
+        public string? RequestingUserDepartment { get; set; }
+        public bool IsAdmin { get; set; }
     }
 }

@@ -222,6 +222,9 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
             {
                 using var memoryStream = new MemoryStream();
                 using var pdfReader = new PdfReader(documentStream);
+                // PDFs exportados com edicao restrita (sem senha de abertura) fazem o iText
+                // recusar a escrita com BadPasswordException a menos que isto seja habilitado.
+                pdfReader.SetUnethicalReading(true);
                 using var pdfWriter = new PdfWriter(memoryStream);
                 using var pdfDocument = new PdfDocument(pdfReader, pdfWriter);
                 ApplyVisualSignatureElements(pdfDocument, visualContext);
@@ -274,9 +277,11 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
                 var fieldName = $"Signature_{DateTime.UtcNow:yyyyMMddHHmmss}";
                 using var stagingStream = await PrepareVisualPdfForCertificateAsync(documentStream, visualContext, cancellationToken);
                 using var pageCountReader = new PdfReader(new MemoryStream(stagingStream.ToArray()));
+                pageCountReader.SetUnethicalReading(true);
                 using var pageCountDocument = new PdfDocument(pageCountReader);
                 var lastPageNumber = pageCountDocument.GetNumberOfPages();
                 var preparedReader = new PdfReader(new MemoryStream(stagingStream.ToArray()));
+                preparedReader.SetUnethicalReading(true);
                 
                 signerProperties
                     .SetFieldName(fieldName)
@@ -336,9 +341,10 @@ namespace AGE.SignatureHub.Infrastructure.Services.Signature
 
             var output = new MemoryStream();
             using (var pdfReader = new PdfReader(preparedStream))
-            using (var pdfWriter = new PdfWriter(output))
-            using (var pdfDocument = new PdfDocument(pdfReader, pdfWriter))
             {
+                pdfReader.SetUnethicalReading(true);
+                using var pdfWriter = new PdfWriter(output);
+                using var pdfDocument = new PdfDocument(pdfReader, pdfWriter);
                 ApplyVisualSignatureElements(pdfDocument, visualContext);
             }
 
