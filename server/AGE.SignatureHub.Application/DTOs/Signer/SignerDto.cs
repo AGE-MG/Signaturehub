@@ -20,5 +20,6 @@ namespace AGE.SignatureHub.Application.DTOs.Signer
         public DateTime? SignedAt { get; set; }
         public string RejectionReason { get; set; } = string.Empty;
         public CertificateInfo CertificateInfo { get; set; } = null!;
+        public DateTime CreatedAt { get; set; }
     }
 }

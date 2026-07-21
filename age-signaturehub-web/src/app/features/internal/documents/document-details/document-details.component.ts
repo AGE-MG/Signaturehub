@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnInit, inject, SecurityContext } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { DocumentDto, DocumentStatusColor, DocumentStatusLabel, formatFileSize } from '../../../../core/models/document.model';
+import { DocumentDto, DocumentStatusColor, DocumentStatusLabel, formatFileSize, SignatoryDto } from '../../../../core/models/document.model';
 import { DocumentStatus } from '../../../../core/models/dasboard.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DocumentService } from '../../../../core/services/document.service';
@@ -220,11 +220,46 @@ export class DocumentDetailsComponent implements OnInit {
       return false;
     }
 
-    return (this.document.signatureFlows ?? []).some((flow) =>
-      (flow.signers ?? []).some((signer) =>
-        this.normalizeEmail(signer.email) === this.currentUserEmail && !!signer.signedAt
-      )
-    );
+    return (this.document.signatureFlows ?? []).some((flow) => {
+      const signers = (flow.signers ?? []).filter((s): s is NonNullable<typeof s> => !!s);
+      const bySignOrder = new Map<number, NonNullable<typeof signers[number]>[]>();
+      for (const signer of signers) {
+        const order = Number(signer.signOrder ?? 0);
+        const group = bySignOrder.get(order) ?? [];
+        group.push(signer);
+        bySignOrder.set(order, group);
+      }
+
+      for (const group of bySignOrder.values()) {
+        const current = this.resolveCurrentResponsible(group);
+        if (
+          current &&
+          Number(current.status ?? 0) === SignatureStatus.Signed &&
+          this.normalizeEmail(current.email) === this.currentUserEmail
+        ) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+
+  /**
+   * Dentro de um mesmo passo (flow + signOrder), uma transferência adiciona um novo
+   * signatário sem apagar o histórico do anterior. O "responsável atual" é sempre o
+   * mais recente do grupo — só ele pode ver o botão de transferir de novo, e só se já
+   * tiver assinado (uma transferência para outra pessoa ainda pendente esconde o botão).
+   */
+  private resolveCurrentResponsible(signers: SignatoryDto[]): SignatoryDto | null {
+    if (signers.length === 0) {
+      return null;
+    }
+
+    return signers.reduce((latest, signer) => {
+      const latestTime = latest.createdAt ? new Date(latest.createdAt).getTime() : 0;
+      const signerTime = signer.createdAt ? new Date(signer.createdAt).getTime() : 0;
+      return signerTime >= latestTime ? signer : latest;
+    });
   }
 
   private computeSignBlockReason(): string | null {
@@ -517,13 +552,36 @@ export class DocumentDetailsComponent implements OnInit {
       return;
     }
 
-    const flowName = this.flowFormMode === 'start'
-      ? `Fluxo ${this.document.title}`
-      : `Transferência de responsabilidade - ${this.document.title}`;
+    this.actionLoading = true;
+
+    if (this.flowFormMode === 'transfer') {
+      this.documentService.transferResponsibility(this.document.id, {
+        newResponsibleName: signerName,
+        newResponsibleEmail: signerEmail,
+        newResponsibleDocument: signerDocument,
+      }).subscribe({
+        next: () => {
+          this.actionLoading = false;
+          this.closeFlowForm();
+          this.cdr.markForCheck();
+          this.snackBar.open('Responsabilidade transferida com sucesso.', 'Fechar', { duration: 3500 });
+          this.loadDocument();
+        },
+        error: (err) => {
+          this.actionLoading = false;
+          this.cdr.markForCheck();
+          const apiMessage = Array.isArray(err?.error)
+            ? err.error.join(' | ')
+            : err?.error?.message || err?.error?.title || 'Falha ao transferir responsabilidade.';
+          this.snackBar.open(apiMessage, 'Fechar', { duration: 5000 });
+        }
+      });
+      return;
+    }
 
     const payload: CreateSignatureFlowDto = {
       documentId: this.document.id,
-      flowName,
+      flowName: `Fluxo ${this.document.title}`,
       flowType: 1,
       signers: [
         {
@@ -536,19 +594,12 @@ export class DocumentDetailsComponent implements OnInit {
       ],
     };
 
-    this.actionLoading = true;
     this.signatureFlowService.create(payload).subscribe({
       next: () => {
         this.actionLoading = false;
         this.closeFlowForm();
         this.cdr.markForCheck();
-        this.snackBar.open(
-          this.flowFormMode === 'start'
-            ? 'Fluxo de assinatura iniciado com sucesso.'
-            : 'Responsabilidade transferida com sucesso para novo fluxo.',
-          'Fechar',
-          { duration: 3500 }
-        );
+        this.snackBar.open('Fluxo de assinatura iniciado com sucesso.', 'Fechar', { duration: 3500 });
         this.loadDocument();
       },
       error: (err) => {

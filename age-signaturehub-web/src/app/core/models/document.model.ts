@@ -20,6 +20,7 @@ export interface SignatoryDto {
   completedAt?: string;
   rejectionReason?: string;
   signatureType?: number;
+  createdAt?: string;
 }
 
 export interface SignatureFlowDto {
@@ -64,6 +65,12 @@ export interface CreateDocumentDto {
 export interface TransferDocumentDepartmentDto {
   targetUserId: string;
   reason: string;
+}
+
+export interface TransferSignatureResponsibilityDto {
+  newResponsibleName: string;
+  newResponsibleEmail: string;
+  newResponsibleDocument: string;
 }
 
 export interface DocumentPagedResult {

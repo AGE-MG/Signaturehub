@@ -8,11 +8,13 @@ using AGE.SignatureHub.Application.Contracts.Infrastructure;
 using AGE.SignatureHub.Application.Contracts.Persistence;
 using AGE.SignatureHub.Application.DTOs.Document;
 using AGE.SignatureHub.Application.DTOs.Notifications;
+using AGE.SignatureHub.Application.DTOs.SignatureFlow;
 using AGE.SignatureHub.Application.Features.Documents.Commands.CreateDocument;
 using AGE.SignatureHub.Application.Features.Documents.Commands.TransferDocumentDepartment;
 using AGE.SignatureHub.Application.Features.Documents.Queries.DownloadDocument;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentById;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetDocumentByStatus;
+using AGE.SignatureHub.Application.Features.SignatureFlows.Commands.TransferSignatureResponsibility;
 using AutoMapper;
 using AGE.SignatureHub.Domain.Enums;
 using MediatR;
@@ -276,6 +278,38 @@ namespace AGE.SignatureHub.API.Controllers
             transferData.UserAgent = HttpContext.Request.Headers["User-Agent"].ToString();
 
             var command = new TransferDocumentDepartmentCommand
+            {
+                DocumentId = id,
+                TransferData = transferData
+            };
+
+            var result = await _mediator.Send(command, cancellationToken);
+            return HandleResponse(result);
+        }
+
+        /// <summary>
+        /// Transfers the current user's own completed signing responsibility to a new
+        /// signer on the same step of the same flow, reopening it until the new signer acts.
+        /// </summary>
+        [HttpPost("{id}/transfer-responsibility")]
+        [ProducesResponseType(typeof(DocumentDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> TransferResponsibility(Guid id, [FromBody] TransferSignatureResponsibilityDto transferData, CancellationToken cancellationToken)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            transferData.RequestingUserId = parsedUserId;
+            transferData.RequestingUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+            transferData.IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
+            transferData.UserAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+
+            var command = new TransferSignatureResponsibilityCommand
             {
                 DocumentId = id,
                 TransferData = transferData

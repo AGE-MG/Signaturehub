@@ -61,6 +61,39 @@ Nenhuma nova ocorrência de `BadPasswordException` no log após a correção.
 | Item | Causa | Correção | Status |
 |---|---:|---|---|
 | Histórico de atividades (`403`) | Regressão da rodada anterior — Admin-only era restritivo demais | Escopo por acesso a documento, como no restante do sistema | Corrigido e verificado |
-| Assinar documento (erro inesperado) | Bug pré-existente do iText com PDFs com restrição de permissão | `SetUnethicalReading(true)` nos leitores de escrita do `SignatureService` | Corrigido e verificado por reprodução; falta confirmação no seu ambiente real |
+| Assinar documento (erro inesperado) | Bug pré-existente do iText com PDFs com restrição de permissão | `SetUnethicalReading(true)` nos leitores de escrita do `SignatureService` | Corrigido e verificado por reprodução; confirmado pelo executor no ambiente real |
 
-Nada foi commitado ainda nesta rodada.
+Commitado e enviado ao remoto em `1978886`.
+
+## 3. "Transferir Responsabilidade" — não transfere, cria um fluxo novo independente (achado de produto, não corrigido)
+
+### Contexto
+
+Teste do executor: no documento `stt_de_en` (já `Completed`, criado pelo próprio executor via AD), usou "Transferir Responsabilidade" apontando para a conta de teste `qa-20260721-transfer-test@example.invalid` (criada só para este teste, mesmo departamento do executor). A conta de teste logou na interface e assinou normalmente.
+
+### O que a funcionalidade realmente faz
+
+Investigação de código confirmou, e o teste no banco validou: **"Transferir Responsabilidade" é o mesmo botão de "Iniciar Fluxo de Assinatura"**, só com `flowName` diferente (`age-signaturehub-web/src/app/features/internal/documents/document-details/document-details.component.ts`, `openFlowForm('transfer')` → mesmo payload de `CreateSignatureFlowDto` → `POST /api/v1/signatureflow`). O backend (`CreateSignatureFlowCommandHandler`) sempre cria um `SignatureFlow` e um `Signer` novos — nunca reatribui ou substitui o signatário existente, e não valida o status do documento antes de aceitar.
+
+Estado final do documento no banco, confirmando o comportamento:
+
+| Fluxo | Tipo | Signatário | Status |
+|---|---|---|---|
+| `Fluxo stt_de_en` (original) | Sequential, 1/1 | `darlam.oliveira@advocaciageral.mg.gov.br` | Signed, `IsCompleted=true` |
+| `Transferência de responsabilidade - stt_de_en` (novo) | Sequential, 1/1 | `qa-20260721-transfer-test@example.invalid` | Signed, `IsCompleted=true` |
+
+Dois fluxos totalmente independentes no mesmo documento, cada um com seu próprio ciclo de vida. `Document.Status` permaneceu `Completed` do início ao fim (nunca voltou para "em andamento"), e `CreatedByUserId` nunca mudou — por isso o documento nunca saiu do feed do executor. Isso acontece porque o criador sempre tem acesso incondicional ao documento (`GetAccessibleDocumentsAsync`/`GetAccessibleByIdWithAllRelationsAsync`: `d.CreatedByUserId == userId`), não por um conceito de "participante" que reconheça a transferência.
+
+### Inconsistência adicional confirmada pelo executor
+
+O botão "Transferir Responsabilidade" continua visível para o usuário original mesmo depois de uma transferência já ter acontecido. Causa: o gate do frontend (`canTransferResponsibility`, mesmo componente) só verifica se o usuário atual é signatário de **algum** fluxo do documento com `signedAt` preenchido — não sabe que uma transferência já ocorreu, então nunca desaparece.
+
+### Proposta do executor (não implementada nesta sessão)
+
+> "transferir responsabilidade fizesse um append de um fluxo concluído, mudasse o status para andamento e então quando a outra pessoa assinasse, concluísse o mesmo fluxo, onde pudesse criar um novo fluxo apenas quando mudasse de departamento"
+
+Ou seja: transferência deveria reabrir/estender o fluxo existente (voltando o documento para "em andamento" até a nova pessoa assinar), reservando a criação de um fluxo novo para o caso de mudança de departamento — que já tem sua própria funcionalidade correta e validada (`Movimentar Departamento` → `TransferDocumentDepartmentCommandHandler`, com checagem adequada de criador/participante).
+
+### Decisão
+
+Registrado como achado de produto para priorização futura. Nenhuma alteração de código feita nesta rodada — funcionalmente "funciona" no sentido de que a pessoa nova consegue assinar, mas o modelo de dados (dois fluxos desconexos por documento, em vez de um histórico de responsabilidade encadeado) e a UI (botão que não reflete o estado real) merecem revisão de design antes de uma correção.

@@ -48,6 +48,7 @@ export interface SignerDto {
   signedAt?: string;
   rejectionReason?: string;
   certificateInfo?: CertificateInfo;
+  createdAt?: string;
 }
 
 export interface SignRequest {

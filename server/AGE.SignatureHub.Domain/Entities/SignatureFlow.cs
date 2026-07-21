@@ -59,6 +59,17 @@ namespace AGE.SignatureHub.Domain.Entities
             SetUpdatedAt();
         }
 
+        /// <summary>
+        /// Reabre um fluxo já concluído para receber a assinatura de um novo responsável
+        /// na mesma etapa de quem transferiu, em vez de criar um fluxo desconectado.
+        /// </summary>
+        public void ReopenForTransfer()
+        {
+            IsCompleted = false;
+            CompletedAt = null;
+            SetUpdatedAt();
+        }
+
         public bool CanSignerSign(Guid signerId)
         {
             var signer = _signers.FirstOrDefault(s => s.Id == signerId);
