@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(dotnet restore:*)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(curl -k -s -o /dev/null -w \"%{http_code}\\\\n\" https://localhost:5001/api/v1/health --max-time 5)",
+      "Bash(echo \"exit:$?\")"
     ]
   }
 }
