@@ -11,5 +11,6 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSi
     public class CreateSignatureFlowCommand : IRequest<BaseResponse<SignatureFlowDto>>
     {
         public CreateSignatureFlowDto FlowData { get; set; } = null!;
+        public Guid RequestingUserId { get; set; }
     }
 }

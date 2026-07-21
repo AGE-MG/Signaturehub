@@ -11,5 +11,8 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.queries.GetSignat
     public class GetSignatureFlowByIdQuery : IRequest<BaseResponse<SignatureFlowDto>>
     {
         public Guid Id { get; set; }
+        public Guid RequestingUserId { get; set; }
+        public string RequestingUserEmail { get; set; } = string.Empty;
+        public string? RequestingUserDepartment { get; set; }
     }
 }

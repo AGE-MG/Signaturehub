@@ -11,5 +11,6 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
     public class SignDocumentCommand : IRequest<BaseResponse<SignerDto>>
     {
         public SignDocumentDto SignData { get; set; } = null!;
+        public string RequestingUserEmail { get; set; } = string.Empty;
     }
 }

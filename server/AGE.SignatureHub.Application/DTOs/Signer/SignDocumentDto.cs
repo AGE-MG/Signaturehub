@@ -9,6 +9,7 @@ namespace AGE.SignatureHub.Application.DTOs.Signer
     public class SignDocumentDto
     {
         public Guid SignerId { get; set; }
+        public string? InvitationToken { get; set; }
         public SignatureType SignatureType { get; set; }
         public byte[] CertificateData { get; set; } = Array.Empty<byte>();
         public string Pin { get; set; } = string.Empty;

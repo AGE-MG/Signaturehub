@@ -52,7 +52,11 @@ namespace AGE.SignatureHub.Infrastructure.Persistence.Configurations
 
             builder.Property(s => s.SignatureImagePath)
                 .HasMaxLength(255);
-            
+
+            builder.Property(s => s.InvitationToken)
+                .IsRequired()
+                .HasMaxLength(64);
+
             builder.Property(s => s.CreatedAt)
                 .IsRequired();
 

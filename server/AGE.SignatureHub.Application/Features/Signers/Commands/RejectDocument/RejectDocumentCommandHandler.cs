@@ -44,6 +44,16 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.RejectDocument
                 {
                     throw new NotFoundException(nameof(signer), request.RejectData.SignerId);
                 }
+
+                var isOwningUser = !string.IsNullOrWhiteSpace(request.RequestingUserEmail) &&
+                    string.Equals(signer.Email, request.RequestingUserEmail, StringComparison.OrdinalIgnoreCase);
+                var hasValidInvitation = signer.ValidateInvitationToken(request.RejectData.InvitationToken);
+
+                if (!isOwningUser && !hasValidInvitation)
+                {
+                    throw new NotFoundException(nameof(signer), request.RejectData.SignerId);
+                }
+
                 var flow = signer.SignatureFlow;
                 var document = flow.Document;
 

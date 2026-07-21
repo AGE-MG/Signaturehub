@@ -11,5 +11,9 @@ namespace AGE.SignatureHub.Application.Features.Signers.Queries.GetSignerById
     public class GetSignerByIdQuery : IRequest<BaseResponse<SignerDto>>
     {
         public Guid SignerId { get; set; }
+        public Guid RequestingUserId { get; set; }
+        public string RequestingUserEmail { get; set; } = string.Empty;
+        public string? RequestingUserDepartment { get; set; }
+        public string? InvitationToken { get; set; }
     }
 }

@@ -24,8 +24,23 @@ namespace AGE.SignatureHub.Application.Features.Signers.Queries.GetSignerById
 
         public async Task<BaseResponse<SignerDto>> Handle(GetSignerByIdQuery request, CancellationToken cancellationToken)
         {
-            var signer = await _unitOfWork.Signers.GetByIdAsync(request.SignerId, cancellationToken);
+            var signer = await _unitOfWork.Signers.GetByIdWithFlowAndDocumentAsync(request.SignerId, cancellationToken);
             if (signer == null)
+            {
+                throw new NotFoundException(nameof(Signer), request.SignerId);
+            }
+
+            var document = signer.SignatureFlow.Document;
+            var normalizedEmail = (request.RequestingUserEmail ?? string.Empty).Trim().ToLowerInvariant();
+            var normalizedDepartment = (request.RequestingUserDepartment ?? string.Empty).Trim().ToLowerInvariant();
+            var hasAccess = string.Equals(signer.Email, request.RequestingUserEmail, StringComparison.OrdinalIgnoreCase) ||
+                document.CreatedByUserId == request.RequestingUserId ||
+                (!document.IsConfidential &&
+                 !string.IsNullOrWhiteSpace(normalizedDepartment) &&
+                 document.OwningDepartment.ToLowerInvariant() == normalizedDepartment) ||
+                signer.ValidateInvitationToken(request.InvitationToken);
+
+            if (!hasAccess)
             {
                 throw new NotFoundException(nameof(Signer), request.SignerId);
             }

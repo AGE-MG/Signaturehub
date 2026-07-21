@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.DTOs.Signer;
 using AGE.SignatureHub.Application.Features.Documents.Queries.GetPendingSignaturesByEmail;
@@ -8,6 +9,7 @@ using AGE.SignatureHub.Application.Features.Signers.Commands.RejectDocument;
 using AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument;
 using AGE.SignatureHub.Application.Features.Signers.Queries.GetSignerById;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AGE.SignatureHub.API.Controllers
@@ -28,9 +30,17 @@ namespace AGE.SignatureHub.API.Controllers
         /// get pending signaturees by email
         /// </summary>
         [HttpGet("pending/{email}")]
+        [Authorize]
         [ProducesResponseType(typeof(List<SignerDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetPendingSignaturesByEmail(string email, CancellationToken cancellationToken)
         {
+            var requesterEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator");
+            if (!isAdmin && !string.Equals(requesterEmail, email, StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
             var query = new GetPendingSignaturesByEmailQuery
             {
                 Email = email
@@ -41,7 +51,7 @@ namespace AGE.SignatureHub.API.Controllers
         }
 
         /// <summary>
-        /// sign a document        
+        /// sign a document
         /// </summary>
         [HttpPost("sign")]
         [ProducesResponseType(typeof(SignerDto),StatusCodes.Status200OK)]
@@ -53,7 +63,8 @@ namespace AGE.SignatureHub.API.Controllers
 
             var command = new SignDocumentCommand
             {
-                SignData = signData
+                SignData = signData,
+                RequestingUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty
             };
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResponse(result);
@@ -70,20 +81,32 @@ namespace AGE.SignatureHub.API.Controllers
             var command = new RejectDocumentCommand
             {
                 RejectData = rejectData,
+                RequestingUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty
             };
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResponse(result);
         }
 
         /// <summary>
-        /// Gets a signer by ID.
+        /// Gets a signer by ID. Accessible either by an authenticated user with document
+        /// access, or anonymously with the signer's invitation token (external signer link).
         /// </summary>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(SignerDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetSignerById(Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetSignerById(Guid id, [FromQuery] string? token, CancellationToken cancellationToken)
         {
-            var query = new GetSignerByIdQuery { SignerId = id };
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid.TryParse(userId, out var parsedUserId);
+
+            var query = new GetSignerByIdQuery
+            {
+                SignerId = id,
+                RequestingUserId = parsedUserId,
+                RequestingUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
+                RequestingUserDepartment = User.FindFirstValue("Department"),
+                InvitationToken = token
+            };
 
             var result = await _mediator.Send(query, cancellationToken);
 

@@ -62,6 +62,15 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
                     throw new NotFoundException(nameof(signer), request.SignData.SignerId);
                 }
 
+                var isOwningUser = !string.IsNullOrWhiteSpace(request.RequestingUserEmail) &&
+                    string.Equals(signer.Email, request.RequestingUserEmail, StringComparison.OrdinalIgnoreCase);
+                var hasValidInvitation = signer.ValidateInvitationToken(request.SignData.InvitationToken);
+
+                if (!isOwningUser && !hasValidInvitation)
+                {
+                    throw new NotFoundException(nameof(signer), request.SignData.SignerId);
+                }
+
                 var flow = signer.SignatureFlow;
                 var document = flow.Document;
                 if (!string.Equals(document.FileExtension, ".pdf", StringComparison.OrdinalIgnoreCase))
@@ -245,7 +254,7 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.SignDocument
 
             foreach (var signer in nextSigners)
             {
-                var signatureUrl = $"{_settings.ApplicationUrl}/sign/{signer.Id}"; // AJUSTAR conforme suas propriedades
+                var signatureUrl = $"{_settings.ApplicationUrl}/sign/{signer.Id}?token={Uri.EscapeDataString(signer.InvitationToken)}";
 
                 await _emailService.SendSignatureRequestAsync(signer.Email, signer.Name, document.Title, signatureUrl, cancellationToken);
             }

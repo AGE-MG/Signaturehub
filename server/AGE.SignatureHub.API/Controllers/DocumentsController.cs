@@ -57,6 +57,15 @@ namespace AGE.SignatureHub.API.Controllers
                 return BadRequest("File is required.");
             }
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            // O criador deve vir sempre da identidade autenticada, nunca do corpo enviado pelo cliente.
+            documentData.CreatedByUserId = parsedUserId;
+
             using var stream = file.OpenReadStream();
 
             var command = new CreateDocumentCommand

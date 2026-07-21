@@ -49,6 +49,11 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSi
                     throw new NotFoundException(nameof(Document), request.FlowData.DocumentId);
                 }
 
+                if (document.CreatedByUserId != request.RequestingUserId)
+                {
+                    throw new NotFoundException(nameof(Document), request.FlowData.DocumentId);
+                }
+
                 await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
                 var signatureFlow = new SignatureFlow(
@@ -129,8 +134,8 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSi
 
             foreach (var signer in signersToNotify)
             {
-                var signatureUrl = $"{_settings.BaseUrl}{_settings.SignatureUrlPath}/{signer.Id}";
-                
+                var signatureUrl = $"{_settings.BaseUrl}{_settings.SignatureUrlPath}/{signer.Id}?token={Uri.EscapeDataString(signer.InvitationToken)}";
+
                 await _emailService.SendSignatureRequestAsync(
                     signer.Email,
                     signer.Name,

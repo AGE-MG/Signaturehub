@@ -11,5 +11,8 @@ namespace AGE.SignatureHub.Application.Features.AuditLogs.Queries.GetAuditLogsBy
     public class GetAuditLogsByDocumentQuery : IRequest<BaseResponse<List<AuditLogDto>>>
     {
         public Guid DocumentId { get; set; }
+        public Guid RequestingUserId { get; set; }
+        public string RequestingUserEmail { get; set; } = string.Empty;
+        public string? RequestingUserDepartment { get; set; }
     }
 }

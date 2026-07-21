@@ -32,6 +32,20 @@ namespace AGE.SignatureHub.Application.Features.SignatureFlows.queries.GetSignat
                 throw new NotFoundException(nameof(SignatureFlow), request.Id);
             }
 
+            var document = signatureFlow.Document;
+            var normalizedEmail = (request.RequestingUserEmail ?? string.Empty).Trim().ToLowerInvariant();
+            var normalizedDepartment = (request.RequestingUserDepartment ?? string.Empty).Trim().ToLowerInvariant();
+            var hasAccess = document.CreatedByUserId == request.RequestingUserId ||
+                signatureFlow.Signers.Any(s => s.Email.ToLowerInvariant() == normalizedEmail) ||
+                (!document.IsConfidential &&
+                 !string.IsNullOrWhiteSpace(normalizedDepartment) &&
+                 document.OwningDepartment.ToLowerInvariant() == normalizedDepartment);
+
+            if (!hasAccess)
+            {
+                throw new NotFoundException(nameof(SignatureFlow), request.Id);
+            }
+
             return new BaseResponse<SignatureFlowDto>
             {
                 Success = true,

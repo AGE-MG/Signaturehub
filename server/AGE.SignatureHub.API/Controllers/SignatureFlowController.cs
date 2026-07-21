@@ -1,18 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AGE.SignatureHub.Application.DTOs.SignatureFlow;
 using AGE.SignatureHub.Application.Features.SignatureFlows.Commands.CreateSignatureFlow;
 using AGE.SignatureHub.Application.Features.SignatureFlows.queries.GetFlowsByDocument;
 using AGE.SignatureHub.Application.Features.SignatureFlows.queries.GetSignatureFlowById;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AGE.SignatureHub.API.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Authorize]
     public class SignatureFlowController : ApiControllerBase
     {
         private readonly ILogger<SignatureFlowController> _logger;
@@ -32,9 +35,16 @@ namespace AGE.SignatureHub.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> StartSignatureFlow([FromBody] CreateSignatureFlowDto flowData, CancellationToken cancellationToken)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
             var command = new CreateSignatureFlowCommand
             {
-                FlowData = flowData
+                FlowData = flowData,
+                RequestingUserId = parsedUserId
             };
 
             var result = await _mediator.Send(command, cancellationToken);
@@ -49,7 +59,19 @@ namespace AGE.SignatureHub.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetSignatureFlowById(Guid id, CancellationToken cancellationToken)
         {
-            var query = new GetSignatureFlowByIdQuery { Id = id };
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            var query = new GetSignatureFlowByIdQuery
+            {
+                Id = id,
+                RequestingUserId = parsedUserId,
+                RequestingUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
+                RequestingUserDepartment = User.FindFirstValue("Department")
+            };
 
             var result = await _mediator.Send(query, cancellationToken);
             return HandleResponse(result);
@@ -57,13 +79,25 @@ namespace AGE.SignatureHub.API.Controllers
 
         /// <summary>
         /// Gets all signature flows for a specific document.
-        /// </summary> 
+        /// </summary>
         [HttpGet("document/{documentId}")]
         [ProducesResponseType(typeof(List<SignatureFlowDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetSignatureFlowsByDocumentId(Guid documentId, CancellationToken cancellationToken)
         {
-            var query = new GetFlowsByDocumentQuery { DocumentId = documentId };
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            var query = new GetFlowsByDocumentQuery
+            {
+                DocumentId = documentId,
+                RequestingUserId = parsedUserId,
+                RequestingUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
+                RequestingUserDepartment = User.FindFirstValue("Department")
+            };
 
             var result = await _mediator.Send(query, cancellationToken);
             return HandleResponse(result);

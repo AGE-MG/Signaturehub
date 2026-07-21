@@ -11,5 +11,6 @@ namespace AGE.SignatureHub.Application.Features.Signers.Commands.RejectDocument
     public class RejectDocumentCommand : IRequest<BaseResponse<SignerDto>>
     {
         public RejectDocumentDto RejectData { get; set; } = new RejectDocumentDto();
+        public string RequestingUserEmail { get; set; } = string.Empty;
     }
 }
